@@ -5,90 +5,101 @@ import { Search, GraduationCap, Globe, Store, MapPin } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="pt-24 pb-16 hero-gradient">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center fade-in">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Searching for a halal place?
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Discover the best places to stay, eat, shop & visit the city nearest to you.
-          </p>
+    <section className="relative pt-20 pb-20 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          {/* Main Heading */}
+          <div className="mb-8 fade-in">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent leading-tight mb-6">
+              Searching for a halal place?
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-medium">
+              Discover the best places to stay, eat, shop & visit the city nearest to you.
+            </p>
+          </div>
           
-          {/* Search Bar */}
-          <div className="max-w-4xl mx-auto glassmorphism rounded-2xl p-2 mb-8" data-testid="hero-search-container">
-            <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  type="text"
-                  placeholder="Search businesses, cuisines, services..."
-                  className="w-full pl-12 pr-4 py-4 bg-card border-border rounded-xl focus:ring-primary text-base"
-                  data-testid="input-search"
-                />
+          {/* Enhanced Search Bar */}
+          <div className="max-w-5xl mx-auto mb-12 fade-in" data-testid="hero-search-container">
+            <div className="bg-white dark:bg-card rounded-3xl shadow-2xl border border-primary/10 p-3">
+              <div className="flex flex-col lg:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
+                  <Input
+                    type="text"
+                    placeholder="Search businesses, cuisines, services..."
+                    className="w-full pl-14 pr-6 py-5 bg-secondary/30 border-0 rounded-2xl focus:ring-2 focus:ring-primary text-lg font-medium placeholder:text-muted-foreground/60"
+                    data-testid="input-search"
+                  />
+                </div>
+                <div className="relative min-w-[240px]">
+                  <Select>
+                    <SelectTrigger className="px-6 py-5 bg-secondary/30 border-0 rounded-2xl focus:ring-2 focus:ring-primary text-lg font-medium" data-testid="select-category">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="food">Food & Dining</SelectItem>
+                      <SelectItem value="shopping">Shopping</SelectItem>
+                      <SelectItem value="services">Services</SelectItem>
+                      <SelectItem value="education">Education</SelectItem>
+                      <SelectItem value="accommodation">Accommodation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-lg hover:shadow-xl" data-testid="button-search">
+                  <Search className="w-5 h-5 mr-3" />
+                  Search
+                </Button>
               </div>
-              <div className="relative min-w-[200px]">
-                <Select>
-                  <SelectTrigger className="px-4 py-4 bg-card border-border rounded-xl focus:ring-primary" data-testid="select-category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="food">Food & Dining</SelectItem>
-                    <SelectItem value="shopping">Shopping</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="accommodation">Accommodation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold hover:bg-primary/90 transition-colors" data-testid="button-search">
-                Search
-              </Button>
             </div>
           </div>
 
-          {/* OR Divider */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex-1 h-px bg-border max-w-32"></div>
-            <div className="mx-4">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">OR</span>
+          {/* Elegant OR Divider */}
+          <div className="flex items-center justify-center mb-12 fade-in">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent max-w-40"></div>
+            <div className="mx-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-primary-foreground font-bold text-base tracking-wider">OR</span>
               </div>
             </div>
-            <div className="flex-1 h-px bg-border max-w-32"></div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent max-w-40"></div>
           </div>
 
           {/* Browse by Category */}
-          <h2 className="text-lg font-semibold text-foreground mb-6">Browse by category</h2>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="bg-card rounded-2xl p-6 hover-lift cursor-pointer border border-border hover:border-primary transition-all group" data-testid="category-school">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <GraduationCap className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="font-semibold text-foreground">School</h3>
-            </div>
+          <div className="fade-in">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-10">Browse by category</h2>
             
-            <div className="bg-card rounded-2xl p-6 hover-lift cursor-pointer border border-border hover:border-primary transition-all group" data-testid="category-online">
-              <div className="w-16 h-16 bg-cyan-100 dark:bg-cyan-900/30 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Globe className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-school">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <GraduationCap className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">School</h3>
               </div>
-              <h3 className="font-semibold text-foreground">Online</h3>
-            </div>
-            
-            <div className="bg-card rounded-2xl p-6 hover-lift cursor-pointer border border-border hover:border-primary transition-all group" data-testid="category-provision-store">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Store className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+              
+              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-online">
+                <div className="w-20 h-20 bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-800/20 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Globe className="w-10 h-10 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Online</h3>
               </div>
-              <h3 className="font-semibold text-foreground">Provision-Store</h3>
-            </div>
-            
-            <div className="bg-card rounded-2xl p-6 hover-lift cursor-pointer border border-border hover:border-primary transition-all group" data-testid="category-masjid">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <MapPin className="w-8 h-8 text-primary" />
+              
+              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-provision-store">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Store className="w-10 h-10 text-gray-600 dark:text-gray-400" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Provision-Store</h3>
               </div>
-              <h3 className="font-semibold text-foreground">Masjid</h3>
+              
+              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-masjid">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <MapPin className="w-10 h-10 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Masjid</h3>
+              </div>
             </div>
           </div>
         </div>
