@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, X } from "lucide-react";
 import MobileMenu from "./MobileMenu";
-import emcLogo from "@assets/image_1756989613955.png";
+import emcLogo from "@assets/image_1756989816731.png";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);

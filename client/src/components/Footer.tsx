@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
-import emcLogo from "@assets/image_1756989613955.png";
+import emcLogo from "@assets/image_1756989816731.png";
 
 export default function Footer() {
   return (
