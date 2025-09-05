@@ -7,9 +7,10 @@ interface MobileMenuProps {
   onClose: () => void;
   onOpenSignIn: () => void;
   onOpenSignUp: () => void;
+  onOpenAddListing: () => void;
 }
 
-export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp }: MobileMenuProps) {
+export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp, onOpenAddListing }: MobileMenuProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   return (
@@ -73,7 +74,14 @@ export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp
                 </div>
               </div>
               
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="mobile-button-add-listing">
+              <Button 
+                onClick={() => {
+                  onOpenAddListing();
+                  onClose();
+                }}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+                data-testid="mobile-button-add-listing"
+              >
                 Add Listing
               </Button>
               
@@ -112,7 +120,14 @@ export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp
             >
               Sign Up
             </Button>
-            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="mobile-button-add-listing">
+            <Button 
+              onClick={() => {
+                onOpenSignIn();
+                onClose();
+              }}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+              data-testid="mobile-button-add-listing-guest"
+            >
               Add Listing
             </Button>
           </>

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import MobileMenu from "./MobileMenu";
 import AuthModal from "./AuthModal";
+import AddListingModal from "./AddListingModal";
 import emcLogo from "@assets/image_1756989816731.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthModal } from "@/hooks/useAuthModal";
@@ -17,6 +18,7 @@ import {
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isOpen, mode, openSignIn, openSignUp, close } = useAuthModal();
 
@@ -81,7 +83,11 @@ export default function Header() {
                 </div>
               ) : isAuthenticated && user ? (
                 <>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
+                  <Button 
+                    onClick={() => setIsAddListingModalOpen(true)}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+                    data-testid="button-add-listing"
+                  >
                     Add Listing
                   </Button>
                   <DropdownMenu>
@@ -141,7 +147,11 @@ export default function Header() {
                   >
                     Sign Up
                   </Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
+                  <Button 
+                    onClick={openSignIn}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+                    data-testid="button-add-listing-guest"
+                  >
                     Add Listing
                   </Button>
                 </>
@@ -173,10 +183,17 @@ export default function Header() {
         onClose={() => setIsMobileMenuOpen(false)}
         onOpenSignIn={openSignIn}
         onOpenSignUp={openSignUp}
+        onOpenAddListing={() => setIsAddListingModalOpen(true)}
       />
 
       {/* Authentication Modal */}
       <AuthModal isOpen={isOpen} onClose={close} initialMode={mode} />
+
+      {/* Add Listing Modal */}
+      <AddListingModal 
+        isOpen={isAddListingModalOpen} 
+        onClose={() => setIsAddListingModalOpen(false)} 
+      />
     </>
   );
 }

@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { insertBusinessListingSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -78,6 +79,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Sign up error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Business listing routes
+  app.post('/api/listings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const listingData = insertBusinessListingSchema.parse(req.body);
+      
+      // Convert tags string to array if provided
+      const tagsArray = listingData.tags ? listingData.tags.split(',').map((tag: string) => tag.trim()) : [];
+      
+      const listing = await storage.createListing({
+        ...listingData,
+        userId,
+        tags: tagsArray,
+      });
+      
+      res.json(listing);
+    } catch (error: any) {
+      console.error("Error creating listing:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid listing data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create listing" });
+    }
+  });
+
+  app.get('/api/listings', async (req, res) => {
+    try {
+      const listings = await storage.getListings();
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  app.get('/api/listings/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const listings = await storage.getUserListings(userId);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching user listings:", error);
+      res.status(500).json({ message: "Failed to fetch user listings" });
     }
   });
 

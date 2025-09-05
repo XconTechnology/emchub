@@ -139,8 +139,78 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: A
     },
   });
 
-  const handleGoogleAuth = () => {
-    window.open('/api/login', '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
+  const handleGoogleAuth = async () => {
+    try {
+      const popup = window.open('/api/login', 'googleAuth', 'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no');
+      
+      if (!popup) {
+        toast({
+          title: "Popup blocked",
+          description: "Please allow popups for this site to sign in with Google.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Listen for the popup to close or receive a message
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // Refresh auth state when popup closes
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          }, 500);
+        }
+      }, 1000);
+
+      // Listen for messages from the popup
+      const messageListener = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) {
+          return;
+        }
+
+        if (event.data.type === 'AUTH_SUCCESS') {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageListener);
+          popup.close();
+          
+          // Refresh auth state and close modal
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          toast({
+            title: "Welcome!",
+            description: "You have been signed in with Google successfully.",
+          });
+          onClose();
+        } else if (event.data.type === 'AUTH_ERROR') {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageListener);
+          popup.close();
+          toast({
+            title: "Authentication failed",
+            description: event.data.error || "Please try again.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      window.addEventListener('message', messageListener);
+
+      // Cleanup after 5 minutes
+      setTimeout(() => {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', messageListener);
+        if (!popup.closed) {
+          popup.close();
+        }
+      }, 5 * 60 * 1000);
+
+    } catch (error) {
+      toast({
+        title: "Authentication error",
+        description: "Failed to open Google authentication. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const onSignInSubmit = (data: SignInData) => {
