@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { usePopupAuth } from "@/hooks/usePopupAuth";
 import { User, LogOut } from "lucide-react";
 
 interface MobileMenuProps {
@@ -9,6 +10,7 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { signIn, signUp, isLoading: authLoading } = usePopupAuth();
 
   return (
     <div 
@@ -88,12 +90,30 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </>
         ) : (
           <>
-            <a href="/api/login" className="block text-foreground hover:text-primary font-medium py-2 transition-colors" data-testid="mobile-link-signin" onClick={onClose}>
-              Sign In
-            </a>
-            <a href="/api/login" className="block text-foreground hover:text-primary font-medium py-2 transition-colors" data-testid="mobile-link-signup" onClick={onClose}>
-              Sign Up
-            </a>
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                signIn();
+                onClose();
+              }}
+              disabled={authLoading}
+              className="w-full justify-start text-foreground hover:text-primary font-medium py-2 transition-colors" 
+              data-testid="mobile-button-signin"
+            >
+              {authLoading ? "Signing in..." : "Sign In"}
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                signUp();
+                onClose();
+              }}
+              disabled={authLoading}
+              className="w-full justify-start text-foreground hover:text-primary font-medium py-2 transition-colors" 
+              data-testid="mobile-button-signup"
+            >
+              {authLoading ? "Signing up..." : "Sign Up"}
+            </Button>
             <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="mobile-button-add-listing">
               Add Listing
             </Button>

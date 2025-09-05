@@ -4,6 +4,7 @@ import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import MobileMenu from "./MobileMenu";
 import emcLogo from "@assets/image_1756989816731.png";
 import { useAuth } from "@/hooks/useAuth";
+import { usePopupAuth } from "@/hooks/usePopupAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { signIn, signUp, isLoading: authLoading } = usePopupAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -122,12 +124,24 @@ export default function Header() {
                 </>
               ) : (
                 <>
-                  <a href="/api/login" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signin">
-                    Sign In
-                  </a>
-                  <a href="/api/login" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signup">
-                    Sign Up
-                  </a>
+                  <Button 
+                    variant="ghost" 
+                    onClick={signIn}
+                    disabled={authLoading}
+                    className="text-foreground hover:text-primary font-medium transition-colors" 
+                    data-testid="button-signin"
+                  >
+                    {authLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={signUp}
+                    disabled={authLoading}
+                    className="text-foreground hover:text-primary font-medium transition-colors" 
+                    data-testid="button-signup"
+                  >
+                    {authLoading ? "Signing up..." : "Sign Up"}
+                  </Button>
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
                     Add Listing
                   </Button>
