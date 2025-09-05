@@ -34,59 +34,91 @@ export default function FeaturedBusinesses() {
   ];
 
   return (
-    <section className="py-16 bg-secondary/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+    <section className="py-24 bg-gradient-to-br from-background via-secondary/20 to-background relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-0 w-96 h-96 bg-primary/8 morphing-blob blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-primary/12 morphing-blob blur-2xl floating-element" style={{animationDelay: '2s'}}></div>
+      </div>
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16 fade-in">
+          <div className="inline-block mb-4">
+            <span className="inline-flex items-center px-6 py-2 bg-primary/15 text-primary font-semibold rounded-full text-sm uppercase tracking-wider">
+              ⭐ Top Rated
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-6 text-glow">
             Featured Businesses
           </h2>
-          <p className="text-xl text-muted-foreground">
-            Discover highly-rated ethnic minority businesses in Hong Kong
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Discover highly-rated ethnic minority businesses in Hong Kong that our community loves
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {businesses.map((business) => (
-            <Card key={business.id} className="bg-card rounded-2xl overflow-hidden shadow-lg hover-lift border-0">
-              <div className="relative">
-                <img
-                  src={business.image}
-                  alt={business.name}
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                    {business.category}
-                  </span>
-                  <div className="flex items-center text-yellow-500">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="ml-1 text-foreground font-medium">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {businesses.map((business, index) => (
+            <div key={business.id} className="group card-3d fade-in" style={{animationDelay: `${index * 0.1}s`}}>
+              <Card className="card-inner bg-white/90 dark:bg-card/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-2xl hover-lift border-2 border-primary/20 hover:border-primary/40 transition-all duration-500 relative">
+                {/* Image Container */}
+                <div className="relative overflow-hidden">
+                  <img
+                    src={business.image}
+                    alt={business.name}
+                    className="w-full h-56 object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+                  
+                  {/* Rating Badge */}
+                  <div className="absolute top-4 right-4 bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-full px-3 py-2 flex items-center shadow-lg">
+                    <Star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+                    <span className="text-foreground font-bold text-sm">
                       {business.rating}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2" data-testid={`business-name-${business.id}`}>
-                  {business.name}
-                </h3>
-                <p className="text-muted-foreground mb-4" data-testid={`business-description-${business.id}`}>
-                  {business.description}
-                </p>
-                <div className="flex items-center text-muted-foreground text-sm">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  <span data-testid={`business-location-${business.id}`}>
-                    {business.location}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+                
+                <CardContent className="p-8">
+                  {/* Category Badge */}
+                  <div className="mb-4">
+                    <span className="inline-block bg-gradient-to-r from-primary/20 to-primary/10 text-primary px-4 py-2 rounded-full text-sm font-bold border border-primary/20">
+                      {business.category}
+                    </span>
+                  </div>
+                  
+                  {/* Business Name */}
+                  <h3 className="text-2xl font-black text-foreground mb-3 group-hover:text-primary transition-colors duration-300" data-testid={`business-name-${business.id}`}>
+                    {business.name}
+                  </h3>
+                  
+                  {/* Description */}
+                  <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed" data-testid={`business-description-${business.id}`}>
+                    {business.description}
+                  </p>
+                  
+                  {/* Location */}
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="w-5 h-5 mr-3 text-primary" />
+                    <span className="font-medium" data-testid={`business-location-${business.id}`}>
+                      {business.location}
+                    </span>
+                  </div>
+                </CardContent>
+                
+                {/* Hover Shimmer Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+              </Card>
+            </div>
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <Button className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold hover:bg-primary/90 transition-colors" data-testid="button-view-all-businesses">
-            View All Businesses
+        <div className="text-center mt-16 fade-in">
+          <Button className="relative bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground px-12 py-6 rounded-3xl font-black text-lg shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 pulse-ring overflow-hidden group" data-testid="button-view-all-businesses">
+            <span className="relative z-10 flex items-center">
+              View All Businesses
+              <span className="ml-3 text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
           </Button>
         </div>
       </div>

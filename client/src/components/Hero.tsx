@@ -5,12 +5,13 @@ import { Search, GraduationCap, Globe, Store, MapPin } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative pt-16 pb-24 bg-gradient-to-br from-primary/5 via-background to-primary/10 overflow-hidden">
-      {/* Background Elements */}
+    <section className="relative pt-16 pb-28 background-pattern overflow-hidden">
+      {/* Dynamic Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/15 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-0 w-64 h-64 bg-primary/8 rounded-full blur-2xl"></div>
+        <div className="absolute top-10 left-1/4 w-96 h-96 bg-gradient-to-br from-primary/20 to-primary/5 morphing-blob blur-2xl floating-element"></div>
+        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-gradient-to-tl from-primary/25 to-primary/10 morphing-blob blur-3xl floating-element" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-0 w-64 h-64 bg-gradient-to-r from-primary/15 to-primary/8 morphing-blob blur-2xl floating-element" style={{animationDelay: '4s'}}></div>
+        <div className="absolute top-1/4 right-0 w-72 h-72 bg-gradient-to-bl from-primary/12 to-primary/6 morphing-blob blur-2xl floating-element" style={{animationDelay: '1s'}}></div>
       </div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,84 +36,108 @@ export default function Hero() {
             </p>
           </div>
           
-          {/* Enhanced Search Bar */}
-          <div className="max-w-5xl mx-auto mb-12 fade-in" data-testid="hero-search-container">
-            <div className="bg-white dark:bg-card rounded-3xl shadow-2xl border border-primary/10 p-3">
-              <div className="flex flex-col lg:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 z-10" />
-                  <Input
-                    type="text"
-                    placeholder="Search businesses, cuisines, services..."
-                    className="w-full pl-14 pr-6 py-5 bg-secondary/30 border-0 rounded-2xl focus:ring-2 focus:ring-primary text-lg font-medium placeholder:text-muted-foreground/60"
-                    data-testid="input-search"
-                  />
+          {/* Enhanced 3D Search Bar */}
+          <div className="max-w-6xl mx-auto mb-16 fade-in card-3d" data-testid="hero-search-container">
+            <div className="card-inner">
+              <div className="relative bg-white/90 dark:bg-card/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-primary/20 p-4 hover-lift">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-3xl"></div>
+                <div className="relative flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-primary w-6 h-6 z-10" />
+                    <Input
+                      type="text"
+                      placeholder="Search businesses, cuisines, services..."
+                      className="w-full pl-16 pr-8 py-6 bg-gradient-to-r from-secondary/20 to-secondary/10 border-2 border-primary/20 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary text-lg font-medium placeholder:text-muted-foreground/70 transition-all"
+                      data-testid="input-search"
+                    />
+                  </div>
+                  <div className="relative min-w-[260px]">
+                    <Select>
+                      <SelectTrigger className="px-8 py-6 bg-gradient-to-r from-secondary/20 to-secondary/10 border-2 border-primary/20 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary text-lg font-medium transition-all" data-testid="select-category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="food">Food & Dining</SelectItem>
+                        <SelectItem value="shopping">Shopping</SelectItem>
+                        <SelectItem value="services">Services</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="relative bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground px-12 py-6 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 pulse-ring" data-testid="button-search">
+                    <Search className="w-6 h-6 mr-3" />
+                    Search
+                  </Button>
                 </div>
-                <div className="relative min-w-[240px]">
-                  <Select>
-                    <SelectTrigger className="px-6 py-5 bg-secondary/30 border-0 rounded-2xl focus:ring-2 focus:ring-primary text-lg font-medium" data-testid="select-category">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="food">Food & Dining</SelectItem>
-                      <SelectItem value="shopping">Shopping</SelectItem>
-                      <SelectItem value="services">Services</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="accommodation">Accommodation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-lg hover:shadow-xl" data-testid="button-search">
-                  <Search className="w-5 h-5 mr-3" />
-                  Search
-                </Button>
               </div>
             </div>
           </div>
 
-          {/* Elegant OR Divider */}
-          <div className="flex items-center justify-center mb-12 fade-in">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent max-w-40"></div>
-            <div className="mx-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-primary-foreground font-bold text-base tracking-wider">OR</span>
+          {/* Dynamic OR Divider */}
+          <div className="flex items-center justify-center mb-16 fade-in">
+            <div className="flex-1 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-primary/60 max-w-48"></div>
+            <div className="mx-10 relative">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary via-primary to-primary/80 rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden floating-element">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                <span className="relative text-primary-foreground font-black text-lg tracking-widest text-glow">OR</span>
               </div>
             </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent max-w-40"></div>
+            <div className="flex-1 h-0.5 bg-gradient-to-l from-transparent via-primary/30 to-primary/60 max-w-48"></div>
           </div>
 
-          {/* Browse by Category */}
+          {/* 3D Browse by Category */}
           <div className="fade-in">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-10">Browse by category</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-foreground mb-12 text-glow">Browse by category</h2>
             
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-school">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <GraduationCap className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+              <div className="group card-3d" data-testid="category-school">
+                <div className="card-inner bg-white/95 dark:bg-card/95 backdrop-blur-xl rounded-3xl p-10 shadow-2xl cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-all duration-500 hover-lift relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent rounded-3xl"></div>
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 via-blue-50 to-blue-100 dark:from-blue-900/60 dark:to-blue-800/40 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-125 group-hover:rotate-6 transition-all duration-500 shadow-xl floating-element">
+                      <GraduationCap className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors duration-300">School</h3>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">School</h3>
               </div>
               
-              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-online">
-                <div className="w-20 h-20 bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-800/20 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Globe className="w-10 h-10 text-cyan-600 dark:text-cyan-400" />
+              <div className="group card-3d" data-testid="category-online">
+                <div className="card-inner bg-white/95 dark:bg-card/95 backdrop-blur-xl rounded-3xl p-10 shadow-2xl cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-all duration-500 hover-lift relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/50 to-transparent rounded-3xl"></div>
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-cyan-100 via-cyan-50 to-cyan-100 dark:from-cyan-900/60 dark:to-cyan-800/40 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-125 group-hover:rotate-6 transition-all duration-500 shadow-xl floating-element" style={{animationDelay: '1s'}}>
+                      <Globe className="w-12 h-12 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                    <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors duration-300">Online</h3>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Online</h3>
               </div>
               
-              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-provision-store">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Store className="w-10 h-10 text-gray-600 dark:text-gray-400" />
+              <div className="group card-3d" data-testid="category-provision-store">
+                <div className="card-inner bg-white/95 dark:bg-card/95 backdrop-blur-xl rounded-3xl p-10 shadow-2xl cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-all duration-500 hover-lift relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-transparent rounded-3xl"></div>
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-125 group-hover:rotate-6 transition-all duration-500 shadow-xl floating-element" style={{animationDelay: '2s'}}>
+                      <Store className="w-12 h-12 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors duration-300">Provision-Store</h3>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Provision-Store</h3>
               </div>
               
-              <div className="group bg-white dark:bg-card rounded-3xl p-8 shadow-lg hover:shadow-2xl cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-300 hover:-translate-y-2" data-testid="category-masjid">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/10 rounded-3xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <MapPin className="w-10 h-10 text-primary" />
+              <div className="group card-3d" data-testid="category-masjid">
+                <div className="card-inner bg-white/95 dark:bg-card/95 backdrop-blur-xl rounded-3xl p-10 shadow-2xl cursor-pointer border-2 border-primary/20 hover:border-primary/50 transition-all duration-500 hover-lift relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent rounded-3xl"></div>
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-primary/30 via-primary/20 to-primary/30 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-125 group-hover:rotate-6 transition-all duration-500 shadow-xl floating-element pulse-ring" style={{animationDelay: '3s'}}>
+                      <MapPin className="w-12 h-12 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors duration-300">Masjid</h3>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Masjid</h3>
               </div>
             </div>
           </div>
