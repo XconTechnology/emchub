@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import MobileMenu from "./MobileMenu";
 import emcLogo from "@assets/image_1756989816731.png";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,15 +72,67 @@ export default function Header() {
 
             {/* User Actions */}
             <div className="hidden md:flex items-center space-x-4">
-              <a href="#" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signin">
-                Sign In
-              </a>
-              <a href="#" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signup">
-                Sign Up
-              </a>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
-                Add Listing
-              </Button>
+              {isLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              ) : isAuthenticated && user ? (
+                <>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
+                    Add Listing
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="button-user-menu">
+                        {user.profileImageUrl ? (
+                          <img
+                            src={user.profileImageUrl}
+                            alt="Profile"
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <div className="flex items-center justify-start gap-2 p-2">
+                        <div className="flex flex-col space-y-1 leading-none">
+                          {(user.firstName || user.lastName) && (
+                            <p className="font-medium">
+                              {user.firstName} {user.lastName}
+                            </p>
+                          )}
+                          {user.email && (
+                            <p className="w-[200px] truncate text-sm text-muted-foreground">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <a href="/api/logout" className="cursor-pointer" data-testid="link-logout">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log out</span>
+                        </a>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <a href="/api/login" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signin">
+                    Sign In
+                  </a>
+                  <a href="/api/login" className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-signup">
+                    Sign Up
+                  </a>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
+                    Add Listing
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
