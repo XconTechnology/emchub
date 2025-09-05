@@ -1,16 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { usePopupAuth } from "@/hooks/usePopupAuth";
 import { User, LogOut } from "lucide-react";
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenSignIn: () => void;
+  onOpenSignUp: () => void;
 }
 
-export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp }: MobileMenuProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { signIn, signUp, isLoading: authLoading } = usePopupAuth();
 
   return (
     <div 
@@ -93,26 +93,24 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             <Button 
               variant="ghost" 
               onClick={() => {
-                signIn();
+                onOpenSignIn();
                 onClose();
               }}
-              disabled={authLoading}
               className="w-full justify-start text-foreground hover:text-primary font-medium py-2 transition-colors" 
               data-testid="mobile-button-signin"
             >
-              {authLoading ? "Signing in..." : "Sign In"}
+              Sign In
             </Button>
             <Button 
               variant="ghost" 
               onClick={() => {
-                signUp();
+                onOpenSignUp();
                 onClose();
               }}
-              disabled={authLoading}
               className="w-full justify-start text-foreground hover:text-primary font-medium py-2 transition-colors" 
               data-testid="mobile-button-signup"
             >
-              {authLoading ? "Signing up..." : "Sign Up"}
+              Sign Up
             </Button>
             <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="mobile-button-add-listing">
               Add Listing

@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import MobileMenu from "./MobileMenu";
+import AuthModal from "./AuthModal";
 import emcLogo from "@assets/image_1756989816731.png";
 import { useAuth } from "@/hooks/useAuth";
-import { usePopupAuth } from "@/hooks/usePopupAuth";
+import { useAuthModal } from "@/hooks/useAuthModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +18,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, isLoading, user } = useAuth();
-  const { signIn, signUp, isLoading: authLoading } = usePopupAuth();
+  const { isOpen, mode, openSignIn, openSignUp, close } = useAuthModal();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -126,21 +127,19 @@ export default function Header() {
                 <>
                   <Button 
                     variant="ghost" 
-                    onClick={signIn}
-                    disabled={authLoading}
+                    onClick={openSignIn}
                     className="text-foreground hover:text-primary font-medium transition-colors" 
                     data-testid="button-signin"
                   >
-                    {authLoading ? "Signing in..." : "Sign In"}
+                    Sign In
                   </Button>
                   <Button 
                     variant="ghost" 
-                    onClick={signUp}
-                    disabled={authLoading}
+                    onClick={openSignUp}
                     className="text-foreground hover:text-primary font-medium transition-colors" 
                     data-testid="button-signup"
                   >
-                    {authLoading ? "Signing up..." : "Sign Up"}
+                    Sign Up
                   </Button>
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" data-testid="button-add-listing">
                     Add Listing
@@ -169,7 +168,15 @@ export default function Header() {
         </nav>
       </header>
 
-      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)}
+        onOpenSignIn={openSignIn}
+        onOpenSignUp={openSignUp}
+      />
+
+      {/* Authentication Modal */}
+      <AuthModal isOpen={isOpen} onClose={close} initialMode={mode} />
     </>
   );
 }

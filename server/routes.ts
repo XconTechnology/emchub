@@ -19,6 +19,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email/password authentication routes
+  app.post('/api/auth/signin', async (req, res) => {
+    const { email, password } = req.body;
+    
+    try {
+      // For now, we'll simulate email/password authentication
+      // In a real app, you'd verify against your database
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Simulate authentication check
+      if (password.length < 6) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // For demo purposes, create a mock user session
+      const mockUser = {
+        id: `email_${email.replace('@', '_').replace('.', '_')}`,
+        email,
+        firstName: email.split('@')[0],
+        lastName: 'User',
+        profileImageUrl: null,
+      };
+
+      // In a real app, you'd create a proper session here
+      res.json({ message: "Authentication successful", user: mockUser });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/auth/signup', async (req, res) => {
+    const { email, password, firstName, lastName } = req.body;
+    
+    try {
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      // For demo purposes, create a mock user
+      const newUser = {
+        id: `email_${email.replace('@', '_').replace('.', '_')}`,
+        email,
+        firstName,
+        lastName,
+        profileImageUrl: null,
+      };
+
+      // In a real app, you'd save to database and create session
+      res.json({ message: "Account created successfully", user: newUser });
+    } catch (error) {
+      console.error("Sign up error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Protected route example
   app.get("/api/protected", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
