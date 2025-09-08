@@ -68,33 +68,33 @@ export default function Hero() {
           <div>
             <h2 className="text-xl font-semibold text-white mb-8">Browse by category</h2>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer group" data-testid="category-school">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <GraduationCap className="w-8 h-8 text-white" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-school">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <GraduationCap className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-center font-semibold text-white">School</h3>
+                <h3 className="text-center font-semibold text-gray-800 text-sm">School</h3>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer group" data-testid="category-online">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <Globe className="w-8 h-8 text-white" />
+              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-online">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Globe className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-center font-semibold text-white">Online</h3>
+                <h3 className="text-center font-semibold text-gray-800 text-sm">Online</h3>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer group" data-testid="category-provision-store">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <Store className="w-8 h-8 text-white" />
+              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-provision-store">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Store className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-center font-semibold text-white">Provision-Store</h3>
+                <h3 className="text-center font-semibold text-gray-800 text-sm">Provision Store</h3>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all cursor-pointer group" data-testid="category-masjid">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl mx-auto mb-4 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <MapPin className="w-8 h-8 text-white" />
+              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-masjid">
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <MapPin className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-center font-semibold text-white">Masjid</h3>
+                <h3 className="text-center font-semibold text-gray-800 text-sm">Masjid</h3>
               </div>
             </div>
           </div>
