@@ -5,11 +5,11 @@ import { Search, GraduationCap, Globe, Store, MapPin } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="py-16" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 50%, hsl(86 49% 38%) 100%)"}}>
+    <section className="pt-24 pb-16" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 50%, hsl(86 49% 38%) 100%)"}}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           {/* Main Heading */}
-          <div className="mb-10">
+          <div className="mb-10 mt-8">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
               Searching for a halal place?
             </h1>
