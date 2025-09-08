@@ -47,30 +47,30 @@ export default function Header() {
                 alt="EMC HUB Logo" 
                 className="w-10 h-10 mr-3"
               />
-              <span className="font-bold text-xl text-white">EMC HUB</span>
+              <span className={`font-bold text-xl transition-colors ${isScrolled ? 'text-gray-900' : 'text-white'}`}>EMC HUB</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="nav-link text-white hover:text-white/80 font-medium transition-colors" data-testid="nav-home">
+              <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
               </a>
-              <a href="#" className="nav-link text-white hover:text-white/80 font-medium transition-colors" data-testid="nav-map">
+              <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </a>
               <div className="relative group">
-                <a href="#" className="nav-link text-white hover:text-white/80 font-medium flex items-center transition-colors" data-testid="nav-listings">
+                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-listings">
                   All Listings
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
               <div className="relative group">
-                <a href="#" className="nav-link text-white hover:text-white/80 font-medium flex items-center transition-colors" data-testid="nav-blog">
+                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-blog">
                   Blog
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
-              <a href="#" className="nav-link text-white hover:text-white/80 font-medium transition-colors" data-testid="nav-about">
+              <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </a>
             </div>
@@ -134,7 +134,7 @@ export default function Header() {
                   <Button 
                     variant="ghost" 
                     onClick={openSignIn}
-                    className="text-white hover:text-white/80 font-medium transition-colors" 
+                    className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                     data-testid="button-signin"
                   >
                     Sign In
@@ -142,7 +142,7 @@ export default function Header() {
                   <Button 
                     variant="ghost" 
                     onClick={openSignUp}
-                    className="text-white hover:text-white/80 font-medium transition-colors" 
+                    className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                     data-testid="button-signup"
                   >
                     Sign Up
