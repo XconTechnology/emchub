@@ -47,30 +47,30 @@ export default function Header() {
                 alt="EMC HUB Logo" 
                 className="w-10 h-10 mr-3"
               />
-              <span className="font-bold text-xl text-foreground">EMC HUB</span>
+              <span className="font-bold text-xl text-gray-900 dark:text-white">EMC HUB</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="nav-link text-foreground hover:text-primary font-medium" data-testid="nav-home">
+              <a href="#" className="nav-link text-gray-900 dark:text-white hover:text-primary font-medium transition-colors" data-testid="nav-home">
                 Home
               </a>
-              <a href="#" className="nav-link text-foreground hover:text-primary font-medium" data-testid="nav-map">
+              <a href="#" className="nav-link text-gray-900 dark:text-white hover:text-primary font-medium transition-colors" data-testid="nav-map">
                 Map of Listings
               </a>
               <div className="relative group">
-                <a href="#" className="nav-link text-foreground hover:text-primary font-medium flex items-center" data-testid="nav-listings">
+                <a href="#" className="nav-link text-gray-900 dark:text-white hover:text-primary font-medium flex items-center transition-colors" data-testid="nav-listings">
                   All Listings
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
               <div className="relative group">
-                <a href="#" className="nav-link text-foreground hover:text-primary font-medium flex items-center" data-testid="nav-blog">
+                <a href="#" className="nav-link text-gray-900 dark:text-white hover:text-primary font-medium flex items-center transition-colors" data-testid="nav-blog">
                   Blog
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
-              <a href="#" className="nav-link text-foreground hover:text-primary font-medium" data-testid="nav-about">
+              <a href="#" className="nav-link text-gray-900 dark:text-white hover:text-primary font-medium transition-colors" data-testid="nav-about">
                 About Us
               </a>
             </div>
@@ -134,7 +134,7 @@ export default function Header() {
                   <Button 
                     variant="ghost" 
                     onClick={openSignIn}
-                    className="text-foreground hover:text-primary font-medium transition-colors" 
+                    className="text-gray-900 dark:text-white hover:text-primary font-medium transition-colors" 
                     data-testid="button-signin"
                   >
                     Sign In
@@ -142,7 +142,7 @@ export default function Header() {
                   <Button 
                     variant="ghost" 
                     onClick={openSignUp}
-                    className="text-foreground hover:text-primary font-medium transition-colors" 
+                    className="text-gray-900 dark:text-white hover:text-primary font-medium transition-colors" 
                     data-testid="button-signup"
                   >
                     Sign Up

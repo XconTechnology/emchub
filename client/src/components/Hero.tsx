@@ -5,7 +5,7 @@ import { Search, GraduationCap, Globe, Store, MapPin } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="py-16 bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 dark:from-green-700 dark:via-green-800 dark:to-emerald-900">
+    <section className="py-16" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 50%, hsl(86 49% 38%) 100%)"}}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           {/* Main Heading */}
@@ -46,7 +46,7 @@ export default function Hero() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="bg-green-700 text-white px-8 py-4 rounded-xl font-semibold hover:bg-green-800 transition-colors shadow-lg hover:shadow-xl" data-testid="button-search">
+                <Button className="bg-white text-black px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl" data-testid="button-search">
                   Search
                 </Button>
               </div>
