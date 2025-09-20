@@ -85,7 +85,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Business listing routes
   app.post('/api/listings', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        console.error("No userId found in request");
+        return res.status(401).json({ message: "Authentication required - user ID not found" });
+      }
+      
       const listingData = insertBusinessListingSchema.parse(req.body);
       
       // Convert tags string to array if provided

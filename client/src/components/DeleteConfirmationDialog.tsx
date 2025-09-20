@@ -12,6 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { BusinessListing } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -21,11 +22,21 @@ interface DeleteConfirmationDialogProps {
 
 export default function DeleteConfirmationDialog({ isOpen, onClose, listing }: DeleteConfirmationDialogProps) {
   const { toast } = useToast();
+  const [listingToDelete, setListingToDelete] = useState<BusinessListing | null>(null);
+
+  // Capture the listing when dialog opens
+  useEffect(() => {
+    if (isOpen && listing) {
+      setListingToDelete(listing);
+    } else if (!isOpen) {
+      setListingToDelete(null);
+    }
+  }, [isOpen, listing]);
 
   const deleteListingMutation = useMutation({
     mutationFn: async () => {
-      if (!listing) throw new Error("No listing to delete");
-      return apiRequest("DELETE", `/api/listings/${listing.id}`);
+      if (!listingToDelete) throw new Error("No listing to delete");
+      return apiRequest("DELETE", `/api/listings/${listingToDelete.id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
@@ -49,7 +60,7 @@ export default function DeleteConfirmationDialog({ isOpen, onClose, listing }: D
     deleteListingMutation.mutate();
   };
 
-  if (!listing) return null;
+  if (!listingToDelete) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -57,7 +68,7 @@ export default function DeleteConfirmationDialog({ isOpen, onClose, listing }: D
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Business Listing</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete "{listing.businessName}"? This action cannot be undone.
+            Are you sure you want to delete "{listingToDelete.businessName}"? This action cannot be undone.
             Your business listing will be permanently removed from the directory.
           </AlertDialogDescription>
         </AlertDialogHeader>

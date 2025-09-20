@@ -68,6 +68,7 @@ export const businessListings = pgTable("business_listings", {
 
 export const insertBusinessListingSchema = createInsertSchema(businessListings).omit({
   id: true,
+  userId: true, // Server will set this from authenticated user
   createdAt: true,
   updatedAt: true,
 }).extend({
