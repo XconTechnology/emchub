@@ -7,13 +7,18 @@ import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus } from "lucide-re
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import AddListingModal from "@/components/AddListingModal";
+import EditListingModal from "@/components/EditListingModal";
+import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import type { BusinessListing } from "@shared/schema";
 
 export default function Profile() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<BusinessListing | null>(null);
 
-  const { data: listings, isLoading: loadingListings } = useQuery({
+  const { data: listings, isLoading: loadingListings } = useQuery<BusinessListing[]>({
     queryKey: ['/api/listings/user'],
     enabled: isAuthenticated,
   });
@@ -137,6 +142,10 @@ export default function Profile() {
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        onClick={() => {
+                          setSelectedListing(listing);
+                          setIsEditModalOpen(true);
+                        }}
                         data-testid={`button-edit-${listing.id}`}
                       >
                         <Edit className="w-4 h-4" />
@@ -144,6 +153,10 @@ export default function Profile() {
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        onClick={() => {
+                          setSelectedListing(listing);
+                          setIsDeleteDialogOpen(true);
+                        }}
                         data-testid={`button-delete-${listing.id}`}
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
@@ -252,6 +265,26 @@ export default function Profile() {
       <AddListingModal 
         isOpen={isAddListingModalOpen}
         onClose={() => setIsAddListingModalOpen(false)}
+      />
+
+      {/* Edit Listing Modal */}
+      <EditListingModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedListing(null);
+        }}
+        listing={selectedListing}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedListing(null);
+        }}
+        listing={selectedListing}
       />
     </div>
   );

@@ -128,6 +128,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/listings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const listingData = insertBusinessListingSchema.parse(req.body);
+      
+      // Convert tags string to array if provided
+      const tagsArray = listingData.tags ? listingData.tags.split(',').map((tag: string) => tag.trim()) : [];
+      
+      // Verify the listing belongs to the user
+      const existingListing = await storage.getUserListings(userId);
+      const userListing = existingListing.find(listing => listing.id === id);
+      
+      if (!userListing) {
+        return res.status(404).json({ message: "Listing not found or access denied" });
+      }
+      
+      const updatedListing = await storage.updateListing(id, {
+        ...listingData,
+        userId,
+        tags: tagsArray,
+      });
+      
+      res.json(updatedListing);
+    } catch (error: any) {
+      console.error("Error updating listing:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid listing data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update listing" });
+    }
+  });
+
+  app.delete('/api/listings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Verify the listing belongs to the user
+      const existingListings = await storage.getUserListings(userId);
+      const userListing = existingListings.find(listing => listing.id === id);
+      
+      if (!userListing) {
+        return res.status(404).json({ message: "Listing not found or access denied" });
+      }
+      
+      await storage.deleteListing(id);
+      res.json({ message: "Listing deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      res.status(500).json({ message: "Failed to delete listing" });
+    }
+  });
+
   // Protected route example
   app.get("/api/protected", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
