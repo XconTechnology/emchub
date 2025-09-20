@@ -121,6 +121,13 @@ export default function Header() {
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
+                        <a href="/profile" className="cursor-pointer" data-testid="link-profile">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>My Profile</span>
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
                         <a href="/api/logout" className="cursor-pointer" data-testid="link-logout">
                           <LogOut className="mr-2 h-4 w-4" />
                           <span>Log out</span>
