@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import EditListingModal from "@/components/EditListingModal";
@@ -12,7 +12,7 @@ import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import type { BusinessListing } from "@shared/schema";
 
 export default function Profile() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -20,7 +20,7 @@ export default function Profile() {
 
   const { data: listings, isLoading: loadingListings } = useQuery<BusinessListing[]>({
     queryKey: ['/api/listings/user'],
-    enabled: isAuthenticated,
+    enabled: !!user,
   });
 
   if (isLoading) {
@@ -33,7 +33,7 @@ export default function Profile() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="w-full max-w-md">
