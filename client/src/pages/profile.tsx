@@ -3,25 +3,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus } from "lucide-react";
+import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import AddListingModal from "@/components/AddListingModal";
-import EditListingModal from "@/components/EditListingModal";
-import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
 import type { Listing } from "@shared/schema";
 
 export default function Profile() {
   const { user, isLoading } = useAuth();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const { data: listings, isLoading: loadingListings } = useQuery<Listing[]>({
-    queryKey: ['/api/me/listings'],
+    queryKey: ['/api/listings/user'],
     enabled: !!user,
   });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return 'N/A';
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   if (isLoading) {
     return (
@@ -40,7 +58,7 @@ export default function Profile() {
           <CardHeader className="text-center">
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              Please sign in to view your profile and manage your business listings.
+              Please sign in to view your profile and manage your listings.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
@@ -75,11 +93,18 @@ export default function Profile() {
               )}
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="profile-name">
-                  {user?.firstName} {user?.lastName}
+                  {user?.firstName && user?.lastName 
+                    ? `${user.firstName} ${user.lastName}` 
+                    : user?.username || 'User'}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300" data-testid="profile-email">
                   {user?.email}
                 </p>
+                {user?.isAdmin && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 mt-1">
+                    Administrator
+                  </Badge>
+                )}
               </div>
             </div>
             <Button 
@@ -94,14 +119,14 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Business Listings Section */}
+      {/* My Listings Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            My Business Listings
+            My Listings
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
-            Manage your business listings and update your information
+            Manage your listings and track their approval status
           </p>
         </div>
 
@@ -124,27 +149,27 @@ export default function Profile() {
           </div>
         ) : listings && listings.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((listing: BusinessListing) => (
-              <Card key={listing.id} className="hover:shadow-lg transition-shadow">
+            {listings.map((listing: Listing) => (
+              <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`my-listing-${listing.id}`}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <CardTitle className="text-lg" data-testid={`listing-name-${listing.id}`}>
-                        {listing.businessName}
+                      <CardTitle className="text-lg" data-testid={`listing-title-${listing.id}`}>
+                        {listing.title}
                       </CardTitle>
-                      <CardDescription className="mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {listing.category}
+                      <div className="flex items-center space-x-2 mt-1">
+                        {getStatusBadge(listing.moderationStatus)}
+                        <Badge variant="outline" className="text-xs">
+                          {listing.type}
                         </Badge>
-                      </CardDescription>
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       <Button 
                         variant="ghost" 
                         size="sm"
                         onClick={() => {
-                          setSelectedListing(listing);
-                          setIsEditModalOpen(true);
+                          // TODO: Implement edit modal for new listing type
                         }}
                         data-testid={`button-edit-${listing.id}`}
                       >
@@ -154,8 +179,7 @@ export default function Profile() {
                         variant="ghost" 
                         size="sm"
                         onClick={() => {
-                          setSelectedListing(listing);
-                          setIsDeleteDialogOpen(true);
+                          // TODO: Implement delete functionality
                         }}
                         data-testid={`button-delete-${listing.id}`}
                       >
@@ -174,10 +198,19 @@ export default function Profile() {
                   <Separator />
                   
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center text-gray-600 dark:text-gray-300">
-                      <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="truncate">{listing.address}, {listing.city}</span>
-                    </div>
+                    {listing.address && listing.city && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-300">
+                        <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{listing.address}, {listing.city}</span>
+                      </div>
+                    )}
+                    
+                    {listing.isOnlineOnly && (
+                      <div className="flex items-center text-gray-600 dark:text-gray-300">
+                        <Globe className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span>Online/Remote Service</span>
+                      </div>
+                    )}
                     
                     {listing.phone && (
                       <div className="flex items-center text-gray-600 dark:text-gray-300">
@@ -223,19 +256,25 @@ export default function Profile() {
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center pt-2">
-                    <Badge 
-                      variant={listing.isVerified === 'verified' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {listing.isVerified === 'verified' ? 'Verified' : 'Pending'}
-                    </Badge>
-                    {listing.priceRange && (
-                      <span className="text-sm font-semibold text-primary">
-                        {listing.priceRange}
-                      </span>
+                  <div className="flex justify-between items-center pt-2 text-xs text-gray-400">
+                    <span>Created: {formatDate(listing.createdAt)}</span>
+                    {listing.moderatedAt && (
+                      <span>Reviewed: {formatDate(listing.moderatedAt)}</span>
                     )}
                   </div>
+
+                  {listing.moderationStatus === 'rejected' && listing.moderationNotes && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
+                      <strong className="text-red-800">Rejection Reason:</strong>
+                      <p className="text-red-700 mt-1">{listing.moderationNotes}</p>
+                    </div>
+                  )}
+
+                  {listing.moderationStatus === 'pending' && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                      <p className="text-yellow-700">Your listing is under review. You'll be notified once it's approved.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -244,9 +283,9 @@ export default function Profile() {
           <Card className="text-center py-12">
             <CardContent>
               <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <CardTitle className="mb-2">No Business Listings Yet</CardTitle>
+              <CardTitle className="mb-2">No Listings Yet</CardTitle>
               <CardDescription className="mb-4">
-                Start building your business directory by adding your first listing
+                Start building your presence by adding your first listing
               </CardDescription>
               <Button 
                 onClick={() => setIsAddListingModalOpen(true)}
@@ -265,26 +304,6 @@ export default function Profile() {
       <AddListingModal 
         isOpen={isAddListingModalOpen}
         onClose={() => setIsAddListingModalOpen(false)}
-      />
-
-      {/* Edit Listing Modal */}
-      <EditListingModal 
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedListing(null);
-        }}
-        listing={selectedListing}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog 
-        isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedListing(null);
-        }}
-        listing={selectedListing}
       />
     </div>
   );
