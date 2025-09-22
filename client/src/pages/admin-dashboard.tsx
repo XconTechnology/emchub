@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -232,15 +233,16 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedListing(listing)}
-              data-testid={`button-view-${listing.id}`}
-            >
-              <Eye className="w-4 h-4 mr-1" />
-              View
-            </Button>
+            <Link href={`/business/${listing.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid={`button-view-${listing.id}`}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                View
+              </Button>
+            </Link>
             {listing.moderationStatus === 'pending' && (
               <>
                 <Button
