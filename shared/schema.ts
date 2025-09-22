@@ -89,6 +89,7 @@ export const listings = pgTable("listings", {
   sku: varchar("sku"),
   price: decimal("price", { precision: 10, scale: 2 }),
   inventory: integer("inventory"),
+  paymentMethods: varchar("payment_methods").array(), // ['cash', 'td', 'both']
   
   // Service-specific fields
   duration: integer("duration_minutes"), // Duration in minutes
@@ -175,8 +176,30 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
+  // Make core fields required
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  phone: z.string().min(1, "Phone is required"),
+  email: z.string().email("Valid email is required"),
+  
+  // Location - either address OR online only
+  address: z.string().optional(),
+  city: z.string().optional(),
+  
+  // Optional arrays
   tags: z.array(z.string()).optional(),
   images: z.array(z.string()).optional(),
+  paymentMethods: z.array(z.string()).optional(),
+}).refine((data) => {
+  // Either has physical address or is online only
+  if (!data.isOnlineOnly && (!data.address || !data.city)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Either provide address and city, or mark as online only",
+  path: ["address"]
 });
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({
