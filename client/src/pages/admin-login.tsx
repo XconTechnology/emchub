@@ -29,6 +29,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Critical for session cookies in production
         body: JSON.stringify({ username, password }),
       });
 

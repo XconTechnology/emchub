@@ -127,6 +127,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Listing not found" });
       }
       
+      // Only show approved listings to public
+      if (listing.moderationStatus !== 'approved') {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
       res.json(listing);
     } catch (error) {
       console.error("Error fetching listing:", error);

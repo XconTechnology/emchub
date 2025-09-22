@@ -111,8 +111,9 @@ export default function FeaturedBusinesses() {
             const category = categories?.find(c => c.id === listing.categoryId);
             
             return (
-              <div key={listing.id} className="group card-3d fade-in" style={{animationDelay: `${index * 0.1}s`}}>
-                <Card className="card-inner bg-white/90 dark:bg-card/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-2xl hover-lift border-2 border-primary/20 hover:border-primary/40 transition-all duration-500 relative">
+              <Link key={listing.id} href={`/business/${listing.id}`}>
+                <div className="group card-3d fade-in cursor-pointer" style={{animationDelay: `${index * 0.1}s`}}>
+                  <Card className="card-inner bg-white/90 dark:bg-card/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-2xl hover-lift border-2 border-primary/20 hover:border-primary/40 transition-all duration-500 relative">
                   {/* Image Container */}
                   <div className="relative overflow-hidden">
                     {listing.images && listing.images.length > 0 ? (
@@ -200,10 +201,11 @@ export default function FeaturedBusinesses() {
                     </div>
                   </CardContent>
                   
-                  {/* Hover Shimmer Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
-                </Card>
-              </div>
+                    {/* Hover Shimmer Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+                  </Card>
+                </div>
+              </Link>
             );
           })}
         </div>

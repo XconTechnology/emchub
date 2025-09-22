@@ -75,7 +75,7 @@ export function setupAuth(app: Express) {
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // True in production with HTTPS
-      sameSite: "lax", // CSRF protection
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // none required for cross-site in production
       maxAge: sessionTtl,
     },
   };
