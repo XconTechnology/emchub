@@ -22,7 +22,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
 import { z } from "zod";
-import { Store, MapPin, Phone, Mail, Globe, Clock, DollarSign, Tag, Calendar, Users, Package } from "lucide-react";
+import { Store, MapPin, Phone, Mail, Globe, Clock, DollarSign, Tag, Calendar, Users, Package, Image, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -45,6 +45,8 @@ const listingTypes = [
 export default function AddListingModal({ isOpen, onClose }: AddListingModalProps) {
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string>("business");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -133,7 +135,27 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
   const onSubmit = (data: any) => {
     console.log('Form submitted with data:', data);
     console.log('Selected type:', selectedType);
-    addListingMutation.mutate(data);
+    // Include image URLs in the submission
+    const submissionData = {
+      ...data,
+      images: imageUrls,
+    };
+    addListingMutation.mutate(submissionData);
+  };
+
+  const addImageUrl = () => {
+    if (currentImageUrl.trim() && !imageUrls.includes(currentImageUrl.trim())) {
+      const newUrls = [...imageUrls, currentImageUrl.trim()];
+      setImageUrls(newUrls);
+      form.setValue("images", newUrls);
+      setCurrentImageUrl("");
+    }
+  };
+
+  const removeImageUrl = (indexToRemove: number) => {
+    const newUrls = imageUrls.filter((_, index) => index !== indexToRemove);
+    setImageUrls(newUrls);
+    form.setValue("images", newUrls);
   };
 
   const handleTypeChange = (type: string) => {
@@ -360,6 +382,75 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
                   </p>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Images Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Business Images</h3>
+            <p className="text-sm text-gray-600">Add images to showcase your business. Enter image URLs below.</p>
+            
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Image className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
+                    className="pl-10"
+                    value={currentImageUrl}
+                    onChange={(e) => setCurrentImageUrl(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
+                    data-testid="input-image-url"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={addImageUrl}
+                  disabled={!currentImageUrl.trim()}
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-add-image"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {imageUrls.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Added Images ({imageUrls.length})</Label>
+                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                        <img
+                          src={url}
+                          alt={`Business image ${index + 1}`}
+                          className="w-12 h-12 object-cover rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' fill='%23ddd'%3E%3Crect width='48' height='48' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' fill='%23999'%3E?%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
+                        <span className="flex-1 text-sm truncate" title={url}>
+                          {url}
+                        </span>
+                        <Button
+                          type="button"
+                          onClick={() => removeImageUrl(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700"
+                          data-testid={`button-remove-image-${index}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500">
+                Tip: Use image hosting services like Imgur, Google Drive (public links), or your own website
+              </p>
             </div>
           </div>
 
