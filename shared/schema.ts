@@ -5,6 +5,10 @@ import {
   pgTable,
   timestamp,
   varchar,
+  integer,
+  decimal,
+  boolean,
+  text,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -43,7 +47,98 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Business listings table
+// Categories table
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Enhanced listings table to support different types
+export const listings = pgTable("listings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'business', 'product', 'service', 'event'
+  title: varchar("title").notNull(),
+  description: text("description"),
+  categoryId: varchar("category_id").references(() => categories.id),
+  
+  // Location data
+  address: varchar("address"),
+  city: varchar("city"),
+  postalCode: varchar("postal_code"),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  isOnlineOnly: boolean("is_online_only").default(false),
+  
+  // Contact information
+  phone: varchar("phone"),
+  email: varchar("email"),
+  website: varchar("website"),
+  
+  // Images (array of URLs)
+  images: varchar("images").array(),
+  
+  // General business information
+  operatingHours: jsonb("operating_hours"),
+  tags: varchar("tags").array(),
+  
+  // Product-specific fields
+  sku: varchar("sku"),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  inventory: integer("inventory"),
+  
+  // Service-specific fields
+  duration: integer("duration_minutes"), // Duration in minutes
+  
+  // Event-specific fields
+  eventDate: timestamp("event_date"),
+  eventEndDate: timestamp("event_end_date"),
+  capacity: integer("capacity"),
+  attendeeCount: integer("attendee_count").default(0),
+  eventPrice: decimal("event_price", { precision: 10, scale: 2 }),
+  
+  // Status and verification
+  isActive: boolean("is_active").default(true),
+  isVerified: boolean("is_verified").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Bookings table for services and events
+export const bookings = pgTable("bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull().references(() => listings.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  bookingDate: timestamp("booking_date").notNull(),
+  duration: integer("duration_minutes"),
+  numberOfPeople: integer("number_of_people").default(1),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'confirmed', 'cancelled'
+  paymentIntentId: varchar("payment_intent_id"), // Stripe payment intent ID
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Coupon codes for events
+export const coupons = pgTable("coupons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(),
+  discountType: varchar("discount_type").notNull(), // 'percentage', 'fixed'
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+  minAmount: decimal("min_amount", { precision: 10, scale: 2 }),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").default(0),
+  validFrom: timestamp("valid_from").defaultNow(),
+  validUntil: timestamp("valid_until"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Keep the old business_listings table for backward compatibility but mark as deprecated
 export const businessListings = pgTable("business_listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -67,14 +162,59 @@ export const businessListings = pgTable("business_listings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertBusinessListingSchema = createInsertSchema(businessListings).omit({
+// Schemas for the new tables
+export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
-  userId: true, // Server will set this from authenticated user
+  createdAt: true,
+});
+
+export const insertListingSchema = createInsertSchema(listings).omit({
+  id: true,
+  userId: true,
+  attendeeCount: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
-  tags: z.string().optional(), // Accept tags as string from frontend
+  tags: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(),
 });
 
+export const insertBookingSchema = createInsertSchema(bookings).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCouponSchema = createInsertSchema(coupons).omit({
+  id: true,
+  usedCount: true,
+  createdAt: true,
+});
+
+// Legacy schema (deprecated)
+export const insertBusinessListingSchema = createInsertSchema(businessListings).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  tags: z.string().optional(),
+});
+
+// Types
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+
+export type Listing = typeof listings.$inferSelect;
+export type InsertListing = z.infer<typeof insertListingSchema>;
+
+export type Booking = typeof bookings.$inferSelect;
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+
+export type Coupon = typeof coupons.$inferSelect;
+export type InsertCoupon = z.infer<typeof insertCouponSchema>;
+
+// Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
 export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;

@@ -49,9 +49,12 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
+              <Link href="/" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
-              </a>
+              </Link>
+              <Link href="/directory" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-directory">
+                Directory
+              </Link>
               <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </a>
