@@ -61,6 +61,7 @@ export interface IStorage {
   getModerationQueue(status?: string): Promise<Listing[]>;
   adminApproveListing(id: string, adminId: string, notes?: string): Promise<Listing>;
   adminRejectListing(id: string, adminId: string, reason: string): Promise<Listing>;
+  getAllUsers(): Promise<User[]>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -76,6 +77,10 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(users.createdAt);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {

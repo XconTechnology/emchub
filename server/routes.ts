@@ -359,8 +359,47 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin authentication routes
+  app.post('/api/admin/login', async (req: any, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      // Simple hardcoded admin credentials (you can enhance this later)
+      if (username === 'admin' && password === 'admin123') {
+        req.session.adminAuth = true;
+        res.json({ message: "Admin login successful" });
+      } else {
+        res.status(401).json({ message: "Invalid admin credentials" });
+      }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Admin login failed" });
+    }
+  });
+
+  app.get('/api/admin/check', async (req: any, res) => {
+    if (req.session.adminAuth) {
+      res.json({ authenticated: true });
+    } else {
+      res.status(401).json({ authenticated: false });
+    }
+  });
+
+  app.post('/api/admin/logout', async (req: any, res) => {
+    req.session.adminAuth = null;
+    res.json({ message: "Admin logout successful" });
+  });
+
+  // Admin middleware for protected admin routes
+  const isAdminAuthenticated = async (req: any, res: any, next: any) => {
+    if (!req.session.adminAuth) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+    next();
+  };
+
   // Admin routes for listing moderation
-  app.get('/api/admin/listings', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/listings', isAdminAuthenticated, async (req: any, res) => {
     try {
       const status = req.query.status as string;
       const listings = await storage.getListingsByStatus(status);
@@ -371,11 +410,22 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/admin/listings/:id/approve', isAdmin, async (req: any, res) => {
+  // Admin route to get all users
+  app.get('/api/admin/users', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch('/api/admin/listings/:id/approve', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const adminId = req.user.id;
-      await storage.adminApproveListing(listingId, adminId);
+      const { notes } = req.body;
+      await storage.adminApproveListing(listingId, 'admin', notes);
       res.json({ message: "Listing approved successfully" });
     } catch (error) {
       console.error("Error approving listing:", error);
@@ -383,12 +433,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/admin/listings/:id/reject', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/listings/:id/reject', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const adminId = req.user.id;
       const { reason } = req.body;
-      await storage.adminRejectListing(listingId, adminId, reason);
+      await storage.adminRejectListing(listingId, 'admin', reason);
       res.json({ message: "Listing rejected successfully" });
     } catch (error) {
       console.error("Error rejecting listing:", error);

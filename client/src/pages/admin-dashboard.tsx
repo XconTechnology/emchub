@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +13,25 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Clock, Eye, MapPin, Phone, Mail } from "lucide-react";
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Eye, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Users,
+  LogOut,
+  Calendar,
+  User
+} from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Listing } from "@shared/schema";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
+import AdminLogin from "./admin-login";
+import type { Listing, User as UserType } from "@shared/schema";
 
 interface ModerationAction {
   type: 'approve' | 'reject';
@@ -28,26 +42,53 @@ interface ModerationAction {
 }
 
 export default function AdminDashboard() {
+  const { isAdminAuthenticated, adminLogout, checkAdminAuth } = useAdminAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [actionDialog, setActionDialog] = useState<ModerationAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
 
-  // Fetch listings by status
+  const handleAdminLoginSuccess = () => {
+    checkAdminAuth();
+    toast({
+      title: "Admin Login Successful",
+      description: "Welcome to the admin dashboard",
+    });
+  };
+
+  const handleLogout = () => {
+    adminLogout();
+    toast({
+      title: "Logged Out",
+      description: "You have been logged out of the admin panel",
+    });
+  };
+
+  // Fetch listings by status (only if authenticated)
   const { data: pendingListings = [], isLoading: isPendingLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'pending'],
-    queryFn: () => fetch('/api/admin/listings?status=pending').then(res => res.json()),
+    queryFn: () => fetch('/api/admin/listings?status=pending', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
   });
 
   const { data: approvedListings = [], isLoading: isApprovedLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'approved'],
-    queryFn: () => fetch('/api/admin/listings?status=approved').then(res => res.json()),
+    queryFn: () => fetch('/api/admin/listings?status=approved', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
   });
 
   const { data: rejectedListings = [], isLoading: isRejectedLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'rejected'],
-    queryFn: () => fetch('/api/admin/listings?status=rejected').then(res => res.json()),
+    queryFn: () => fetch('/api/admin/listings?status=rejected', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
+  });
+
+  // Fetch all users
+  const { data: users = [], isLoading: isUsersLoading } = useQuery<UserType[]>({
+    queryKey: ['/api/admin/users'],
+    queryFn: () => fetch('/api/admin/users', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
   });
 
   // Approve listing mutation
@@ -56,6 +97,7 @@ export default function AdminDashboard() {
       const response = await fetch(`/api/admin/listings/${id}/approve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ notes }),
       });
       if (!response.ok) throw new Error('Failed to approve listing');
@@ -85,6 +127,7 @@ export default function AdminDashboard() {
       const response = await fetch(`/api/admin/listings/${id}/reject`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ reason }),
       });
       if (!response.ok) throw new Error('Failed to reject listing');
@@ -107,6 +150,10 @@ export default function AdminDashboard() {
       });
     }
   });
+
+  if (!isAdminAuthenticated) {
+    return <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />;
+  }
 
   const handleApprove = (listing: Listing) => {
     setActionDialog({
@@ -258,15 +305,62 @@ export default function AdminDashboard() {
     </Card>
   );
 
+  const UserCard = ({ user }: { user: UserType }) => (
+    <Card className="mb-4" data-testid={`user-card-${user.id}`}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{user.firstName} {user.lastName}</CardTitle>
+            <div className="flex items-center space-x-2 mt-1">
+              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                {user.role}
+              </Badge>
+              <span className="text-sm text-gray-500">@{user.username}</span>
+            </div>
+          </div>
+          <div className="text-right text-sm text-gray-500">
+            <div className="flex items-center">
+              <Calendar className="w-3 h-3 mr-1" />
+              {formatDate(user.createdAt)}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="flex items-center text-sm text-gray-600">
+            <Mail className="w-4 h-4 mr-2" />
+            {user.email}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <User className="w-4 h-4 mr-2" />
+            User ID: {user.id}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage and moderate business listings</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600">Manage listings and monitor users</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleLogout}
+          className="text-red-600 border-red-300 hover:bg-red-50"
+          data-testid="button-admin-logout"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Logout
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pending" data-testid="tab-pending">
             Pending ({pendingListings.length})
           </TabsTrigger>
@@ -275,6 +369,10 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="rejected" data-testid="tab-rejected">
             Rejected ({rejectedListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="users" data-testid="tab-users">
+            <Users className="w-4 h-4 mr-1" />
+            Users ({users.length})
           </TabsTrigger>
         </TabsList>
 
@@ -318,6 +416,21 @@ export default function AdminDashboard() {
             ) : (
               rejectedListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Registered Users</h2>
+            {isUsersLoading ? (
+              <div>Loading users...</div>
+            ) : users.length === 0 ? (
+              <p className="text-gray-500">No registered users</p>
+            ) : (
+              users.map((user) => (
+                <UserCard key={user.id} user={user} />
               ))
             )}
           </div>

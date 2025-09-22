@@ -4,7 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute, AdminRoute } from "@/lib/protected-route";
+import { AdminAuthProvider } from "@/hooks/use-admin-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import AuthPage from "@/pages/auth-page";
@@ -20,7 +21,7 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       <Route path="/directory" component={DirectoryPage} />
       <ProtectedRoute path="/profile" component={Profile} />
-      <AdminRoute path="/admin" component={AdminDashboard} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -30,10 +31,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AdminAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AdminAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
