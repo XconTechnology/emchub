@@ -9,17 +9,17 @@ import {
   insertBookingSchema 
 } from "@shared/schema";
 
-// Admin middleware
-const isAdmin = async (req: any, res: any, next: any) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
+// Admin middleware for session-based admin authentication
+const isAdminAuthenticated = async (req: any, res: any, next: any) => {
+  console.log('Admin auth check:', { 
+    hasSession: !!req.session, 
+    adminAuth: req.session?.adminAuth,
+    path: req.path 
+  });
   
-  const user = await storage.getUser(req.user.id);
-  if (!user || user.role !== "admin") {
-    return res.status(403).json({ message: "Admin access required" });
+  if (!req.session?.adminAuth) {
+    return res.status(401).json({ message: "Admin authentication required" });
   }
-  
   next();
 };
 
@@ -298,49 +298,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin routes for listing moderation
-  app.get('/api/admin/listings', isAdmin, async (req, res) => {
-    try {
-      const status = req.query.status as string;
-      const listings = await storage.getModerationQueue(status);
-      res.json(listings);
-    } catch (error) {
-      console.error("Error fetching moderation queue:", error);
-      res.status(500).json({ message: "Failed to fetch listings" });
-    }
-  });
-
-  app.patch('/api/admin/listings/:id/approve', isAdmin, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { notes } = req.body;
-      const adminId = req.user.id;
-      
-      const listing = await storage.adminApproveListing(id, adminId, notes);
-      res.json(listing);
-    } catch (error) {
-      console.error("Error approving listing:", error);
-      res.status(500).json({ message: "Failed to approve listing" });
-    }
-  });
-
-  app.patch('/api/admin/listings/:id/reject', isAdmin, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { reason } = req.body;
-      const adminId = req.user.id;
-      
-      if (!reason) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
-      const listing = await storage.adminRejectListing(id, adminId, reason);
-      res.json(listing);
-    } catch (error) {
-      console.error("Error rejecting listing:", error);
-      res.status(500).json({ message: "Failed to reject listing" });
-    }
-  });
 
   // Add endpoint to check if current user is admin
   app.get('/api/me', isAuthenticated, async (req: any, res) => {
@@ -407,19 +364,6 @@ export function registerRoutes(app: Express): Server {
     res.json({ message: "Admin logout successful" });
   });
 
-  // Admin middleware for protected admin routes
-  const isAdminAuthenticated = async (req: any, res: any, next: any) => {
-    console.log('Admin auth check:', { 
-      hasSession: !!req.session, 
-      adminAuth: req.session?.adminAuth,
-      path: req.path 
-    });
-    
-    if (!req.session?.adminAuth) {
-      return res.status(401).json({ message: "Admin authentication required" });
-    }
-    next();
-  };
 
   // Admin routes for listing moderation
   app.get('/api/admin/listings', isAdminAuthenticated, async (req: any, res) => {
@@ -448,7 +392,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const listingId = req.params.id;
       const { notes } = req.body;
-      await storage.adminApproveListing(listingId, 'admin', notes);
+      await storage.adminApproveListing(listingId, null, notes);
       res.json({ message: "Listing approved successfully" });
     } catch (error) {
       console.error("Error approving listing:", error);
@@ -460,7 +404,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const listingId = req.params.id;
       const { reason } = req.body;
-      await storage.adminRejectListing(listingId, 'admin', reason);
+      await storage.adminRejectListing(listingId, null, reason);
       res.json({ message: "Listing rejected successfully" });
     } catch (error) {
       console.error("Error rejecting listing:", error);
