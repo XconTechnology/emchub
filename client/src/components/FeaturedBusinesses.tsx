@@ -188,14 +188,9 @@ export default function FeaturedBusinesses() {
                       {listing.website && (
                         <div className="flex items-center text-muted-foreground">
                           <Globe className="w-4 h-4 mr-3 text-primary flex-shrink-0" />
-                          <a 
-                            href={listing.website} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline truncate"
-                          >
+                          <span className="text-primary truncate">
                             Visit Website
-                          </a>
+                          </span>
                         </div>
                       )}
                     </div>
