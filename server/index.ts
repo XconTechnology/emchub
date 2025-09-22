@@ -1,8 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS configuration for production
+app.use(cors({
+  origin: process.env.NODE_ENV === "production" ? 
+    ["https://testingprojects.site", "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev"] :
+    true,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
