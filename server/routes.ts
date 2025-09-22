@@ -362,11 +362,17 @@ export function registerRoutes(app: Express): Server {
   // Admin authentication routes
   app.post('/api/admin/login', async (req: any, res) => {
     try {
+      console.log('Admin login attempt:', { session: !!req.session, body: req.body });
       const { username, password } = req.body;
       
       // Simple hardcoded admin credentials (you can enhance this later)
       if (username === 'admin' && password === 'admin123') {
+        if (!req.session) {
+          console.error('Session not available during admin login');
+          return res.status(500).json({ message: "Session configuration error" });
+        }
         req.session.adminAuth = true;
+        console.log('Admin session set successfully');
         res.json({ message: "Admin login successful" });
       } else {
         res.status(401).json({ message: "Invalid admin credentials" });
@@ -378,7 +384,13 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get('/api/admin/check', async (req: any, res) => {
-    if (req.session.adminAuth) {
+    console.log('Admin check:', { 
+      hasSession: !!req.session, 
+      adminAuth: req.session?.adminAuth,
+      sessionId: req.session?.id 
+    });
+    
+    if (req.session?.adminAuth) {
       res.json({ authenticated: true });
     } else {
       res.status(401).json({ authenticated: false });
@@ -392,7 +404,13 @@ export function registerRoutes(app: Express): Server {
 
   // Admin middleware for protected admin routes
   const isAdminAuthenticated = async (req: any, res: any, next: any) => {
-    if (!req.session.adminAuth) {
+    console.log('Admin auth check:', { 
+      hasSession: !!req.session, 
+      adminAuth: req.session?.adminAuth,
+      path: req.path 
+    });
+    
+    if (!req.session?.adminAuth) {
       return res.status(401).json({ message: "Admin authentication required" });
     }
     next();
