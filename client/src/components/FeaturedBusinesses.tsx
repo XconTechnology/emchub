@@ -207,12 +207,11 @@ export default function FeaturedBusinesses() {
 
         <div className="text-center mt-16 fade-in">
           <Link href="/directory">
-            <Button className="relative bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground px-12 py-6 rounded-3xl font-black text-lg shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:scale-105 pulse-ring overflow-hidden group" data-testid="button-view-all-businesses">
+            <Button className="relative bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground px-12 py-6 rounded-3xl font-black text-lg shadow-2xl" data-testid="button-view-all-businesses">
               <span className="relative z-10 flex items-center">
                 View All Businesses
-                <span className="ml-3 text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
+                <span className="ml-3 text-2xl">→</span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             </Button>
           </Link>
         </div>
