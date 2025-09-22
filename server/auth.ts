@@ -8,6 +8,8 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
+import { insertUserSchema } from "@shared/schema";
+import { z } from "zod";
 
 declare global {
   namespace Express {
@@ -16,6 +18,26 @@ declare global {
 }
 
 const scryptAsync = promisify(scrypt);
+
+// Helper function to sanitize user object by removing sensitive fields
+function sanitizeUser(user: SelectUser): Omit<SelectUser, 'password'> {
+  const { password, ...sanitizedUser } = user;
+  return sanitizedUser;
+}
+
+// Server-side validation schemas
+const registerSchema = insertUserSchema.omit({ id: true }).extend({
+  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+  email: z.string().email("Invalid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(255),
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100)
+});
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required")
+});
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -40,14 +62,20 @@ export function setupAuth(app: Express) {
     tableName: "sessions",
   });
 
+  // Require SESSION_SECRET for security
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET environment variable is required");
+  }
+
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "your-secret-key",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === "production", // True in production with HTTPS
+      sameSite: "lax", // CSRF protection
       maxAge: sessionTtl,
     },
   };
@@ -87,11 +115,16 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, email, password, firstName, lastName } = req.body;
-
-      if (!username || !email || !password) {
-        return res.status(400).json({ message: "Username, email, and password are required" });
+      // Server-side validation with Zod
+      const validationResult = registerSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validationResult.error.issues.map(issue => issue.message)
+        });
       }
+
+      const { username, email, password, firstName, lastName } = validationResult.data;
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -107,14 +140,18 @@ export function setupAuth(app: Express) {
         username,
         email,
         password: await hashPassword(password),
-        firstName: firstName || "",
-        lastName: lastName || "",
+        firstName,
+        lastName,
         profileImageUrl: null,
       });
 
-      req.login(user, (err) => {
+      // Regenerate session for security
+      req.session.regenerate((err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        req.login(user, (err) => {
+          if (err) return next(err);
+          res.status(201).json(sanitizeUser(user));
+        });
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -123,14 +160,28 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    // Server-side validation with Zod
+    const validationResult = loginSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: "Validation failed", 
+        errors: validationResult.error.issues.map(issue => issue.message)
+      });
+    }
+
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      req.login(user, (err) => {
+      
+      // Regenerate session for security (prevent session fixation)
+      req.session.regenerate((err) => {
         if (err) return next(err);
-        res.status(200).json(user);
+        req.login(user, (err) => {
+          if (err) return next(err);
+          res.status(200).json(sanitizeUser(user));
+        });
       });
     })(req, res, next);
   });
@@ -138,13 +189,19 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      // Destroy session for security
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        res.sendStatus(200);
+      });
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    res.json(sanitizeUser(req.user!));
   });
 }
 
