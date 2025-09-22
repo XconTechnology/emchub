@@ -34,6 +34,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role").notNull().default("user"), // 'user' | 'admin'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -105,6 +106,12 @@ export const listings = pgTable("listings", {
   isActive: boolean("is_active").default(true),
   isVerified: boolean("is_verified").default(false),
   
+  // Moderation fields
+  moderationStatus: varchar("moderation_status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+  moderationNotes: text("moderation_notes"),
+  moderatedBy: varchar("moderated_by").references(() => users.id),
+  moderatedAt: timestamp("moderated_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -173,6 +180,11 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   id: true,
   userId: true,
   attendeeCount: true,
+  // Omit moderation fields - server controlled
+  moderationStatus: true,
+  moderationNotes: true,
+  moderatedBy: true,
+  moderatedAt: true,
   createdAt: true,
   updatedAt: true,
 }).extend({

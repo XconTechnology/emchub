@@ -57,6 +57,11 @@ export interface IStorage {
   validateCoupon(code: string, amount: number): Promise<{ valid: boolean; discount?: number; coupon?: Coupon }>;
   useCoupon(code: string): Promise<void>;
   
+  // Admin moderation operations
+  getModerationQueue(status?: string): Promise<Listing[]>;
+  adminApproveListing(id: string, adminId: string, notes?: string): Promise<Listing>;
+  adminRejectListing(id: string, adminId: string, reason: string): Promise<Listing>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -119,7 +124,11 @@ export class DatabaseStorage implements IStorage {
     search?: string,
     isOnlineOnly?: boolean 
   }): Promise<Listing[]> {
-    let conditions = [eq(listings.isActive, true)];
+    // Only show approved and active listings for public directory
+    let conditions = [
+      eq(listings.isActive, true),
+      eq(listings.moderationStatus, "approved")
+    ];
     
     if (filters?.categories && filters.categories.length > 0) {
       conditions.push(inArray(listings.categoryId, filters.categories));
@@ -147,6 +156,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserListings(userId: string): Promise<Listing[]> {
+    // Return all user listings regardless of moderation status for "My Listings" page
     return db.select().from(listings).where(eq(listings.userId, userId));
   }
 
@@ -265,6 +275,47 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBusinessListing(id: string): Promise<void> {
     await db.delete(businessListings).where(eq(businessListings.id, id));
+  }
+
+  // Admin moderation operations implementation
+  async getModerationQueue(status?: string): Promise<Listing[]> {
+    let conditions = [eq(listings.isActive, true)];
+    
+    if (status) {
+      conditions.push(eq(listings.moderationStatus, status));
+    }
+    
+    return db.select().from(listings).where(and(...conditions));
+  }
+
+  async adminApproveListing(id: string, adminId: string, notes?: string): Promise<Listing> {
+    const [listing] = await db
+      .update(listings)
+      .set({ 
+        moderationStatus: "approved",
+        moderationNotes: notes || null,
+        moderatedBy: adminId,
+        moderatedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return listing;
+  }
+
+  async adminRejectListing(id: string, adminId: string, reason: string): Promise<Listing> {
+    const [listing] = await db
+      .update(listings)
+      .set({ 
+        moderationStatus: "rejected",
+        moderationNotes: reason,
+        moderatedBy: adminId,
+        moderatedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return listing;
   }
 }
 

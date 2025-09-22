@@ -9,6 +9,20 @@ import {
   insertBookingSchema 
 } from "@shared/schema";
 
+// Admin middleware
+const isAdmin = async (req: any, res: any, next: any) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  const user = await storage.getUser(req.user.id);
+  if (!user || user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  
+  next();
+};
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication middleware and routes (from blueprint: javascript_auth_all_persistance)
   setupAuth(app);
@@ -276,6 +290,72 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching business listings:", error);
       res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  // Admin routes for listing moderation
+  app.get('/api/admin/listings', isAdmin, async (req, res) => {
+    try {
+      const status = req.query.status as string;
+      const listings = await storage.getModerationQueue(status);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching moderation queue:", error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  app.patch('/api/admin/listings/:id/approve', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const adminId = req.user.id;
+      
+      const listing = await storage.adminApproveListing(id, adminId, notes);
+      res.json(listing);
+    } catch (error) {
+      console.error("Error approving listing:", error);
+      res.status(500).json({ message: "Failed to approve listing" });
+    }
+  });
+
+  app.patch('/api/admin/listings/:id/reject', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const adminId = req.user.id;
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+      
+      const listing = await storage.adminRejectListing(id, adminId, reason);
+      res.json(listing);
+    } catch (error) {
+      console.error("Error rejecting listing:", error);
+      res.status(500).json({ message: "Failed to reject listing" });
+    }
+  });
+
+  // Add endpoint to check if current user is admin
+  app.get('/api/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.role === 'admin'
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
