@@ -288,6 +288,15 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(listings).where(and(...conditions));
   }
 
+  async getListingsByStatus(status?: string): Promise<Listing[]> {
+    if (status) {
+      return db.select().from(listings).where(
+        and(eq(listings.isActive, true), eq(listings.moderationStatus, status))
+      );
+    }
+    return db.select().from(listings).where(eq(listings.isActive, true));
+  }
+
   async adminApproveListing(id: string, adminId: string, notes?: string): Promise<Listing> {
     const [listing] = await db
       .update(listings)

@@ -359,15 +359,40 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get current user's listings (includes all moderation statuses)
-  app.get('/api/me/listings', isAuthenticated, async (req: any, res) => {
+  // Admin routes for listing moderation
+  app.get('/api/admin/listings', isAdmin, async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const listings = await storage.getUserListings(userId);
+      const status = req.query.status as string;
+      const listings = await storage.getListingsByStatus(status);
       res.json(listings);
     } catch (error) {
-      console.error("Error fetching user listings:", error);
-      res.status(500).json({ message: "Failed to fetch user listings" });
+      console.error("Error fetching admin listings:", error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  app.patch('/api/admin/listings/:id/approve', isAdmin, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const adminId = req.user.id;
+      await storage.adminApproveListing(listingId, adminId);
+      res.json({ message: "Listing approved successfully" });
+    } catch (error) {
+      console.error("Error approving listing:", error);
+      res.status(500).json({ message: "Failed to approve listing" });
+    }
+  });
+
+  app.patch('/api/admin/listings/:id/reject', isAdmin, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const adminId = req.user.id;
+      const { reason } = req.body;
+      await storage.adminRejectListing(listingId, adminId, reason);
+      res.json({ message: "Listing rejected successfully" });
+    } catch (error) {
+      console.error("Error rejecting listing:", error);
+      res.status(500).json({ message: "Failed to reject listing" });
     }
   });
 
