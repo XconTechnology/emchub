@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
-import MobileMenu from "./MobileMenu";
-import AuthModal from "./AuthModal";
+import { Link } from "wouter";
 import AddListingModal from "./AddListingModal";
 import emcLogo from "@assets/image_1756989816731.png";
-import { useAuth } from "@/hooks/useAuth";
-import { useAuthModal } from "@/hooks/useAuthModal";
+import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +17,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const { isOpen, mode, openSignIn, openSignUp, close } = useAuthModal();
+  const { user, isLoading, logoutMutation } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,27 +78,24 @@ export default function Header() {
                 <div className="animate-pulse">
                   <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </div>
-              ) : isAuthenticated && user ? (
+              ) : user ? (
                 <>
                   <Button 
                     onClick={() => setIsAddListingModalOpen(true)}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+                    className="bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)] transition-colors" 
                     data-testid="button-add-listing"
                   >
                     Add Listing
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="button-user-menu">
-                        {user.profileImageUrl ? (
-                          <img
-                            src={user.profileImageUrl}
-                            alt="Profile"
-                            className="h-8 w-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-5 w-5" />
-                        )}
+                      <Button 
+                        variant="ghost" 
+                        className={`relative h-10 px-4 rounded-md transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                        data-testid="button-profile"
+                      >
+                        <User className="h-5 w-5 mr-2" />
+                        Profile
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -121,46 +115,43 @@ export default function Header() {
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <a href="/profile" className="cursor-pointer" data-testid="link-profile">
+                        <Link href="/profile" className="cursor-pointer" data-testid="link-profile">
                           <User className="mr-2 h-4 w-4" />
                           <span>My Profile</span>
-                        </a>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <a href="/api/logout" className="cursor-pointer" data-testid="link-logout">
-                          <LogOut className="mr-2 h-4 w-4" />
-                          <span>Log out</span>
-                        </a>
+                      <DropdownMenuItem 
+                        onClick={() => logoutMutation.mutate()}
+                        className="cursor-pointer"
+                        data-testid="button-logout"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
               ) : (
                 <>
-                  <Button 
-                    variant="ghost" 
-                    onClick={openSignIn}
-                    className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
-                    data-testid="button-signin"
-                  >
-                    Sign In
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    onClick={openSignUp}
-                    className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
-                    data-testid="button-signup"
-                  >
-                    Sign Up
-                  </Button>
-                  <Button 
-                    onClick={openSignIn}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
-                    data-testid="button-add-listing-guest"
-                  >
-                    Add Listing
-                  </Button>
+                  <Link href="/auth">
+                    <Button 
+                      variant="ghost" 
+                      className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      data-testid="button-signin"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/auth">
+                    <Button 
+                      variant="ghost" 
+                      className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      data-testid="button-signup"
+                    >
+                      Sign Up
+                    </Button>
+                  </Link>
                 </>
               )}
             </div>
@@ -185,16 +176,54 @@ export default function Header() {
         </nav>
       </header>
 
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)}
-        onOpenSignIn={openSignIn}
-        onOpenSignUp={openSignUp}
-        onOpenAddListing={() => setIsAddListingModalOpen(true)}
-      />
-
-      {/* Authentication Modal */}
-      <AuthModal isOpen={isOpen} onClose={close} initialMode={mode} />
+      {/* Mobile menu - simplified for now */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+            {user ? (
+              <>
+                <Button 
+                  onClick={() => setIsAddListingModalOpen(true)}
+                  className="w-full justify-start bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)]"
+                  data-testid="mobile-button-add-listing"
+                >
+                  Add Listing
+                </Button>
+                <Link href="/profile">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start"
+                    data-testid="mobile-link-profile"
+                  >
+                    Profile
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => logoutMutation.mutate()}
+                  className="w-full justify-start"
+                  data-testid="mobile-button-logout"
+                >
+                  Log out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth">
+                  <Button variant="ghost" className="w-full justify-start" data-testid="mobile-button-signin">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button variant="ghost" className="w-full justify-start" data-testid="mobile-button-signup">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Add Listing Modal */}
       <AddListingModal 
