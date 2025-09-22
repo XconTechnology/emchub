@@ -55,6 +55,11 @@ export default function Header() {
               <Link href="/directory" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-directory">
                 Directory
               </Link>
+              {user?.isAdmin && (
+                <Link href="/admin" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
+                  Admin
+                </Link>
+              )}
               <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </a>

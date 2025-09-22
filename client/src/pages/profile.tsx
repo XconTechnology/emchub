@@ -9,17 +9,17 @@ import { useState } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import EditListingModal from "@/components/EditListingModal";
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog";
-import type { BusinessListing } from "@shared/schema";
+import type { Listing } from "@shared/schema";
 
 export default function Profile() {
   const { user, isLoading } = useAuth();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<BusinessListing | null>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
-  const { data: listings, isLoading: loadingListings } = useQuery<BusinessListing[]>({
-    queryKey: ['/api/listings/user'],
+  const { data: listings, isLoading: loadingListings } = useQuery<Listing[]>({
+    queryKey: ['/api/me/listings'],
     enabled: !!user,
   });
 

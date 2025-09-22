@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import AuthPage from "@/pages/auth-page";
 import DirectoryPage from "@/pages/directory-page";
+import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       <Route path="/directory" component={DirectoryPage} />
       <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

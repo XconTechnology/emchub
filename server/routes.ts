@@ -359,6 +359,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get current user's listings (includes all moderation statuses)
+  app.get('/api/me/listings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const listings = await storage.getUserListings(userId);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching user listings:", error);
+      res.status(500).json({ message: "Failed to fetch user listings" });
+    }
+  });
+
   // Protected route example
   app.get("/api/protected", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.id;
