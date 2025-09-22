@@ -88,6 +88,8 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
         eventEndDate: data.eventEndDate || null,
       };
 
+      console.log('Sending to API:', transformedData);
+
       const response = await fetch("/api/listings", {
         method: "POST",
         headers: {
@@ -96,12 +98,17 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
         body: JSON.stringify(transformedData),
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error('API Error:', error);
         throw new Error(error.message || "Failed to add listing");
       }
       
-      return response.json();
+      const result = await response.json();
+      console.log('API Success:', result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
@@ -124,6 +131,8 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
   });
 
   const onSubmit = (data: any) => {
+    console.log('Form submitted with data:', data);
+    console.log('Selected type:', selectedType);
     addListingMutation.mutate(data);
   };
 

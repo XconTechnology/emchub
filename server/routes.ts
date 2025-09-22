@@ -40,6 +40,10 @@ export function registerRoutes(app: Express): Server {
 
   // Enhanced listings routes (new system)
   app.post('/api/listings', isAuthenticated, async (req: any, res) => {
+    console.log('POST /api/listings - Request received');
+    console.log('User:', req.user);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     try {
       const userId = req.user?.id;
       
@@ -48,17 +52,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Authentication required - user ID not found" });
       }
       
+      console.log('About to parse listing data with userId:', userId);
       const listingData = insertListingSchema.parse(req.body);
+      console.log('Parsed listing data:', listingData);
       
       const listing = await storage.createListing({
         ...listingData,
         userId,
       });
       
+      console.log('Created listing:', listing);
       res.json(listing);
     } catch (error: any) {
       console.error("Error creating listing:", error);
       if (error.name === 'ZodError') {
+        console.error("Zod validation errors:", error.errors);
         return res.status(400).json({ message: "Invalid listing data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create listing" });
@@ -66,6 +74,9 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get('/api/listings', async (req, res) => {
+    console.log('GET /api/listings - Request received');
+    console.log('Query params:', req.query);
+    
     try {
       const { categories, type, search, isOnlineOnly } = req.query;
       
@@ -83,7 +94,9 @@ export function registerRoutes(app: Express): Server {
         filters.isOnlineOnly = isOnlineOnly === 'true';
       }
       
+      console.log('Filters:', filters);
       const listings = await storage.getListings(filters);
+      console.log('Found listings:', listings.length);
       res.json(listings);
     } catch (error) {
       console.error("Error fetching listings:", error);
