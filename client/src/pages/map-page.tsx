@@ -25,8 +25,7 @@ const customIcon = new Icon({
 export default function MapPage() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [viewType, setViewType] = useState<'map' | 'virtual'>('map');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mapType, setMapType] = useState<'map' | 'satellite'>('map');
 
   // Fetch approved listings
@@ -41,21 +40,15 @@ export default function MapPage() {
 
   // Filter listings
   const filteredListings = listings.filter(listing => {
-    // Filter by view type (map/virtual)
-    if (viewType === 'map' && listing.isOnlineOnly) return false;
-    if (viewType === 'virtual' && !listing.isOnlineOnly) return false;
-    
     // Filter by search term
     if (searchTerm && !listing.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !listing.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
-    // Filter by categories - exclude uncategorized items when specific categories selected
-    if (selectedCategories.length > 0) {
-      if (!listing.categoryId || !selectedCategories.includes(listing.categoryId)) {
-        return false;
-      }
+    // Filter by selected category
+    if (selectedCategory && listing.categoryId !== selectedCategory) {
+      return false;
     }
     
     return true;
@@ -65,8 +58,6 @@ export default function MapPage() {
   const mapLocations = filteredListings.filter(
     listing => listing.latitude && listing.longitude && !listing.isOnlineOnly
   );
-
-  const virtualLocations = filteredListings.filter(listing => listing.isOnlineOnly);
 
   // Calculate center
   const center: [number, number] = mapLocations.length > 0
@@ -82,15 +73,9 @@ export default function MapPage() {
     return category?.name || 'Uncategorized';
   };
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryId) 
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+  const handleCategoryClick = (categoryId: string | null) => {
+    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
   };
-
-  const displayListings = viewType === 'map' ? mapLocations : virtualLocations;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -99,30 +84,11 @@ export default function MapPage() {
       <div className="flex-1 pt-16 flex">
         {/* Left Sidebar */}
         <div className="w-full md:w-96 border-r border-gray-200 flex flex-col bg-white">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setViewType('map')}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                viewType === 'map'
-                  ? 'bg-white text-gray-900 border-b-2 border-primary'
-                  : 'bg-gray-50 text-gray-600 hover:text-gray-900'
-              }`}
-              data-testid="tab-map-locations"
-            >
-              Map Locations ({mapLocations.length})
-            </button>
-            <button
-              onClick={() => setViewType('virtual')}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                viewType === 'virtual'
-                  ? 'bg-white text-gray-900 border-b-2 border-primary'
-                  : 'bg-gray-50 text-gray-600 hover:text-gray-900'
-              }`}
-              data-testid="tab-virtual-locations"
-            >
-              Virtual Locations ({virtualLocations.length})
-            </button>
+          {/* Locations Found Count */}
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700" data-testid="text-locations-count">
+              {filteredListings.length} Locations Found
+            </h2>
           </div>
 
           {/* Search */}
@@ -144,9 +110,9 @@ export default function MapPage() {
           <div className="px-4 py-3 border-b border-gray-200">
             <div className="flex flex-wrap gap-2">
               <Badge
-                variant={selectedCategories.length === 0 ? "default" : "outline"}
+                variant={selectedCategory === null ? "default" : "outline"}
                 className="cursor-pointer"
-                onClick={() => setSelectedCategories([])}
+                onClick={() => handleCategoryClick(null)}
                 data-testid="filter-all"
               >
                 All
@@ -154,9 +120,9 @@ export default function MapPage() {
               {categories.map(category => (
                 <Badge
                   key={category.id}
-                  variant={selectedCategories.includes(category.id) ? "default" : "outline"}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
                   className="cursor-pointer"
-                  onClick={() => handleCategoryToggle(category.id)}
+                  onClick={() => handleCategoryClick(category.id)}
                   data-testid={`filter-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {category.name}
@@ -169,15 +135,14 @@ export default function MapPage() {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="p-8 text-center text-gray-500">Loading...</div>
-            ) : displayListings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="p-8 text-center text-gray-500">No listings found</div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {displayListings.map((listing, index) => (
+                {filteredListings.map((listing, index) => (
                   <div
                     key={listing.id}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => setLocation(`/business/${listing.id}`)}
+                    className="p-4 hover:bg-gray-50 transition-colors"
                     data-testid={`listing-item-${listing.id}`}
                   >
                     <div className="flex gap-3">
@@ -185,27 +150,55 @@ export default function MapPage() {
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-1" data-testid={`text-listing-title-${listing.id}`}>
-                            {listing.title}
-                            <ExternalLink className="w-3 h-3 text-gray-400" />
-                          </h3>
-                        </div>
+                        {/* Image */}
+                        {listing.images && listing.images.length > 0 && (
+                          <img
+                            src={listing.images[0]}
+                            alt={listing.title}
+                            className="w-16 h-16 object-cover rounded mb-2"
+                          />
+                        )}
+                        
+                        {/* Title with external link */}
+                        <h3 
+                          className="font-semibold text-base text-gray-900 flex items-center gap-1 mb-1 cursor-pointer hover:text-primary" 
+                          onClick={() => setLocation(`/business/${listing.id}`)}
+                          data-testid={`text-listing-title-${listing.id}`}
+                        >
+                          {listing.title}
+                          <ExternalLink className="w-4 h-4" />
+                        </h3>
+                        
+                        {/* Address */}
                         {listing.address && (
-                          <p className="text-xs text-gray-600 mb-1">
+                          <p className="text-xs text-gray-600 italic mb-2">
                             {listing.address}, {listing.city}
                           </p>
                         )}
+                        
+                        {/* Description - show full text */}
                         {listing.description && (
-                          <p className="text-xs text-gray-500 line-clamp-2">
+                          <div className="text-xs text-gray-700 mb-2 whitespace-pre-line">
                             {listing.description}
+                          </div>
+                        )}
+                        
+                        {/* Additional details */}
+                        {listing.phone && (
+                          <p className="text-xs text-gray-600 mb-1">
+                            <span className="font-semibold">Phone:</span> {listing.phone}
                           </p>
                         )}
-                        <div className="mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {getCategoryName(listing.categoryId)}
-                          </Badge>
-                        </div>
+                        {listing.email && (
+                          <p className="text-xs text-gray-600 mb-1">
+                            <span className="font-semibold">Email:</span> {listing.email}
+                          </p>
+                        )}
+                        {listing.website && (
+                          <p className="text-xs text-gray-600 mb-1">
+                            <span className="font-semibold">Website:</span> {listing.website}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
