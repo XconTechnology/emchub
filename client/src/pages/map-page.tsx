@@ -33,18 +33,22 @@ export default function MapPage() {
     queryKey: ['/api/listings'],
   });
 
-  // Fetch categories
-  const { data: allCategories = [] } = useQuery<Category[]>({
+  // Define the specific categories to display (hard-coded)
+  const displayCategories = [
+    'School',
+    'Online',
+    'Provision Store',
+    'Masjid',
+    'Services Store',
+    'Virtual Kitchen',
+    'Arts Henna',
+    'Restaurant'
+  ];
+
+  // Fetch categories for mapping
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
-
-  // Define the specific categories to display in order
-  const categoryOrder = ['Food', 'Services', 'Arts', 'Products', 'Prayer Spaces', 'Education', 'Health'];
-  
-  // Filter and sort categories based on the defined order
-  const categories = categoryOrder
-    .map(name => allCategories.find(cat => cat.name === name))
-    .filter((cat): cat is Category => cat !== undefined);
 
   // Filter listings
   const filteredListings = listings.filter(listing => {
@@ -54,9 +58,12 @@ export default function MapPage() {
       return false;
     }
     
-    // Filter by selected category
-    if (selectedCategory && listing.categoryId !== selectedCategory) {
-      return false;
+    // Filter by selected category name (match against category name from database)
+    if (selectedCategory) {
+      const listingCategory = categories.find(cat => cat.id === listing.categoryId);
+      if (!listingCategory || listingCategory.name !== selectedCategory) {
+        return false;
+      }
     }
     
     return true;
@@ -117,23 +124,15 @@ export default function MapPage() {
           {/* Category Filters */}
           <div className="px-4 py-3 border-b border-gray-200">
             <div className="flex flex-wrap gap-2">
-              <Badge
-                variant={selectedCategory === null ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleCategoryClick(null)}
-                data-testid="filter-all"
-              >
-                All
-              </Badge>
-              {categories.map(category => (
+              {displayCategories.map(categoryName => (
                 <Badge
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  key={categoryName}
+                  variant={selectedCategory === categoryName ? "default" : "outline"}
                   className="cursor-pointer"
-                  onClick={() => handleCategoryClick(category.id)}
-                  data-testid={`filter-${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => handleCategoryClick(categoryName)}
+                  data-testid={`filter-${categoryName.toLowerCase().replace(/\s+/g, '-')}`}
                 >
-                  {category.name}
+                  {categoryName}
                 </Badge>
               ))}
             </div>
