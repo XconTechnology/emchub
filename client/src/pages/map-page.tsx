@@ -35,6 +35,7 @@ export default function MapPage() {
 
   // Define the specific categories to display (hard-coded)
   const displayCategories = [
+    'All',
     'School',
     'Online',
     'Provision Store',
@@ -44,6 +45,17 @@ export default function MapPage() {
     'Arts Henna',
     'Restaurant'
   ];
+
+  // Map display category names to database category names
+  const categoryMapping: Record<string, string> = {
+    'School': 'Education',
+    'Restaurant': 'Food',
+    'Arts Henna': 'Arts',
+    'Provision Store': 'Products',
+    'Masjid': 'Prayer Spaces',
+    'Services Store': 'Services',
+    // Add more mappings as needed
+  };
 
   // Fetch categories for mapping
   const { data: categories = [] } = useQuery<Category[]>({
@@ -59,9 +71,11 @@ export default function MapPage() {
     }
     
     // Filter by selected category name (match against category name from database)
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'All') {
+      // Map display category to database category name
+      const dbCategoryName = categoryMapping[selectedCategory] || selectedCategory;
       const listingCategory = categories.find(cat => cat.id === listing.categoryId);
-      if (!listingCategory || listingCategory.name !== selectedCategory) {
+      if (!listingCategory || listingCategory.name !== dbCategoryName) {
         return false;
       }
     }
