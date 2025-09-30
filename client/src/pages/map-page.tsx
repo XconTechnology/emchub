@@ -34,9 +34,17 @@ export default function MapPage() {
   });
 
   // Fetch categories
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: allCategories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
+
+  // Define the specific categories to display in order
+  const categoryOrder = ['Food', 'Services', 'Arts', 'Products', 'Prayer Spaces', 'Education', 'Health'];
+  
+  // Filter and sort categories based on the defined order
+  const categories = categoryOrder
+    .map(name => allCategories.find(cat => cat.name === name))
+    .filter((cat): cat is Category => cat !== undefined);
 
   // Filter listings
   const filteredListings = listings.filter(listing => {
