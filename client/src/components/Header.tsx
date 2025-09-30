@@ -13,7 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Header() {
+interface HeaderProps {
+  forceSolid?: boolean;
+}
+
+export default function Header({ forceSolid = false }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
@@ -28,11 +32,13 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const isSolid = forceSolid || isScrolled;
+
   return (
     <>
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "glassmorphism shadow-lg" : "bg-transparent"
+          isSolid ? "glassmorphism shadow-lg" : "bg-transparent"
         }`}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,38 +50,38 @@ export default function Header() {
                 alt="EMC HUB Logo" 
                 className="w-10 h-10 mr-3"
               />
-              <span className={`font-bold text-xl transition-colors ${isScrolled ? 'text-gray-900' : 'text-white'}`}>EMC HUB</span>
+              <span className={`font-bold text-xl transition-colors ${isSolid ? 'text-gray-900' : 'text-white'}`}>EMC HUB</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
+              <Link href="/" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
               </Link>
-              <Link href="/directory" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-directory">
+              <Link href="/directory" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-directory">
                 Directory
               </Link>
               {user?.isAdmin && (
-                <Link href="/admin" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
+                <Link href="/admin" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
                   Admin
                 </Link>
               )}
-              <Link href="/map" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
+              <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </Link>
               <div className="relative group">
-                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-listings">
+                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-listings">
                   All Listings
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
               <div className="relative group">
-                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-blog">
+                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-blog">
                   Blog
                   <ChevronDown className="ml-1 w-4 h-4" />
                 </a>
               </div>
-              <a href="#" className={`nav-link font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
+              <a href="#" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </a>
             </div>
@@ -99,7 +105,7 @@ export default function Header() {
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className={`relative h-10 px-4 rounded-md transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                        className={`relative h-10 px-4 rounded-md transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                         data-testid="button-profile"
                       >
                         <User className="h-5 w-5 mr-2" />
@@ -145,7 +151,7 @@ export default function Header() {
                   <Link href="/auth">
                     <Button 
                       variant="ghost" 
-                      className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                       data-testid="button-signin"
                     >
                       Sign In
@@ -154,7 +160,7 @@ export default function Header() {
                   <Link href="/auth">
                     <Button 
                       variant="ghost" 
-                      className={`font-medium transition-colors ${isScrolled ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                       data-testid="button-signup"
                     >
                       Sign Up
