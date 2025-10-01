@@ -392,7 +392,8 @@ export function registerRoutes(app: Express): Server {
     try {
       const listingId = req.params.id;
       const { notes } = req.body;
-      await storage.adminApproveListing(listingId, null, notes);
+      const adminId = req.session?.adminAuth?.userId || 'system';
+      await storage.adminApproveListing(listingId, adminId, notes);
       res.json({ message: "Listing approved successfully" });
     } catch (error) {
       console.error("Error approving listing:", error);
@@ -404,7 +405,8 @@ export function registerRoutes(app: Express): Server {
     try {
       const listingId = req.params.id;
       const { reason } = req.body;
-      await storage.adminRejectListing(listingId, null, reason);
+      const adminId = req.session?.adminAuth?.userId || 'system';
+      await storage.adminRejectListing(listingId, adminId, reason);
       res.json({ message: "Listing rejected successfully" });
     } catch (error) {
       console.error("Error rejecting listing:", error);

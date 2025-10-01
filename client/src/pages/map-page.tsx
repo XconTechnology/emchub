@@ -66,6 +66,7 @@ export default function MapPage() {
   // Map display category names to database category names
   const categoryMapping: Record<string, string> = {
     'School': 'Education',
+    'Online': 'Education',
     'Restaurant': 'Food',
     'Arts Henna': 'Arts',
     'Provision Store': 'Products',
