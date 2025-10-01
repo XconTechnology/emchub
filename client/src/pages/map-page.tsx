@@ -147,12 +147,15 @@ export default function MapPage() {
   };
 
   const handleListingClick = (listing: Listing) => {
+    // Always highlight the clicked listing
+    setFocusedListing(listing.id);
+    
+    // Only update map if listing has coordinates
     if (listing.latitude && listing.longitude && !listing.isOnlineOnly) {
       const lat = parseFloat(listing.latitude);
       const lng = parseFloat(listing.longitude);
       setMapCenter([lat, lng]);
       setMapZoom(16);
-      setFocusedListing(listing.id);
     }
   };
 
