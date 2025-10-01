@@ -414,6 +414,109 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin seed endpoint for demo data
+  app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.session?.adminAuth?.userId || 'system';
+      const results = {
+        categoriesCreated: 0,
+        listingsCreated: 0,
+        listingsSkipped: 0,
+      };
+
+      // 1. Ensure Education category exists
+      const categories = await storage.getCategories();
+      let educationCategory = categories.find(c => c.name === 'Education');
+      
+      if (!educationCategory) {
+        educationCategory = await storage.createCategory({
+          name: 'Education',
+          description: 'Educational institutions and services',
+        });
+        results.categoriesCreated++;
+      }
+
+      // 2. Define the 4 demo school listings
+      const demoListings = [
+        {
+          title: 'Islamic Primary School',
+          description: 'Islamic Primary School of Hong Kong provides quality Islamic education combining academic excellence with Islamic values. Located in Hong Kong, the school offers a comprehensive curriculum for primary-aged students.',
+          type: 'business',
+          categoryId: educationCategory.id,
+          address: 'Hong Kong',
+          latitude: '22.3193',
+          longitude: '114.1694',
+          phone: '+852 1234 5678',
+          email: 'info@islamicprimary.edu.hk',
+          isOnlineOnly: false,
+        },
+        {
+          title: 'EdSquare',
+          description: 'EdSquare is an educational center providing quality tutoring and learning support services. We focus on helping students achieve their academic goals through personalized learning approaches.',
+          type: 'business',
+          categoryId: educationCategory.id,
+          address: 'Hong Kong',
+          latitude: '22.3220',
+          longitude: '114.1700',
+          phone: '+852 2345 6789',
+          email: 'contact@edsquare.edu.hk',
+          isOnlineOnly: false,
+        },
+        {
+          title: 'Ease Education Limited',
+          description: 'TCCA 2/F, Waterside Plaza, 38 Wong Shun Street Tuen Wan, New Territories Hong Kong SAR\n\nEase Education is a charitable institution or trust of a public character, is exempt from tax under Section 88 of the Inland revenue ordinance. Our mission is to promote excellence in academics, personal responsibility, and character development and to instill life long learning.',
+          type: 'business',
+          categoryId: educationCategory.id,
+          address: 'TCCA 2/F, Waterside Plaza, 38 Wong Shun Street Tuen Wan, New Territories',
+          latitude: '22.3705',
+          longitude: '114.1090',
+          phone: '+852 3456 7890',
+          email: 'info@easeeducation.org.hk',
+          isOnlineOnly: false,
+        },
+        {
+          title: 'Alif Complementary Educational Services',
+          description: 'Alif provides online educational support and tutoring services for students. We specialize in complementary education that supports mainstream schooling with flexible online learning options.',
+          type: 'business',
+          categoryId: educationCategory.id,
+          phone: '+852 4567 8901',
+          email: 'support@alifservices.edu.hk',
+          isOnlineOnly: true,
+        },
+      ];
+
+      // 3. Create listings if they don't already exist (check by title)
+      const existingListings = await storage.getListings({});
+      
+      for (const demoListing of demoListings) {
+        const exists = existingListings.some(l => l.title === demoListing.title);
+        
+        if (!exists) {
+          // Create listing with system/admin as owner
+          const newListing = await storage.createListing({
+            ...demoListing,
+            userId: adminId,
+          });
+          
+          // Immediately approve it so it shows publicly
+          await storage.adminApproveListing(newListing.id, adminId, 'Demo seed data');
+          results.listingsCreated++;
+        } else {
+          results.listingsSkipped++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Demo data seeded successfully',
+        results,
+      });
+    } catch (error) {
+      console.error("Error seeding demo data:", error);
+      res.status(500).json({ message: "Failed to seed demo data" });
+    }
+  });
+
   // Protected route example
   app.get("/api/protected", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.id;
