@@ -152,6 +152,34 @@ export default function AdminDashboard() {
     }
   });
 
+  // Seed demo data mutation
+  const seedDemoMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/seed-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to seed demo data');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Demo Data Seeded Successfully",
+        description: `Created ${data.results.listingsCreated} listings, skipped ${data.results.listingsSkipped} existing listings.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to seed demo data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   if (!isAdminAuthenticated) {
     return <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />;
   }
@@ -350,15 +378,25 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600">Manage listings and monitor users</p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleLogout}
-          className="text-red-600 border-red-300 hover:bg-red-50"
-          data-testid="button-admin-logout"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Logout
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            onClick={() => seedDemoMutation.mutate()}
+            disabled={seedDemoMutation.isPending}
+            data-testid="button-seed-demo"
+          >
+            {seedDemoMutation.isPending ? 'Seeding...' : 'Seed Demo Listings'}
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="text-red-600 border-red-300 hover:bg-red-50"
+            data-testid="button-admin-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
