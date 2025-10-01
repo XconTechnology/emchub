@@ -76,12 +76,17 @@ export default function MapPage() {
   };
 
   // Fetch categories for mapping
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
 
   // Filter listings
   const filteredListings = listings.filter(listing => {
+    // If categories are still loading and we need them for filtering, skip filtering
+    if (categoriesLoading && selectedCategory && selectedCategory !== 'All') {
+      return true; // Show all listings while categories load
+    }
+    
     // Filter by search term
     if (searchTerm && !listing.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !listing.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
