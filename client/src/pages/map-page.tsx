@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Icon } from "leaflet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,28 @@ const customIcon = new Icon({
   shadowSize: [41, 41]
 });
 
+// Component to control map center
+function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom, {
+      animate: true,
+      duration: 1
+    });
+  }, [center, zoom, map]);
+  
+  return null;
+}
+
 export default function MapPage() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [mapType, setMapType] = useState<'map' | 'satellite'>('map');
+  const [focusedListing, setFocusedListing] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([22.3193, 114.1694]);
+  const [mapZoom, setMapZoom] = useState(12);
 
   // Fetch approved listings
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
@@ -88,13 +105,16 @@ export default function MapPage() {
     listing => listing.latitude && listing.longitude && !listing.isOnlineOnly
   );
 
-  // Calculate center
-  const center: [number, number] = mapLocations.length > 0
+  // Calculate center for initial map view
+  const defaultCenter: [number, number] = mapLocations.length > 0
     ? [
         mapLocations.reduce((sum, l) => sum + parseFloat(l.latitude || '0'), 0) / mapLocations.length,
         mapLocations.reduce((sum, l) => sum + parseFloat(l.longitude || '0'), 0) / mapLocations.length
       ]
     : [22.3193, 114.1694];
+  
+  // Use defaultCenter for the initial mapCenter if not yet set by user click
+  const center: [number, number] = focusedListing ? mapCenter : defaultCenter;
 
   const getCategoryName = (categoryId: string | null) => {
     if (!categoryId) return 'Uncategorized';
@@ -104,6 +124,16 @@ export default function MapPage() {
 
   const handleCategoryClick = (categoryId: string | null) => {
     setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+  };
+
+  const handleListingClick = (listing: Listing) => {
+    if (listing.latitude && listing.longitude && !listing.isOnlineOnly) {
+      const lat = parseFloat(listing.latitude);
+      const lng = parseFloat(listing.longitude);
+      setMapCenter([lat, lng]);
+      setMapZoom(16);
+      setFocusedListing(listing.id);
+    }
   };
 
   return (
@@ -163,7 +193,10 @@ export default function MapPage() {
                 {filteredListings.map((listing, index) => (
                   <div
                     key={listing.id}
-                    className="p-4 hover:bg-gray-50 transition-colors"
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      focusedListing === listing.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                    }`}
+                    onClick={() => handleListingClick(listing)}
                     data-testid={`listing-item-${listing.id}`}
                   >
                     <div className="flex gap-3">
@@ -180,14 +213,15 @@ export default function MapPage() {
                           />
                         )}
                         
-                        {/* Title with external link */}
+                        {/* Title */}
                         <h3 
-                          className="font-semibold text-base text-gray-900 flex items-center gap-1 mb-1 cursor-pointer hover:text-primary" 
-                          onClick={() => setLocation(`/business/${listing.id}`)}
+                          className="font-semibold text-base text-gray-900 flex items-center gap-1 mb-1" 
                           data-testid={`text-listing-title-${listing.id}`}
                         >
                           {listing.title}
-                          <ExternalLink className="w-4 h-4" />
+                          {listing.latitude && listing.longitude && !listing.isOnlineOnly && (
+                            <MapPin className="w-4 h-4 text-blue-500" />
+                          )}
                         </h3>
                         
                         {/* Address */}
@@ -275,6 +309,7 @@ export default function MapPage() {
               scrollWheelZoom={true}
               data-testid="container-map"
             >
+              <MapController center={mapCenter} zoom={mapZoom} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url={
