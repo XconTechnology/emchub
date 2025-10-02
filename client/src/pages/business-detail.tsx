@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { 
   MapPin, 
   Phone, 
@@ -40,35 +42,43 @@ export default function BusinessDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-            <div className="w-full h-96 bg-gray-200 dark:bg-gray-700 rounded-xl mb-8"></div>
-            <div className="space-y-4">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+      <div className="min-h-screen bg-background">
+        <Header forceSolid={true} />
+        <div className="pt-20 pb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+              <div className="w-full h-96 bg-gray-200 dark:bg-gray-700 rounded-xl mb-8"></div>
+              <div className="space-y-4">
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              </div>
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   if (error || !listing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Business Not Found</h1>
-          <p className="text-muted-foreground mb-6">The business you're looking for doesn't exist or has been removed.</p>
-          <Link href="/directory">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Directory
-            </Button>
-          </Link>
+      <div className="min-h-screen bg-background">
+        <Header forceSolid={true} />
+        <div className="pt-20 pb-16 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Business Not Found</h1>
+            <p className="text-muted-foreground mb-6">The business you're looking for doesn't exist or has been removed.</p>
+            <Link href="/directory">
+              <Button variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Directory
+              </Button>
+            </Link>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -93,8 +103,10 @@ export default function BusinessDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-background">
+      <Header forceSolid={true} />
+      <main className="pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <div className="mb-6">
           <Link href="/directory">
@@ -364,7 +376,9 @@ export default function BusinessDetail() {
             Share
           </Button>
         </div>
-      </div>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }
