@@ -476,7 +476,7 @@ export function registerRoutes(app: Express): Server {
         },
         {
           title: 'Alif Complementary Educational Services',
-          description: 'Alif provides online educational support and tutoring services for students. We specialize in complementary education that supports mainstream schooling with flexible online learning options.',
+          description: 'On-demand educational courses uniquely suited to the audiences needs such as note-taking, financial literacy, mnemonics and other study skills.',
           type: 'business',
           categoryId: educationCategory.id,
           address: 'Hong Kong SAR, China',
@@ -484,7 +484,7 @@ export function registerRoutes(app: Express): Server {
           longitude: '114.1694',
           phone: '+852 4567 8901',
           email: 'support@alifservices.edu.hk',
-          isOnlineOnly: false,
+          isOnlineOnly: true,
         },
       ];
 

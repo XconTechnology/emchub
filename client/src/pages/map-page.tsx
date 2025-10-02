@@ -120,9 +120,9 @@ export default function MapPage() {
     return true;
   });
 
-  // Get map locations (those with coordinates)
+  // Get map locations (those with coordinates, including online services with addresses)
   const mapLocations = filteredListings.filter(
-    listing => listing.latitude && listing.longitude && !listing.isOnlineOnly
+    listing => listing.latitude && listing.longitude
   );
 
   // Calculate center for initial map view
@@ -150,8 +150,8 @@ export default function MapPage() {
     // Always highlight the clicked listing
     setFocusedListing(listing.id);
     
-    // Only update map if listing has coordinates
-    if (listing.latitude && listing.longitude && !listing.isOnlineOnly) {
+    // Update map if listing has coordinates (including online services with addresses)
+    if (listing.latitude && listing.longitude) {
       const lat = parseFloat(listing.latitude);
       const lng = parseFloat(listing.longitude);
       setMapCenter([lat, lng]);
