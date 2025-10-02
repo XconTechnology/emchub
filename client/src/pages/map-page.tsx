@@ -299,7 +299,7 @@ export default function MapPage() {
         {/* Right Map */}
         <div className="flex-1 relative hidden md:block">
           {/* Map Type Toggle */}
-          <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-md overflow-hidden flex">
+          <div className="absolute top-4 left-4 z-40 bg-white rounded-lg shadow-md overflow-hidden flex">
             <button
               onClick={() => setMapType('map')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
