@@ -6,8 +6,10 @@ import {
   insertBusinessListingSchema, 
   insertListingSchema,
   insertCategorySchema,
-  insertBookingSchema 
+  insertBookingSchema,
+  users as usersTable
 } from "@shared/schema";
+import { db } from "./db";
 
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
@@ -417,7 +419,35 @@ export function registerRoutes(app: Express): Server {
   // Admin seed endpoint for demo data
   app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
     try {
-      const adminId = req.session?.adminAuth?.userId || 'system';
+      // Get or find a valid user ID for creating listings
+      let userId = req.session?.adminAuth?.userId;
+      
+      // If no user ID from session, try to find the admin user
+      if (!userId) {
+        const adminUser = await storage.getUserByUsername('admin');
+        if (adminUser) {
+          userId = adminUser.id;
+        }
+      }
+      
+      // If still no user, get any user from the database or create a system user
+      if (!userId) {
+        // Try to get any existing user
+        const users = await db.select().from(usersTable).limit(1);
+        if (users.length > 0) {
+          userId = users[0].id;
+        } else {
+          // Create a system user for seeding if no users exist
+          const [systemUser] = await db.insert(usersTable).values({
+            username: 'system-seed',
+            email: 'system@emchub.com',
+            password: 'not-used', // This user won't be used for login
+            role: 'admin',
+          }).returning();
+          userId = systemUser.id;
+        }
+      }
+
       const results = {
         categoriesCreated: 0,
         listingsCreated: 0,
@@ -525,11 +555,11 @@ export function registerRoutes(app: Express): Server {
           // Create listing with system/admin as owner
           const newListing = await storage.createListing({
             ...demoListing,
-            userId: adminId,
+            userId: userId,
           });
           
           // Immediately approve it so it shows publicly
-          await storage.adminApproveListing(newListing.id, adminId, 'Demo seed data');
+          await storage.adminApproveListing(newListing.id, userId, 'Demo seed data');
           results.listingsCreated++;
         } else {
           results.listingsSkipped++;
@@ -541,9 +571,13 @@ export function registerRoutes(app: Express): Server {
         message: 'Demo data seeded successfully',
         results,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error seeding demo data:", error);
-      res.status(500).json({ message: "Failed to seed demo data" });
+      res.status(500).json({ 
+        message: "Failed to seed demo data", 
+        error: error.message || String(error),
+        details: error.stack 
+      });
     }
   });
 
