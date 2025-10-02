@@ -160,7 +160,10 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to seed demo data');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to seed demo data' }));
+        throw new Error(errorData.error || errorData.message || 'Failed to seed demo data');
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -171,10 +174,11 @@ export default function AdminDashboard() {
         description: `Created ${data.results.listingsCreated} listings, skipped ${data.results.listingsSkipped} existing listings.`,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error('Seed error:', error);
       toast({
         title: "Error",
-        description: "Failed to seed demo data. Please try again.",
+        description: error.message || "Failed to seed demo data. Please try again.",
         variant: "destructive",
       });
     }
