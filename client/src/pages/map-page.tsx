@@ -242,6 +242,16 @@ export default function MapPage() {
                           data-testid={`text-listing-title-${listing.id}`}
                         >
                           {listing.title}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocation(`/business/${listing.id}`);
+                            }}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            data-testid={`button-view-detail-${listing.id}`}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
                           {listing.latitude && listing.longitude && !listing.isOnlineOnly && (
                             <MapPin className="w-4 h-4 text-blue-500" />
                           )}
