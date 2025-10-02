@@ -107,7 +107,7 @@ export default function BusinessDetail() {
       <Header forceSolid={true} />
       <main className="pt-16">
         {/* Hero Section - Brand Green */}
-        <div className="bg-gradient-to-br from-primary via-emerald-500 to-green-600 text-white relative overflow-hidden">
+        <div className="text-white relative overflow-hidden" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 50%, hsl(86 49% 38%) 100%)"}}>
           {/* Decorative circles */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
