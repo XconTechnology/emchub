@@ -105,178 +105,215 @@ export default function BusinessDetail() {
   return (
     <div className="min-h-screen bg-background">
       <Header forceSolid={true} />
-      <main className="pt-20 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <div className="mb-6">
-          <Link href="/directory">
-            <Button variant="outline" className="hover:bg-primary/10" data-testid="button-back-to-directory">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Directory
-            </Button>
-          </Link>
+      <main className="pt-16">
+        {/* Hero Section - Brand Green */}
+        <div className="bg-gradient-to-br from-primary via-emerald-500 to-green-600 text-white relative overflow-hidden">
+          {/* Decorative circles */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+            {/* Back Button */}
+            <div className="mb-6">
+              <Link href="/map">
+                <Button variant="ghost" className="text-white hover:bg-white/20 border-white/30" data-testid="button-back-to-map">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Map
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-8 items-start">
+              {/* Left: Business Info */}
+              <div>
+                {/* Badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {listing.isOnlineOnly ? (
+                    <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                      Online
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      Physical Location
+                    </Badge>
+                  )}
+                  {category && (
+                    <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                      {category.name}
+                    </Badge>
+                  )}
+                  <Badge className="bg-white text-green-600 font-semibold">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                </div>
+
+                {/* Business Title */}
+                <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight" data-testid="business-title">
+                  {listing.title}
+                </h1>
+
+                {/* Location */}
+                {(listing.address || listing.city) && (
+                  <div className="flex items-center gap-2 text-white/90 mb-6">
+                    <MapPin className="w-5 h-5" />
+                    <span className="text-lg" data-testid="business-location">
+                      {listing.address || listing.city}
+                    </span>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-3">
+                  {listing.phone && (
+                    <a href={`tel:${listing.phone}`}>
+                      <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold" data-testid="button-call">
+                        <Phone className="w-5 h-5 mr-2" />
+                        Call Now
+                      </Button>
+                    </a>
+                  )}
+                  {listing.email && (
+                    <a href={`mailto:${listing.email}`}>
+                      <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" data-testid="button-email">
+                        <Mail className="w-5 h-5 mr-2" />
+                        Send Email
+                      </Button>
+                    </a>
+                  )}
+                  {listing.website && (
+                    <a href={listing.website} target="_blank" rel="noopener noreferrer">
+                      <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" data-testid="button-website">
+                        <Globe className="w-5 h-5 mr-2" />
+                        Visit Website
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Business Image or Icon */}
+              <div className="lg:flex lg:justify-end">
+                {listing.images && listing.images.length > 0 ? (
+                  <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 max-w-md w-full">
+                    <img
+                      src={listing.images[0]}
+                      alt={listing.title}
+                      className="w-full h-80 object-cover"
+                      data-testid="business-hero-image"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center max-w-md w-full border-2 border-white/20">
+                    <div className="text-8xl mb-4">{category?.icon || '🏪'}</div>
+                    <div className="text-2xl font-bold">{category?.name || 'Business'}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Business Header */}
-        <Card className="mb-8 bg-white/90 dark:bg-card/90 backdrop-blur-xl shadow-2xl border-2 border-primary/20">
-          <CardContent className="p-0">
-            {/* Image Gallery */}
-            {listing.images && listing.images.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                <div className="md:col-span-2">
-                  <img
-                    src={listing.images[0]}
-                    alt={listing.title}
-                    className="w-full h-96 object-cover rounded-xl"
-                    data-testid="business-main-image"
-                  />
-                </div>
-                {listing.images.slice(1, 5).map((image, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={image}
-                      alt={`${listing.title} - Image ${index + 2}`}
-                      className="w-full h-48 object-cover rounded-xl"
-                      data-testid={`business-image-${index + 1}`}
-                    />
-                    {index === 3 && listing.images!.length > 5 && (
-                      <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
-                        <span className="text-white text-xl font-bold">
-                          +{listing.images!.length - 5} more
-                        </span>
-                      </div>
-                    )}
-                  </div>
+        {/* Content Section */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* Description Card */}
+        <Card className="mb-8 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">About</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line" data-testid="business-description">
+              {listing.description}
+            </p>
+            
+            {/* Tags */}
+            {listing.tags && Array.isArray(listing.tags) && listing.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-6">
+                {listing.tags.map((tag: string, index: number) => (
+                  <Badge key={index} variant="outline" className="text-sm bg-primary/5 text-primary border-primary/20">
+                    #{tag}
+                  </Badge>
                 ))}
               </div>
-            ) : (
-              <div className="h-96 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center m-6 rounded-xl">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">{category?.icon || '🏪'}</div>
-                  <div className="text-primary font-bold text-xl">{category?.name || 'Business'}</div>
-                </div>
-              </div>
             )}
-
-            <div className="p-6 pt-0">
-              {/* Title and Status */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge variant="outline" className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/20">
-                      {getTypeIcon(listing.type)}
-                      <span className="ml-2 capitalize">{listing.type}</span>
-                    </Badge>
-                    {category && (
-                      <Badge variant="secondary">
-                        {category.name}
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Approved
-                    </Badge>
-                  </div>
-                  <h1 className="text-4xl font-black text-foreground mb-2" data-testid="business-title">
-                    {listing.title}
-                  </h1>
-                </div>
-                <div className="bg-white/90 dark:bg-card/90 backdrop-blur-md rounded-full px-4 py-3 flex items-center shadow-lg">
-                  <Star className="w-5 h-5 text-yellow-500 fill-current mr-2" />
-                  <span className="text-foreground font-bold">4.8</span>
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-lg text-muted-foreground mb-6 leading-relaxed" data-testid="business-description">
-                {listing.description}
-              </p>
-
-              {/* Tags */}
-              {listing.tags && Array.isArray(listing.tags) && listing.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {listing.tags.map((tag: string, index: number) => (
-                    <Badge key={index} variant="outline" className="text-sm">
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Contact Information */}
-          <Card className="lg:col-span-2 bg-white/90 dark:bg-card/90 backdrop-blur-xl shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="w-5 h-5 text-primary" />
-                Contact Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {listing.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Phone</p>
-                    <a href={`tel:${listing.phone}`} className="text-primary hover:underline" data-testid="business-phone">
-                      {listing.phone}
-                    </a>
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Contact Information */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-primary" />
+                  Contact Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                {listing.phone && (
+                  <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg">
+                    <Phone className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                      <a href={`tel:${listing.phone}`} className="text-lg font-semibold text-primary hover:underline" data-testid="business-phone">
+                        {listing.phone}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {listing.email && (
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Email</p>
-                    <a href={`mailto:${listing.email}`} className="text-primary hover:underline" data-testid="business-email">
-                      {listing.email}
-                    </a>
+                {listing.email && (
+                  <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg">
+                    <Mail className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Email</p>
+                      <a href={`mailto:${listing.email}`} className="text-lg font-semibold text-primary hover:underline break-all" data-testid="business-email">
+                        {listing.email}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {listing.website && (
-                <div className="flex items-center gap-3">
-                  <Globe className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Website</p>
-                    <a 
-                      href={listing.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-primary hover:underline"
-                      data-testid="business-website"
-                    >
-                      Visit Website
-                    </a>
+                {listing.website && (
+                  <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg">
+                    <Globe className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Website</p>
+                      <a 
+                        href={listing.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-lg font-semibold text-primary hover:underline"
+                        data-testid="business-website"
+                      >
+                        Visit Website
+                      </a>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {(listing.address || listing.city) && !listing.isOnlineOnly && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Address</p>
-                    <p className="text-muted-foreground" data-testid="business-address">
-                      {listing.address && `${listing.address}, `}{listing.city}
-                      {listing.postalCode && ` ${listing.postalCode}`}
-                    </p>
+                {(listing.address || listing.city) && !listing.isOnlineOnly && (
+                  <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-lg">
+                    <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Address</p>
+                      <p className="text-lg font-semibold" data-testid="business-address">
+                        {listing.address && `${listing.address}, `}{listing.city}
+                        {listing.postalCode && ` ${listing.postalCode}`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {listing.isOnlineOnly && (
-                <div className="flex items-center gap-3">
-                  <Globe className="w-5 h-5 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Service Type</p>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                {listing.isOnlineOnly && (
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                    <Globe className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Service Type</p>
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 mt-1">
                       Online/Remote Service
                     </Badge>
                   </div>
@@ -364,17 +401,36 @@ export default function BusinessDetail() {
               )}
             </CardContent>
           </Card>
-        </div>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex gap-4">
-          <Button className="flex-1 bg-primary hover:bg-primary/90" size="lg" data-testid="button-contact-business">
-            <Phone className="w-5 h-5 mr-2" />
-            Contact Business
-          </Button>
-          <Button variant="outline" size="lg" data-testid="button-share-business">
-            Share
-          </Button>
+          {/* Sidebar Column */}
+          <div className="space-y-6">
+            {/* Quick Info Card */}
+            <Card className="shadow-lg bg-gradient-to-br from-primary/5 to-emerald-50">
+              <CardHeader>
+                <CardTitle>Quick Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                  <span className="text-muted-foreground">Status</span>
+                  <Badge className="bg-green-100 text-green-800">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Active
+                  </Badge>
+                </div>
+                {category && (
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                    <span className="text-muted-foreground">Category</span>
+                    <Badge variant="outline">{category.name}</Badge>
+                  </div>
+                )}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                  <span className="text-muted-foreground">Listed</span>
+                  <span className="text-sm font-medium">{formatDate(listing.createdAt)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
         </div>
       </main>
