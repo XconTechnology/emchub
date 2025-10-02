@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import {
   Dialog,
@@ -14,6 +15,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   CheckCircle, 
   XCircle, 
@@ -25,14 +33,28 @@ import {
   Users,
   LogOut,
   Calendar,
-  User
+  User,
+  Plus
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertListingSchema } from "@shared/schema";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import AdminLogin from "./admin-login";
-import type { Listing, User as UserType } from "@shared/schema";
+import type { Listing, User as UserType, Category } from "@shared/schema";
 
 interface ModerationAction {
   type: 'approve' | 'reject';
@@ -49,6 +71,28 @@ export default function AdminDashboard() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [actionDialog, setActionDialog] = useState<ModerationAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  const form = useForm<z.infer<typeof insertListingSchema>>({
+    resolver: zodResolver(insertListingSchema),
+    defaultValues: {
+      type: "business",
+      title: "",
+      description: "",
+      categoryId: "",
+      phone: "",
+      email: "",
+      website: "",
+      address: "",
+      city: "",
+      postalCode: "",
+      latitude: "",
+      longitude: "",
+      isOnlineOnly: false,
+      isActive: true,
+      isVerified: false,
+    },
+  });
 
   const handleAdminLoginSuccess = () => {
     checkAdminAuth();
@@ -97,6 +141,35 @@ export default function AdminDashboard() {
     queryKey: ['/api/admin/users'],
     queryFn: () => fetch('/api/admin/users', { credentials: 'include' }).then(res => res.json()),
     enabled: isAdminAuthenticated,
+  });
+
+  // Fetch categories
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  // Create listing mutation
+  const createListingMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertListingSchema>) => {
+      return apiRequest('/api/listings', 'POST', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Listing Created",
+        description: "The new listing has been created successfully and is pending approval.",
+      });
+      setCreateDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create listing. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   // Approve listing mutation
@@ -392,6 +465,14 @@ export default function AdminDashboard() {
         <div className="flex gap-2">
           <Button 
             variant="default" 
+            onClick={() => setCreateDialogOpen(true)}
+            data-testid="button-add-listing"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Listing
+          </Button>
+          <Button 
+            variant="outline" 
             onClick={() => seedDemoMutation.mutate()}
             disabled={seedDemoMutation.isPending}
             data-testid="button-seed-demo"
@@ -625,6 +706,264 @@ export default function AdminDashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Create listing dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Listing</DialogTitle>
+            <DialogDescription>
+              Create a new business listing with all the details
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((data) => createListingMutation.mutate(data))} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-type">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="business">Business</SelectItem>
+                          <SelectItem value="product">Product</SelectItem>
+                          <SelectItem value="service">Service</SelectItem>
+                          <SelectItem value="event">Event</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Business name" {...field} data-testid="input-title" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe your business..." 
+                        {...field} 
+                        rows={4}
+                        data-testid="input-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+852 1234 5678" {...field} data-testid="input-phone" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="contact@business.com" {...field} data-testid="input-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} value={field.value || ""} data-testid="input-website" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isOnlineOnly"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value || false}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-online-only"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Online Only
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Check if this is an online-only business (no physical location)
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {!form.watch("isOnlineOnly") && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Street address" {...field} data-testid="input-address" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Hong Kong" {...field} data-testid="input-city" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="postalCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Postal Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="999077" {...field} value={field.value || ""} data-testid="input-postal" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="latitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Latitude</FormLabel>
+                          <FormControl>
+                            <Input placeholder="22.3193" {...field} value={field.value || ""} data-testid="input-latitude" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="longitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Longitude</FormLabel>
+                          <FormControl>
+                            <Input placeholder="114.1694" {...field} value={field.value || ""} data-testid="input-longitude" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createListingMutation.isPending}
+                  data-testid="button-submit-listing"
+                >
+                  {createListingMutation.isPending ? 'Creating...' : 'Create Listing'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
