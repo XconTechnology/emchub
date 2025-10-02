@@ -45,7 +45,7 @@ interface ModerationAction {
 export default function AdminDashboard() {
   const { isAdminAuthenticated, adminLogout, checkAdminAuth } = useAdminAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("all");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [actionDialog, setActionDialog] = useState<ModerationAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
@@ -65,6 +65,13 @@ export default function AdminDashboard() {
       description: "You have been logged out of the admin panel",
     });
   };
+
+  // Fetch all listings (only if authenticated)
+  const { data: allListings = [], isLoading: isAllLoading } = useQuery<Listing[]>({
+    queryKey: ['/api/admin/listings', 'all'],
+    queryFn: () => fetch('/api/admin/listings', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
+  });
 
   // Fetch listings by status (only if authenticated)
   const { data: pendingListings = [], isLoading: isPendingLoading } = useQuery<Listing[]>({
@@ -404,7 +411,10 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="all" data-testid="tab-all">
+            All Listings ({allListings.length})
+          </TabsTrigger>
           <TabsTrigger value="pending" data-testid="tab-pending">
             Pending ({pendingListings.length})
           </TabsTrigger>
@@ -419,6 +429,21 @@ export default function AdminDashboard() {
             Users ({users.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">All Listings</h2>
+            {isAllLoading ? (
+              <div>Loading all listings...</div>
+            ) : allListings.length === 0 ? (
+              <p className="text-gray-500">No listings found</p>
+            ) : (
+              allListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
 
         <TabsContent value="pending" className="mt-6">
           <div className="space-y-4">
