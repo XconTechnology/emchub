@@ -424,9 +424,10 @@ export function registerRoutes(app: Express): Server {
         listingsSkipped: 0,
       };
 
-      // 1. Ensure Education category exists
+      // 1. Ensure categories exist
       const categories = await storage.getCategories();
       let educationCategory = categories.find(c => c.name === 'Education');
+      let artsCategory = categories.find(c => c.name === 'Arts');
       
       if (!educationCategory) {
         educationCategory = await storage.createCategory({
@@ -436,7 +437,15 @@ export function registerRoutes(app: Express): Server {
         results.categoriesCreated++;
       }
 
-      // 2. Define the 4 demo school listings
+      if (!artsCategory) {
+        artsCategory = await storage.createCategory({
+          name: 'Arts',
+          description: 'Arts and creative services',
+        });
+        results.categoriesCreated++;
+      }
+
+      // 2. Define the demo listings
       const demoListings = [
         {
           title: 'Islamic Primary School',
@@ -485,6 +494,20 @@ export function registerRoutes(app: Express): Server {
           phone: '+852 4567 8901',
           email: 'support@alifservices.edu.hk',
           isOnlineOnly: true,
+        },
+        {
+          title: 'mehndilicious_',
+          description: '📍🇵🇰|🇭🇰 ~💯Organic cones\n\nDm to book henna service for any occasion 🇭🇰',
+          type: 'business',
+          categoryId: artsCategory.id,
+          address: 'Quarry Bay, Hong Kong',
+          city: 'Hong Kong',
+          latitude: '22.2875',
+          longitude: '114.2100',
+          phone: '+852 9876 5432',
+          email: 'mehndilicious@example.com',
+          website: 'https://www.instagram.com/mehndilicious/?hl=en',
+          isOnlineOnly: false,
         },
       ];
 
