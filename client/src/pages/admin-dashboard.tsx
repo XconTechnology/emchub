@@ -756,11 +756,14 @@ export default function AdminDashboard() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="school">School</SelectItem>
+                          <SelectItem value="online">Online</SelectItem>
+                          <SelectItem value="provision-store">Provision Store</SelectItem>
+                          <SelectItem value="masjid">Masjid</SelectItem>
+                          <SelectItem value="services-store">Services Store</SelectItem>
+                          <SelectItem value="virtual-kitchen">Virtual Kitchen</SelectItem>
+                          <SelectItem value="arts-henna">Arts Henna</SelectItem>
+                          <SelectItem value="restaurant">Restaurant</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
