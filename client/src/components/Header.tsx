@@ -37,7 +37,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   return (
     <>
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-[1200] transition-all duration-300 ${
           isSolid ? "glassmorphism shadow-lg" : "bg-transparent"
         }`}
       >
