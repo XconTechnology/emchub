@@ -185,8 +185,8 @@ export default function BusinessDetail() {
               </Link>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8 items-start">
-              {/* Left: Business Info */}
+            <div>
+              {/* Business Info */}
               <div>
                 {/* Badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -254,8 +254,7 @@ export default function BusinessDetail() {
                   )}
                   <Button 
                     size="lg" 
-                    variant="outline" 
-                    className="border-white text-white hover:bg-white/10" 
+                    className="bg-green-600 text-white hover:bg-green-700" 
                     onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' })}
                     data-testid="button-write-review"
                   >
@@ -264,33 +263,13 @@ export default function BusinessDetail() {
                   </Button>
                   <Button 
                     size="lg" 
-                    variant="outline" 
-                    className="border-white text-white hover:bg-white/10" 
+                    className="bg-green-600 text-white hover:bg-green-700" 
                     data-testid="button-report"
                   >
                     <Flag className="w-5 h-5 mr-2" />
                     Report
                   </Button>
                 </div>
-              </div>
-
-              {/* Right: Business Image or Icon */}
-              <div className="lg:flex lg:justify-end">
-                {listing.images && listing.images.length > 0 ? (
-                  <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20 max-w-md w-full">
-                    <img
-                      src={listing.images[0]}
-                      alt={listing.title}
-                      className="w-full h-80 object-cover"
-                      data-testid="business-hero-image"
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 text-center max-w-md w-full border-2 border-white/20">
-                    <div className="text-8xl mb-4">{category?.icon || '🏪'}</div>
-                    <div className="text-2xl font-bold">{category?.name || 'Business'}</div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
