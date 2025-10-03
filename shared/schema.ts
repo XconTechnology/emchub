@@ -188,14 +188,14 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  // Make core fields required
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  categoryId: z.string().min(1, "Category is required"),
-  phone: z.string().min(1, "Phone is required"),
-  email: z.string().email("Valid email is required"),
+  // Make all fields optional - user can choose what to provide
+  title: z.string().optional(),
+  description: z.string().optional(),
+  categoryId: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
   
-  // Location - either address OR online only
+  // Location fields optional
   address: z.string().optional(),
   city: z.string().optional(),
   
@@ -203,15 +203,6 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   tags: z.array(z.string()).optional(),
   images: z.array(z.string()).optional(),
   paymentMethods: z.array(z.string()).optional(),
-}).refine((data) => {
-  // Either has physical address or is online only
-  if (!data.isOnlineOnly && (!data.address || !data.city)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Either provide address and city, or mark as online only",
-  path: ["address"]
 });
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({

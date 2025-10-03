@@ -996,6 +996,32 @@ export default function AdminDashboard() {
 
               <FormField
                 control={form.control}
+                name="images"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Images (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter image URLs, one per line&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                        value={Array.isArray(field.value) ? field.value.join('\n') : ''}
+                        onChange={(e) => {
+                          const urls = e.target.value.split('\n').map(url => url.trim()).filter(url => url.length > 0);
+                          field.onChange(urls.length > 0 ? urls : undefined);
+                        }}
+                        rows={4}
+                        data-testid="input-images"
+                      />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      First image will be shown in the hero section
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="isOnlineOnly"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -1227,6 +1253,32 @@ export default function AdminDashboard() {
                     <FormControl>
                       <Input placeholder="https://example.com" {...field} value={field.value || ""} data-testid="input-edit-website" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="images"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Images (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter image URLs, one per line&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                        value={Array.isArray(field.value) ? field.value.join('\n') : ''}
+                        onChange={(e) => {
+                          const urls = e.target.value.split('\n').map(url => url.trim()).filter(url => url.length > 0);
+                          field.onChange(urls.length > 0 ? urls : undefined);
+                        }}
+                        rows={4}
+                        data-testid="input-edit-images"
+                      />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      First image will be shown in the hero section
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
