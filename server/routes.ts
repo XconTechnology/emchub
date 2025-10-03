@@ -10,6 +10,7 @@ import {
   users as usersTable
 } from "@shared/schema";
 import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
@@ -23,6 +24,17 @@ const isAdminAuthenticated = async (req: any, res: any, next: any) => {
     return res.status(401).json({ message: "Admin authentication required" });
   }
   next();
+};
+
+// Middleware that allows both user and admin authentication
+const isAuthenticatedOrAdmin = async (req: any, res: any, next: any) => {
+  // Check for admin authentication via session
+  if (req.session?.adminAuth) {
+    return next();
+  }
+  
+  // Otherwise, require user authentication
+  return isAuthenticated(req, res, next);
 };
 
 export function registerRoutes(app: Express): Server {
@@ -55,13 +67,25 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Enhanced listings routes (new system)
-  app.post('/api/listings', isAuthenticated, async (req: any, res) => {
+  app.post('/api/listings', isAuthenticatedOrAdmin, async (req: any, res) => {
     console.log('POST /api/listings - Request received');
     console.log('User:', req.user);
+    console.log('Admin auth:', req.session?.adminAuth);
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     
     try {
-      const userId = req.user?.id;
+      // For admin users, get the admin user ID from the database
+      let userId = req.user?.id;
+      const isAdmin = req.session?.adminAuth === true;
+      
+      if (isAdmin && !userId) {
+        // Get the first admin user from the database
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length > 0) {
+          userId = adminUsers[0].id;
+          console.log('Using admin user ID:', userId);
+        }
+      }
       
       if (!userId) {
         console.error("No userId found in request");
@@ -72,9 +96,13 @@ export function registerRoutes(app: Express): Server {
       const listingData = insertListingSchema.parse(req.body);
       console.log('Parsed listing data:', listingData);
       
+      // Auto-approve listings created by admins
+      const moderationStatus = isAdmin ? 'approved' : 'pending';
+      
       const listing = await storage.createListing({
         ...listingData,
         userId,
+        moderationStatus,
       });
       
       console.log('Created listing:', listing);

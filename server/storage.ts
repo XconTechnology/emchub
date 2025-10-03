@@ -34,7 +34,7 @@ export interface IStorage {
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Enhanced listing operations
-  createListing(listing: InsertListing & { userId: string }): Promise<Listing>;
+  createListing(listing: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing>;
   getListings(filters?: { 
     categories?: string[], 
     type?: string, 
@@ -115,10 +115,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Enhanced listing operations
-  async createListing(listingData: InsertListing & { userId: string }): Promise<Listing> {
+  async createListing(listingData: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing> {
     const [listing] = await db
       .insert(listings)
-      .values(listingData)
+      .values(listingData as any)
       .returning();
     return listing;
   }

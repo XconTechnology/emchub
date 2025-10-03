@@ -178,14 +178,14 @@ export default function AdminDashboard() {
   // Create listing mutation
   const createListingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertListingSchema>) => {
-      return apiRequest('/api/listings', 'POST', data);
+      return apiRequest('POST', '/api/listings', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       toast({
         title: "Listing Created",
-        description: "The new listing has been created successfully and is pending approval.",
+        description: "The new listing has been created successfully and is now live on the site.",
       });
       setCreateDialogOpen(false);
       form.reset();
@@ -637,18 +637,9 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="all" data-testid="tab-all">
             All Listings ({allListings.length})
-          </TabsTrigger>
-          <TabsTrigger value="pending" data-testid="tab-pending">
-            Pending ({pendingListings.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved" data-testid="tab-approved">
-            Approved ({approvedListings.length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected" data-testid="tab-rejected">
-            Rejected ({rejectedListings.length})
           </TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">
             <Users className="w-4 h-4 mr-1" />
@@ -665,51 +656,6 @@ export default function AdminDashboard() {
               <p className="text-gray-500">No listings found</p>
             ) : (
               allListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="pending" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Pending Listings</h2>
-            {isPendingLoading ? (
-              <div>Loading pending listings...</div>
-            ) : pendingListings.length === 0 ? (
-              <p className="text-gray-500">No pending listings</p>
-            ) : (
-              pendingListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="approved" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Approved Listings</h2>
-            {isApprovedLoading ? (
-              <div>Loading approved listings...</div>
-            ) : approvedListings.length === 0 ? (
-              <p className="text-gray-500">No approved listings</p>
-            ) : (
-              approvedListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="rejected" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Rejected Listings</h2>
-            {isRejectedLoading ? (
-              <div>Loading rejected listings...</div>
-            ) : rejectedListings.length === 0 ? (
-              <p className="text-gray-500">No rejected listings</p>
-            ) : (
-              rejectedListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))
             )}
