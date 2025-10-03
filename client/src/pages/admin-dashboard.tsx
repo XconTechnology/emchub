@@ -846,7 +846,7 @@ export default function AdminDashboard() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category *</FormLabel>
+                      <FormLabel>Category</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-category">
@@ -875,7 +875,7 @@ export default function AdminDashboard() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title *</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
                       <Input placeholder="Business name" {...field} data-testid="input-title" />
                     </FormControl>
@@ -889,7 +889,7 @@ export default function AdminDashboard() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description *</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe your business..." 
@@ -909,7 +909,7 @@ export default function AdminDashboard() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone *</FormLabel>
+                      <FormLabel>Phone</FormLabel>
                       <FormControl>
                         <Input placeholder="+852 1234 5678" {...field} data-testid="input-phone" />
                       </FormControl>
@@ -923,7 +923,7 @@ export default function AdminDashboard() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email *</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="contact@business.com" {...field} data-testid="input-email" />
                       </FormControl>
@@ -1005,7 +1005,7 @@ export default function AdminDashboard() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Address *</FormLabel>
+                          <FormLabel>Address</FormLabel>
                           <FormControl>
                             <Input placeholder="Street address" {...field} data-testid="input-address" />
                           </FormControl>
@@ -1019,7 +1019,7 @@ export default function AdminDashboard() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City *</FormLabel>
+                          <FormLabel>City</FormLabel>
                           <FormControl>
                             <Input placeholder="Hong Kong" {...field} data-testid="input-city" />
                           </FormControl>
@@ -1109,7 +1109,7 @@ export default function AdminDashboard() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category *</FormLabel>
+                      <FormLabel>Category</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-edit-category">
@@ -1138,7 +1138,7 @@ export default function AdminDashboard() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title *</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
                       <Input placeholder="Business name" {...field} data-testid="input-edit-title" />
                     </FormControl>
@@ -1152,7 +1152,7 @@ export default function AdminDashboard() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description *</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe your business..." 
@@ -1173,7 +1173,7 @@ export default function AdminDashboard() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone *</FormLabel>
+                      <FormLabel>Phone</FormLabel>
                       <FormControl>
                         <Input placeholder="+852 1234 5678" {...field} value={field.value || ""} data-testid="input-edit-phone" />
                       </FormControl>
@@ -1187,7 +1187,7 @@ export default function AdminDashboard() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email *</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="contact@business.com" {...field} value={field.value || ""} data-testid="input-edit-email" />
                       </FormControl>
