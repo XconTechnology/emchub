@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { 
@@ -18,12 +21,25 @@ import {
   DollarSign,
   Users,
   Package,
-  CheckCircle
+  CheckCircle,
+  MessageSquare,
+  Flag
 } from "lucide-react";
 import type { Listing, Category } from "@shared/schema";
 
 export default function BusinessDetail() {
   const { id } = useParams();
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewName, setReviewName] = useState("");
+  const [reviewText, setReviewText] = useState("");
+  const [reviews, setReviews] = useState<Array<{
+    id: string;
+    name: string;
+    rating: number;
+    text: string;
+    date: string;
+  }>>([]);
 
   const { data: listing, isLoading, error } = useQuery<Listing>({
     queryKey: ['/api/listings', id],
@@ -100,6 +116,52 @@ export default function BusinessDetail() {
       case 'event': return <Calendar className="w-5 h-5" />;
       default: return <MapPin className="w-5 h-5" />;
     }
+  };
+
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewName.trim() || !reviewText.trim() || rating === 0) {
+      return;
+    }
+
+    const newReview = {
+      id: Date.now().toString(),
+      name: reviewName,
+      rating: rating,
+      text: reviewText,
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    };
+
+    setReviews([newReview, ...reviews]);
+    setReviewName("");
+    setReviewText("");
+    setRating(0);
+  };
+
+  const StarRating = ({ value, onRate, readonly = false }: { value: number; onRate?: (rating: number) => void; readonly?: boolean }) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={readonly}
+            onClick={() => onRate && onRate(star)}
+            onMouseEnter={() => !readonly && setHoverRating(star)}
+            onMouseLeave={() => !readonly && setHoverRating(0)}
+            className={`${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
+          >
+            <Star
+              className={`w-6 h-6 ${
+                star <= (readonly ? value : (hoverRating || rating))
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -190,6 +252,25 @@ export default function BusinessDetail() {
                       </Button>
                     </a>
                   )}
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-white text-white hover:bg-white/10" 
+                    onClick={() => document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-write-review"
+                  >
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Write a Review
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-white text-white hover:bg-white/10" 
+                    data-testid="button-report"
+                  >
+                    <Flag className="w-5 h-5 mr-2" />
+                    Report
+                  </Button>
                 </div>
               </div>
 
@@ -431,6 +512,90 @@ export default function BusinessDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div id="reviews-section" className="mt-12">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-primary" />
+                Reviews
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Write a Review Form */}
+              <div className="mb-8 p-6 bg-primary/5 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Name *</label>
+                    <Input
+                      type="text"
+                      value={reviewName}
+                      onChange={(e) => setReviewName(e.target.value)}
+                      placeholder="Enter your name"
+                      required
+                      data-testid="input-review-name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Rating *</label>
+                    <StarRating value={rating} onRate={setRating} />
+                    {rating === 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">Click on stars to rate</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Review *</label>
+                    <Textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Share your experience with this business..."
+                      rows={4}
+                      required
+                      data-testid="textarea-review"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="bg-primary hover:bg-primary/90"
+                    data-testid="button-submit-review"
+                  >
+                    Submit Review
+                  </Button>
+                </form>
+              </div>
+
+              {/* Display Reviews */}
+              <div className="space-y-4">
+                {reviews.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No reviews yet. Be the first to review this business!</p>
+                  </div>
+                ) : (
+                  reviews.map((review) => (
+                    <Card key={review.id} className="border-l-4 border-primary/30" data-testid={`review-${review.id}`}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-semibold text-lg">{review.name}</h4>
+                            <StarRating value={review.rating} readonly />
+                          </div>
+                          <span className="text-sm text-muted-foreground">{review.date}</span>
+                        </div>
+                        <p className="text-muted-foreground mt-3 leading-relaxed">{review.text}</p>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
         </div>
       </main>
