@@ -416,6 +416,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin route to update any listing
+  app.patch('/api/admin/listings/:id', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const updatedListing = await storage.updateListing(listingId, req.body);
+      res.json(updatedListing);
+    } catch (error: any) {
+      console.error("Error updating listing:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid listing data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update listing" });
+    }
+  });
+
+  // Admin route to delete any listing
+  app.delete('/api/admin/listings/:id', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      await storage.deleteListing(listingId);
+      res.json({ message: "Listing deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      res.status(500).json({ message: "Failed to delete listing" });
+    }
+  });
+
   // Admin seed endpoint for demo data
   app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
     try {
