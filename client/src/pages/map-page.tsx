@@ -63,17 +63,8 @@ export default function MapPage() {
     'Restaurant'
   ];
 
-  // Map display category names to database category names
-  const categoryMapping: Record<string, string> = {
-    'School': 'Education',
-    'Online': 'Education',
-    'Restaurant': 'Food',
-    'Arts Henna': 'Arts',
-    'Provision Store': 'Products',
-    'Masjid': 'Prayer Spaces',
-    'Services Store': 'Services',
-    // Add more mappings as needed
-  };
+  // Category names in database now match display names exactly
+  // No mapping needed anymore
 
   // Fetch categories for mapping
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
@@ -97,23 +88,9 @@ export default function MapPage() {
     if (selectedCategory && selectedCategory !== 'All') {
       const listingCategory = categories.find(cat => cat.id === listing.categoryId);
       
-      // Special handling for School and Online tabs
-      if (selectedCategory === 'School') {
-        // School tab: Education category AND NOT online-only
-        if (!listingCategory || listingCategory.name !== 'Education' || listing.isOnlineOnly) {
-          return false;
-        }
-      } else if (selectedCategory === 'Online') {
-        // Online tab: Education category AND online-only
-        if (!listingCategory || listingCategory.name !== 'Education' || !listing.isOnlineOnly) {
-          return false;
-        }
-      } else {
-        // For other tabs, use the category mapping
-        const dbCategoryName = categoryMapping[selectedCategory] || selectedCategory;
-        if (!listingCategory || listingCategory.name !== dbCategoryName) {
-          return false;
-        }
+      // Match category name directly since display names match database names
+      if (!listingCategory || listingCategory.name !== selectedCategory) {
+        return false;
       }
     }
     

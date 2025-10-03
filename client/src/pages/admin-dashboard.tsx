@@ -467,17 +467,19 @@ export default function AdminDashboard() {
     });
   };
 
-  const ListingCard = ({ listing }: { listing: Listing }) => (
-    <Card className="mb-4" data-testid={`listing-card-${listing.id}`}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{listing.title}</CardTitle>
-            <div className="flex items-center space-x-2 mt-1">
-              {getStatusBadge(listing.moderationStatus)}
-              <Badge variant="outline">{listing.type}</Badge>
+  const ListingCard = ({ listing }: { listing: Listing }) => {
+    const listingCategory = categories.find(cat => cat.id === listing.categoryId);
+    return (
+      <Card className="mb-4" data-testid={`listing-card-${listing.id}`}>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg">{listing.title}</CardTitle>
+              <div className="flex items-center space-x-2 mt-1">
+                {getStatusBadge(listing.moderationStatus)}
+                <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
+              </div>
             </div>
-          </div>
           <div className="flex space-x-2">
             <Link href={`/business/${listing.id}`}>
               <Button
@@ -569,7 +571,8 @@ export default function AdminDashboard() {
         )}
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   const UserCard = ({ user }: { user: UserType }) => (
     <Card className="mb-4" data-testid={`user-card-${user.id}`}>
