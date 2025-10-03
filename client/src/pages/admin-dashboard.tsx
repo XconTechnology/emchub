@@ -34,7 +34,9 @@ import {
   LogOut,
   Calendar,
   User,
-  Plus
+  Plus,
+  Edit,
+  Trash
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -72,8 +74,33 @@ export default function AdminDashboard() {
   const [actionDialog, setActionDialog] = useState<ModerationAction | null>(null);
   const [actionNotes, setActionNotes] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [listingToEdit, setListingToEdit] = useState<Listing | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
 
   const form = useForm<z.infer<typeof insertListingSchema>>({
+    resolver: zodResolver(insertListingSchema),
+    defaultValues: {
+      type: "business",
+      title: "",
+      description: "",
+      categoryId: "",
+      phone: "",
+      email: "",
+      website: "",
+      address: "",
+      city: "",
+      postalCode: "",
+      latitude: "",
+      longitude: "",
+      isOnlineOnly: false,
+      isActive: true,
+      isVerified: false,
+    },
+  });
+
+  const editForm = useForm<z.infer<typeof insertListingSchema>>({
     resolver: zodResolver(insertListingSchema),
     defaultValues: {
       type: "business",
@@ -264,6 +291,67 @@ export default function AdminDashboard() {
     }
   });
 
+  // Edit listing mutation
+  const editListingMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: z.infer<typeof insertListingSchema> }) => {
+      const response = await fetch(`/api/admin/listings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update listing');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Listing Updated",
+        description: "The listing has been updated successfully.",
+      });
+      setEditDialogOpen(false);
+      setListingToEdit(null);
+      editForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete listing mutation
+  const deleteListingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/listings/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete listing');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Listing Deleted",
+        description: "The listing has been deleted successfully.",
+      });
+      setDeleteDialogOpen(false);
+      setListingToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   if (!isAdminAuthenticated) {
     return <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />;
   }
@@ -282,6 +370,45 @@ export default function AdminDashboard() {
       listingId: listing.id,
       listing,
     });
+  };
+
+  const handleEdit = (listing: Listing) => {
+    setListingToEdit(listing);
+    editForm.reset({
+      type: listing.type || "business",
+      title: listing.title || "",
+      description: listing.description || "",
+      categoryId: listing.categoryId || "",
+      phone: listing.phone || "",
+      email: listing.email || "",
+      website: listing.website || "",
+      address: listing.address || "",
+      city: listing.city || "",
+      postalCode: listing.postalCode || "",
+      latitude: listing.latitude || "",
+      longitude: listing.longitude || "",
+      isOnlineOnly: listing.isOnlineOnly || false,
+      isActive: listing.isActive ?? true,
+      isVerified: listing.isVerified || false,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDelete = (listing: Listing) => {
+    setListingToDelete(listing);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (listingToDelete) {
+      deleteListingMutation.mutate(listingToDelete.id);
+    }
+  };
+
+  const handleEditSubmit = (data: z.infer<typeof insertListingSchema>) => {
+    if (listingToEdit) {
+      editListingMutation.mutate({ id: listingToEdit.id, data });
+    }
   };
 
   const handleActionConfirm = () => {
@@ -355,6 +482,24 @@ export default function AdminDashboard() {
                 View
               </Button>
             </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEdit(listing)}
+              data-testid={`button-edit-${listing.id}`}
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDelete(listing)}
+              data-testid={`button-delete-${listing.id}`}
+            >
+              <Trash className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
             {listing.moderationStatus === 'pending' && (
               <>
                 <Button
@@ -367,7 +512,7 @@ export default function AdminDashboard() {
                   Approve
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleReject(listing)}
                   data-testid={`button-reject-${listing.id}`}
@@ -965,6 +1110,241 @@ export default function AdminDashboard() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit listing dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Listing</DialogTitle>
+            <DialogDescription>
+              Update the listing details
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-edit-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="school">School</SelectItem>
+                          <SelectItem value="online">Online</SelectItem>
+                          <SelectItem value="provision-store">Provision Store</SelectItem>
+                          <SelectItem value="masjid">Masjid</SelectItem>
+                          <SelectItem value="services-store">Services Store</SelectItem>
+                          <SelectItem value="virtual-kitchen">Virtual Kitchen</SelectItem>
+                          <SelectItem value="arts-henna">Arts Henna</SelectItem>
+                          <SelectItem value="restaurant">Restaurant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Business name" {...field} data-testid="input-edit-title" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe your business..." 
+                        {...field} 
+                        value={field.value || ""}
+                        rows={4}
+                        data-testid="input-edit-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+852 1234 5678" {...field} value={field.value || ""} data-testid="input-edit-phone" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="contact@business.com" {...field} value={field.value || ""} data-testid="input-edit-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} value={field.value || ""} data-testid="input-edit-website" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Street address" {...field} value={field.value || ""} data-testid="input-edit-address" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Hong Kong" {...field} value={field.value || ""} data-testid="input-edit-city" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="postalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="000000" {...field} value={field.value || ""} data-testid="input-edit-postal" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Latitude</FormLabel>
+                      <FormControl>
+                        <Input placeholder="22.3193" {...field} value={field.value || ""} data-testid="input-edit-latitude" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longitude</FormLabel>
+                      <FormControl>
+                        <Input placeholder="114.1694" {...field} value={field.value || ""} data-testid="input-edit-longitude" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={editListingMutation.isPending}
+                  data-testid="button-submit-edit"
+                >
+                  {editListingMutation.isPending ? 'Updating...' : 'Update Listing'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Listing</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{listingToDelete?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={deleteListingMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteListingMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
