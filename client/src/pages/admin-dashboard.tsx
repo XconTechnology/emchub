@@ -178,7 +178,14 @@ export default function AdminDashboard() {
   // Create listing mutation
   const createListingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertListingSchema>) => {
-      return apiRequest('POST', '/api/listings', data);
+      // Clean up the data - convert empty strings to undefined for optional fields
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === '' ? undefined : value
+        ])
+      );
+      return apiRequest('POST', '/api/listings', cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
