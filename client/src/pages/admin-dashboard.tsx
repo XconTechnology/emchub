@@ -368,7 +368,7 @@ export default function AdminDashboard() {
       isOnlineOnly: listing.isOnlineOnly || false,
       isActive: listing.isActive ?? true,
       isVerified: listing.isVerified || false,
-      status: listing.status || "published",
+      status: (listing.status === 'draft' || listing.status === 'published') ? listing.status : "published",
     });
     setEditDialogOpen(true);
   };
@@ -449,6 +449,11 @@ export default function AdminDashboard() {
               <CardTitle className="text-lg">{listing.title}</CardTitle>
               <div className="flex items-center space-x-2 mt-1">
                 {getStatusBadge(listing.moderationStatus)}
+                {listing.status === 'draft' ? (
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-800">Draft</Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">Published</Badge>
+                )}
                 <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
               </div>
             </div>
