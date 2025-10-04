@@ -115,6 +115,7 @@ export const listings = pgTable("listings", {
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete - if set, listing is in recycle bin
 });
 
 // Bookings table for services and events
@@ -201,7 +202,7 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   city: z.string().optional(),
   
   // Status field - can be 'draft' or 'published'
-  status: z.enum(["draft", "published"]).optional().default("published"),
+  status: z.enum(["draft", "published"]).optional().default("draft"),
   
   // Optional arrays
   tags: z.array(z.string()).optional(),

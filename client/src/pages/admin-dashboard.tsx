@@ -97,7 +97,7 @@ export default function AdminDashboard() {
       isOnlineOnly: false,
       isActive: true,
       isVerified: false,
-      status: "published",
+      status: "draft",
     },
   });
 
