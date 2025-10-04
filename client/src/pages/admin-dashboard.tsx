@@ -97,6 +97,7 @@ export default function AdminDashboard() {
       isOnlineOnly: false,
       isActive: true,
       isVerified: false,
+      status: "published",
     },
   });
 
@@ -118,6 +119,7 @@ export default function AdminDashboard() {
       isOnlineOnly: false,
       isActive: true,
       isVerified: false,
+      status: "published",
     },
   });
 
@@ -366,6 +368,7 @@ export default function AdminDashboard() {
       isOnlineOnly: listing.isOnlineOnly || false,
       isActive: listing.isActive ?? true,
       isVerified: listing.isVerified || false,
+      status: listing.status || "published",
     });
     setEditDialogOpen(true);
   };
@@ -1036,6 +1039,31 @@ export default function AdminDashboard() {
                 </>
               )}
 
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Publish Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft (not visible to public)</SelectItem>
+                        <SelectItem value="published">Published (visible to public)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Draft listings are only visible in the admin dashboard
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   Cancel
@@ -1268,6 +1296,31 @@ export default function AdminDashboard() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={editForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Publish Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft (not visible to public)</SelectItem>
+                        <SelectItem value="published">Published (visible to public)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Draft listings are only visible in the admin dashboard
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
