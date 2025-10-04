@@ -266,37 +266,6 @@ export default function AdminDashboard() {
     }
   });
 
-  // Seed demo data mutation
-  const seedDemoMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/admin/seed-demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to seed demo data' }));
-        throw new Error(errorData.error || errorData.message || 'Failed to seed demo data');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
-      toast({
-        title: "Demo Data Seeded Successfully",
-        description: `Created ${data.results.listingsCreated} listings, skipped ${data.results.listingsSkipped} existing listings.`,
-      });
-    },
-    onError: (error: Error) => {
-      console.error('Seed error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to seed demo data. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
 
   // Edit listing mutation
   const editListingMutation = useMutation({
@@ -625,14 +594,6 @@ export default function AdminDashboard() {
           >
             <Plus className="w-4 h-4 mr-2" />
             Add New Listing
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => seedDemoMutation.mutate()}
-            disabled={seedDemoMutation.isPending}
-            data-testid="button-seed-demo"
-          >
-            {seedDemoMutation.isPending ? 'Seeding...' : 'Seed Demo Listings'}
           </Button>
           <Button 
             variant="outline" 
