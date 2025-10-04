@@ -138,6 +138,9 @@ export function registerRoutes(app: Express): Server {
         filters.isOnlineOnly = isOnlineOnly === 'true';
       }
       
+      // Only show published listings to the public
+      filters.status = 'published';
+      
       console.log('Filters:', filters);
       const listings = await storage.getListings(filters);
       console.log('Found listings:', listings.length);
@@ -157,8 +160,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Listing not found" });
       }
       
-      // Only show approved listings to public
-      if (listing.moderationStatus !== 'approved') {
+      // Only show approved and published listings to public
+      if (listing.moderationStatus !== 'approved' || listing.status !== 'published') {
         return res.status(404).json({ message: "Listing not found" });
       }
       

@@ -39,7 +39,8 @@ export interface IStorage {
     categories?: string[], 
     type?: string, 
     search?: string,
-    isOnlineOnly?: boolean 
+    isOnlineOnly?: boolean,
+    status?: string
   }): Promise<Listing[]>;
   getUserListings(userId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
@@ -127,13 +128,19 @@ export class DatabaseStorage implements IStorage {
     categories?: string[], 
     type?: string, 
     search?: string,
-    isOnlineOnly?: boolean 
+    isOnlineOnly?: boolean,
+    status?: string
   }): Promise<Listing[]> {
     // Only show approved and active listings for public directory
     let conditions = [
       eq(listings.isActive, true),
       eq(listings.moderationStatus, "approved")
     ];
+    
+    // Filter by status if provided (draft or published)
+    if (filters?.status) {
+      conditions.push(eq(listings.status, filters.status));
+    }
     
     if (filters?.categories && filters.categories.length > 0) {
       conditions.push(inArray(listings.categoryId, filters.categories));
