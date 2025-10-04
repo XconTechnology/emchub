@@ -165,6 +165,13 @@ export default function AdminDashboard() {
     enabled: isAdminAuthenticated,
   });
 
+  // Fetch deleted listings (recycle bin)
+  const { data: deletedListings = [], isLoading: isDeletedLoading } = useQuery<Listing[]>({
+    queryKey: ['/api/admin/listings', 'deleted'],
+    queryFn: () => fetch('/api/admin/listings/deleted', { credentials: 'include' }).then(res => res.json()),
+    enabled: isAdminAuthenticated,
+  });
+
   // Fetch all users
   const { data: users = [], isLoading: isUsersLoading } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],
@@ -301,11 +308,11 @@ export default function AdminDashboard() {
     }
   });
 
-  // Delete listing mutation
+  // Delete listing mutation (soft delete)
   const deleteListingMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/admin/listings/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`/api/admin/listings/${id}/soft-delete`, {
+        method: 'POST',
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to delete listing');
@@ -315,8 +322,8 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       toast({
-        title: "Listing Deleted",
-        description: "The listing has been deleted successfully.",
+        title: "Listing Moved to Recycle Bin",
+        description: "The listing has been moved to recycle bin and can be restored.",
       });
       setDeleteDialogOpen(false);
       setListingToDelete(null);
@@ -325,6 +332,89 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Restore listing mutation
+  const restoreListingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/listings/${id}/restore`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to restore listing');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Listing Restored",
+        description: "The listing has been restored successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to restore listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Permanently delete listing mutation
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/listings/${id}/permanent`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to permanently delete listing');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Listing Permanently Deleted",
+        description: "The listing has been permanently deleted and cannot be recovered.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to permanently delete listing. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update listing status mutation (draft/published)
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await fetch(`/api/admin/listings/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Status Updated",
+        description: `Listing ${variables.status === 'published' ? 'published' : 'saved as draft'} successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status. Please try again.",
         variant: "destructive",
       });
     }
@@ -457,7 +547,7 @@ export default function AdminDashboard() {
                 <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
               </div>
             </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-wrap">
             <Link href={`/business/${listing.id}`}>
               <Button
                 variant="outline"
@@ -477,6 +567,27 @@ export default function AdminDashboard() {
               <Edit className="w-4 h-4 mr-1" />
               Edit
             </Button>
+            {listing.status === 'draft' ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'published' })}
+                disabled={updateStatusMutation.isPending}
+                data-testid={`button-publish-${listing.id}`}
+              >
+                Publish
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'draft' })}
+                disabled={updateStatusMutation.isPending}
+                data-testid={`button-draft-${listing.id}`}
+              >
+                Save as Draft
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"
@@ -616,12 +727,29 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           <TabsTrigger value="all" data-testid="tab-all">
-            All Listings ({allListings.length})
+            All ({allListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="draft" data-testid="tab-draft">
+            Draft ({allListings.filter(l => l.status === 'draft').length})
+          </TabsTrigger>
+          <TabsTrigger value="published" data-testid="tab-published">
+            Published ({allListings.filter(l => l.status === 'published').length})
+          </TabsTrigger>
+          <TabsTrigger value="pending" data-testid="tab-pending">
+            Pending ({pendingListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="approved" data-testid="tab-approved">
+            Approved ({approvedListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" data-testid="tab-rejected">
+            Rejected ({rejectedListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="recycle" data-testid="tab-recycle">
+            Recycle Bin ({deletedListings.length})
           </TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">
-            <Users className="w-4 h-4 mr-1" />
             Users ({users.length})
           </TabsTrigger>
         </TabsList>
@@ -637,6 +765,138 @@ export default function AdminDashboard() {
               allListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="draft" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Draft Listings</h2>
+            {isAllLoading ? (
+              <div>Loading draft listings...</div>
+            ) : allListings.filter(l => l.status === 'draft').length === 0 ? (
+              <p className="text-gray-500">No draft listings found</p>
+            ) : (
+              allListings.filter(l => l.status === 'draft').map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="published" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Published Listings</h2>
+            {isAllLoading ? (
+              <div>Loading published listings...</div>
+            ) : allListings.filter(l => l.status === 'published').length === 0 ? (
+              <p className="text-gray-500">No published listings found</p>
+            ) : (
+              allListings.filter(l => l.status === 'published').map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Pending Listings</h2>
+            {isPendingLoading ? (
+              <div>Loading pending listings...</div>
+            ) : pendingListings.length === 0 ? (
+              <p className="text-gray-500">No pending listings found</p>
+            ) : (
+              pendingListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="approved" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Approved Listings</h2>
+            {isApprovedLoading ? (
+              <div>Loading approved listings...</div>
+            ) : approvedListings.length === 0 ? (
+              <p className="text-gray-500">No approved listings found</p>
+            ) : (
+              approvedListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rejected" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Rejected Listings</h2>
+            {isRejectedLoading ? (
+              <div>Loading rejected listings...</div>
+            ) : rejectedListings.length === 0 ? (
+              <p className="text-gray-500">No rejected listings found</p>
+            ) : (
+              rejectedListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="recycle" className="mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Recycle Bin</h2>
+            {isDeletedLoading ? (
+              <div>Loading deleted listings...</div>
+            ) : deletedListings.length === 0 ? (
+              <p className="text-gray-500">No deleted listings found</p>
+            ) : (
+              deletedListings.map((listing) => {
+                const listingCategory = categories.find(cat => cat.id === listing.categoryId);
+                return (
+                  <Card key={listing.id} className="mb-4" data-testid={`listing-card-${listing.id}`}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{listing.title}</CardTitle>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
+                            <Badge variant="secondary" className="bg-red-100 text-red-800">Deleted</Badge>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => restoreListingMutation.mutate(listing.id)}
+                            disabled={restoreListingMutation.isPending}
+                            data-testid={`button-restore-${listing.id}`}
+                          >
+                            Restore
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm('Are you sure you want to permanently delete this listing? This cannot be undone.')) {
+                                permanentDeleteMutation.mutate(listing.id);
+                              }
+                            }}
+                            disabled={permanentDeleteMutation.isPending}
+                            data-testid={`button-permanent-delete-${listing.id}`}
+                          >
+                            Delete Permanently
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600 mb-2">{listing.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         </TabsContent>
