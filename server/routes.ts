@@ -99,10 +99,12 @@ export function registerRoutes(app: Express): Server {
       // Auto-approve listings created by admins
       const moderationStatus = isAdmin ? 'approved' : 'pending';
       
+      // New listings default to 'draft' status
       const listing = await storage.createListing({
         ...listingData,
         userId,
         moderationStatus,
+        status: 'draft',
       });
       
       console.log('Created listing:', listing);

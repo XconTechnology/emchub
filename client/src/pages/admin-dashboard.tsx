@@ -536,7 +536,14 @@ export default function AdminDashboard() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <CardTitle className="text-lg mb-2">{listing.title}</CardTitle>
+              <div className="flex items-center gap-2 mb-2">
+                <CardTitle className="text-lg">{listing.title}</CardTitle>
+                {listing.status === 'draft' ? (
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-800" data-testid={`status-draft-${listing.id}`}>Draft</Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800" data-testid={`status-published-${listing.id}`}>Published</Badge>
+                )}
+              </div>
               <p className="text-gray-600 text-sm mb-2">{listing.description}</p>
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center">
