@@ -138,10 +138,11 @@ export class DatabaseStorage implements IStorage {
     isOnlineOnly?: boolean,
     status?: string
   }): Promise<Listing[]> {
-    // Only show approved and active listings for public directory
+    // Only show approved, active, and non-deleted listings for public directory
     let conditions = [
       eq(listings.isActive, true),
-      eq(listings.moderationStatus, "approved")
+      eq(listings.moderationStatus, "approved"),
+      sql`${listings.deletedAt} IS NULL`
     ];
     
     // Filter by status if provided (draft or published)
