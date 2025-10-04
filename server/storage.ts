@@ -64,6 +64,13 @@ export interface IStorage {
   adminRejectListing(id: string, adminId: string, reason: string): Promise<Listing>;
   getAllUsers(): Promise<User[]>;
   
+  // Soft delete and restore operations
+  softDeleteListing(id: string): Promise<Listing>;
+  restoreListing(id: string): Promise<Listing>;
+  getDeletedListings(): Promise<Listing[]>;
+  permanentlyDeleteListing(id: string): Promise<void>;
+  updateListingStatus(id: string, status: string): Promise<Listing>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -291,7 +298,10 @@ export class DatabaseStorage implements IStorage {
 
   // Admin moderation operations implementation
   async getModerationQueue(status?: string): Promise<Listing[]> {
-    let conditions = [eq(listings.isActive, true)];
+    let conditions = [
+      eq(listings.isActive, true),
+      sql`${listings.deletedAt} IS NULL`
+    ];
     
     if (status) {
       conditions.push(eq(listings.moderationStatus, status));
@@ -303,10 +313,19 @@ export class DatabaseStorage implements IStorage {
   async getListingsByStatus(status?: string): Promise<Listing[]> {
     if (status) {
       return db.select().from(listings).where(
-        and(eq(listings.isActive, true), eq(listings.moderationStatus, status))
+        and(
+          eq(listings.isActive, true), 
+          eq(listings.moderationStatus, status),
+          sql`${listings.deletedAt} IS NULL`
+        )
       );
     }
-    return db.select().from(listings).where(eq(listings.isActive, true));
+    return db.select().from(listings).where(
+      and(
+        eq(listings.isActive, true),
+        sql`${listings.deletedAt} IS NULL`
+      )
+    );
   }
 
   async adminApproveListing(id: string, adminId: string, notes?: string): Promise<Listing> {
@@ -332,6 +351,51 @@ export class DatabaseStorage implements IStorage {
         moderationNotes: reason,
         moderatedBy: adminId,
         moderatedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return listing;
+  }
+  
+  // Soft delete and restore operations
+  async softDeleteListing(id: string): Promise<Listing> {
+    const [listing] = await db
+      .update(listings)
+      .set({ 
+        deletedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return listing;
+  }
+  
+  async restoreListing(id: string): Promise<Listing> {
+    const [listing] = await db
+      .update(listings)
+      .set({ 
+        deletedAt: null,
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return listing;
+  }
+  
+  async getDeletedListings(): Promise<Listing[]> {
+    return db.select().from(listings).where(sql`${listings.deletedAt} IS NOT NULL`);
+  }
+  
+  async permanentlyDeleteListing(id: string): Promise<void> {
+    await db.delete(listings).where(eq(listings.id, id));
+  }
+  
+  async updateListingStatus(id: string, status: string): Promise<Listing> {
+    const [listing] = await db
+      .update(listings)
+      .set({ 
+        status,
         updatedAt: new Date()
       })
       .where(eq(listings.id, id))

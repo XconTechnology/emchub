@@ -473,6 +473,62 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ message: "Failed to delete listing" });
     }
   });
+  
+  // Soft delete and restore operations
+  app.post('/api/admin/listings/:id/soft-delete', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const listing = await storage.softDeleteListing(listingId);
+      res.json({ message: "Listing moved to recycle bin", listing });
+    } catch (error) {
+      console.error("Error soft deleting listing:", error);
+      res.status(500).json({ message: "Failed to delete listing" });
+    }
+  });
+  
+  app.post('/api/admin/listings/:id/restore', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const listing = await storage.restoreListing(listingId);
+      res.json({ message: "Listing restored successfully", listing });
+    } catch (error) {
+      console.error("Error restoring listing:", error);
+      res.status(500).json({ message: "Failed to restore listing" });
+    }
+  });
+  
+  app.get('/api/admin/listings/deleted', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listings = await storage.getDeletedListings();
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching deleted listings:", error);
+      res.status(500).json({ message: "Failed to fetch deleted listings" });
+    }
+  });
+  
+  app.delete('/api/admin/listings/:id/permanent', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      await storage.permanentlyDeleteListing(listingId);
+      res.json({ message: "Listing permanently deleted" });
+    } catch (error) {
+      console.error("Error permanently deleting listing:", error);
+      res.status(500).json({ message: "Failed to permanently delete listing" });
+    }
+  });
+  
+  app.patch('/api/admin/listings/:id/status', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const { status } = req.body;
+      const listing = await storage.updateListingStatus(listingId, status);
+      res.json({ message: "Listing status updated", listing });
+    } catch (error) {
+      console.error("Error updating listing status:", error);
+      res.status(500).json({ message: "Failed to update listing status" });
+    }
+  });
 
   // Admin seed endpoint for demo data
   app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
