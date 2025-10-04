@@ -544,6 +544,7 @@ export function registerRoutes(app: Express): Server {
           phone: '+852 1234 5678',
           email: 'info@islamicprimary.edu.hk',
           isOnlineOnly: false,
+          status: 'published' as const,
         },
         {
           title: 'EdSquare',
@@ -557,6 +558,7 @@ export function registerRoutes(app: Express): Server {
           phone: '+852 2345 6789',
           email: 'contact@edsquare.edu.hk',
           isOnlineOnly: false,
+          status: 'published' as const,
         },
         {
           title: 'Ease Education Limited',
@@ -570,6 +572,7 @@ export function registerRoutes(app: Express): Server {
           phone: '+852 3456 7890',
           email: 'info@easeeducation.org.hk',
           isOnlineOnly: false,
+          status: 'published' as const,
         },
         {
           title: 'Alif Complementary Educational Services',
@@ -583,6 +586,7 @@ export function registerRoutes(app: Express): Server {
           phone: '+852 4567 8901',
           email: 'support@alifservices.edu.hk',
           isOnlineOnly: true,
+          status: 'published' as const,
         },
         {
           title: 'mehndilicious_',
@@ -597,6 +601,7 @@ export function registerRoutes(app: Express): Server {
           email: 'mehndilicious@example.com',
           website: 'https://www.instagram.com/mehndilicious/?hl=en',
           isOnlineOnly: false,
+          status: 'published' as const,
         },
       ];
 

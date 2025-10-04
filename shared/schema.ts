@@ -105,6 +105,7 @@ export const listings = pgTable("listings", {
   // Status and verification
   isActive: boolean("is_active").default(true),
   isVerified: boolean("is_verified").default(false),
+  status: varchar("status").notNull().default("draft"), // 'draft' | 'published'
   
   // Moderation fields
   moderationStatus: varchar("moderation_status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
@@ -198,6 +199,9 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   // Location fields optional
   address: z.string().optional(),
   city: z.string().optional(),
+  
+  // Status field - can be 'draft' or 'published'
+  status: z.enum(["draft", "published"]).optional().default("published"),
   
   // Optional arrays
   tags: z.array(z.string()).optional(),
