@@ -590,7 +590,7 @@ export default function AdminDashboard() {
                   disabled={updateStatusMutation.isPending}
                   data-testid={`button-publish-${listing.id}`}
                 >
-                  Published
+                  Publish
                 </Button>
               ) : (
                 <Button
