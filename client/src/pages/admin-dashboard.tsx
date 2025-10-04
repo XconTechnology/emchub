@@ -535,130 +535,71 @@ export default function AdminDashboard() {
       <Card className="mb-4" data-testid={`listing-card-${listing.id}`}>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-lg">{listing.title}</CardTitle>
-              <div className="flex items-center space-x-2 mt-1">
-                {getStatusBadge(listing.moderationStatus)}
-                {listing.status === 'draft' ? (
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-800">Draft</Badge>
-                ) : (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">Published</Badge>
-                )}
+            <div className="flex-1">
+              <CardTitle className="text-lg mb-2">{listing.title}</CardTitle>
+              <p className="text-gray-600 text-sm mb-2">{listing.description}</p>
+              <div className="flex items-center space-x-4 text-xs text-gray-500">
+                <span className="flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {formatDate(listing.createdAt)}
+                </span>
                 <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
               </div>
             </div>
-          <div className="flex space-x-2 flex-wrap">
-            <Link href={`/business/${listing.id}`}>
-              <Button
-                variant="outline"
-                size="sm"
-                data-testid={`button-view-${listing.id}`}
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                View
-              </Button>
-            </Link>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleEdit(listing)}
-              data-testid={`button-edit-${listing.id}`}
-            >
-              <Edit className="w-4 h-4 mr-1" />
-              Edit
-            </Button>
-            {listing.status === 'draft' ? (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'published' })}
-                disabled={updateStatusMutation.isPending}
-                data-testid={`button-publish-${listing.id}`}
-              >
-                Publish
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'draft' })}
-                disabled={updateStatusMutation.isPending}
-                data-testid={`button-draft-${listing.id}`}
-              >
-                Save as Draft
-              </Button>
-            )}
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDelete(listing)}
-              data-testid={`button-delete-${listing.id}`}
-            >
-              <Trash className="w-4 h-4 mr-1" />
-              Delete
-            </Button>
-            {listing.moderationStatus === 'pending' && (
-              <>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleApprove(listing)}
-                  data-testid={`button-approve-${listing.id}`}
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Approve
-                </Button>
+            <div className="flex space-x-2 flex-wrap ml-4">
+              <Link href={`/business/${listing.id}`}>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleReject(listing)}
-                  data-testid={`button-reject-${listing.id}`}
+                  data-testid={`button-view-${listing.id}`}
                 >
-                  <XCircle className="w-4 h-4 mr-1" />
-                  Reject
+                  <Eye className="w-4 h-4 mr-1" />
+                  View
                 </Button>
-              </>
-            )}
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(listing)}
+                data-testid={`button-edit-${listing.id}`}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDelete(listing)}
+                data-testid={`button-delete-${listing.id}`}
+              >
+                <Trash className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+              {listing.status === 'draft' ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'published' })}
+                  disabled={updateStatusMutation.isPending}
+                  data-testid={`button-publish-${listing.id}`}
+                >
+                  Published
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'draft' })}
+                  disabled={updateStatusMutation.isPending}
+                  data-testid={`button-draft-${listing.id}`}
+                >
+                  Move to Draft
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-gray-600 mb-2">{listing.description}</p>
-        <div className="flex items-center space-x-4 text-sm text-gray-500">
-          {listing.address && (
-            <span className="flex items-center">
-              <MapPin className="w-3 h-3 mr-1" />
-              {listing.address}, {listing.city}
-            </span>
-          )}
-          {listing.phone && (
-            <span className="flex items-center">
-              <Phone className="w-3 h-3 mr-1" />
-              {listing.phone}
-            </span>
-          )}
-          {listing.email && (
-            <span className="flex items-center">
-              <Mail className="w-3 h-3 mr-1" />
-              {listing.email}
-            </span>
-          )}
-        </div>
-        <div className="mt-2 text-xs text-gray-400">
-          Created: {formatDate(listing.createdAt)}
-          {listing.moderatedAt && (
-            <span className="ml-4">
-              Moderated: {formatDate(listing.moderatedAt)}
-            </span>
-          )}
-        </div>
-        {listing.moderationNotes && (
-          <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-            <strong>Notes:</strong> {listing.moderationNotes}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+      </Card>
     );
   };
 
@@ -727,24 +668,15 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="all" data-testid="tab-all">
-            All ({allListings.length})
+            All Listings ({allListings.length})
           </TabsTrigger>
           <TabsTrigger value="draft" data-testid="tab-draft">
-            Draft ({allListings.filter(l => l.status === 'draft').length})
+            Draft Listings ({allListings.filter(l => l.status === 'draft').length})
           </TabsTrigger>
           <TabsTrigger value="published" data-testid="tab-published">
-            Published ({allListings.filter(l => l.status === 'published').length})
-          </TabsTrigger>
-          <TabsTrigger value="pending" data-testid="tab-pending">
-            Pending ({pendingListings.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved" data-testid="tab-approved">
-            Approved ({approvedListings.length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected" data-testid="tab-rejected">
-            Rejected ({rejectedListings.length})
+            Published Listings ({allListings.filter(l => l.status === 'published').length})
           </TabsTrigger>
           <TabsTrigger value="recycle" data-testid="tab-recycle">
             Recycle Bin ({deletedListings.length})
@@ -793,51 +725,6 @@ export default function AdminDashboard() {
               <p className="text-gray-500">No published listings found</p>
             ) : (
               allListings.filter(l => l.status === 'published').map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="pending" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Pending Listings</h2>
-            {isPendingLoading ? (
-              <div>Loading pending listings...</div>
-            ) : pendingListings.length === 0 ? (
-              <p className="text-gray-500">No pending listings found</p>
-            ) : (
-              pendingListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="approved" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Approved Listings</h2>
-            {isApprovedLoading ? (
-              <div>Loading approved listings...</div>
-            ) : approvedListings.length === 0 ? (
-              <p className="text-gray-500">No approved listings found</p>
-            ) : (
-              approvedListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="rejected" className="mt-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Rejected Listings</h2>
-            {isRejectedLoading ? (
-              <div>Loading rejected listings...</div>
-            ) : rejectedListings.length === 0 ? (
-              <p className="text-gray-500">No rejected listings found</p>
-            ) : (
-              rejectedListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))
             )}
