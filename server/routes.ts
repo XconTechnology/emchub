@@ -12,6 +12,7 @@ import {
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { geocodeAddress } from "./geocoding";
 
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
@@ -96,6 +97,24 @@ export function registerRoutes(app: Express): Server {
       console.log('About to parse listing data with userId:', userId);
       const listingData = insertListingSchema.parse(req.body);
       console.log('Parsed listing data:', listingData);
+      
+      // Auto-geocode if address exists but coordinates don't
+      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+        if (!listingData.latitude || !listingData.longitude) {
+          console.log('Attempting to geocode address:', listingData.address, listingData.city);
+          const coordinates = await geocodeAddress(
+            listingData.address || '', 
+            listingData.city || ''
+          );
+          if (coordinates) {
+            listingData.latitude = coordinates.latitude;
+            listingData.longitude = coordinates.longitude;
+            console.log('Geocoding successful:', coordinates);
+          } else {
+            console.log('Geocoding failed or no results found');
+          }
+        }
+      }
       
       // Auto-approve listings created by admins
       const moderationStatus = isAdmin ? 'approved' : 'pending';
@@ -199,6 +218,24 @@ export function registerRoutes(app: Express): Server {
       const existingListing = await storage.getListing(id);
       if (!existingListing || existingListing.userId !== userId) {
         return res.status(404).json({ message: "Listing not found or access denied" });
+      }
+      
+      // Auto-geocode if address exists but coordinates don't
+      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+        if (!listingData.latitude || !listingData.longitude) {
+          console.log('Attempting to geocode address on update:', listingData.address, listingData.city);
+          const coordinates = await geocodeAddress(
+            listingData.address || '', 
+            listingData.city || ''
+          );
+          if (coordinates) {
+            listingData.latitude = coordinates.latitude;
+            listingData.longitude = coordinates.longitude;
+            console.log('Geocoding successful on update:', coordinates);
+          } else {
+            console.log('Geocoding failed or no results found on update');
+          }
+        }
       }
       
       const updatedListing = await storage.updateListing(id, listingData);
@@ -467,7 +504,27 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/admin/listings/:id', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const updatedListing = await storage.updateListing(listingId, req.body);
+      const listingData = req.body;
+      
+      // Auto-geocode if address exists but coordinates don't
+      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+        if (!listingData.latitude || !listingData.longitude) {
+          console.log('Attempting to geocode address on admin update:', listingData.address, listingData.city);
+          const coordinates = await geocodeAddress(
+            listingData.address || '', 
+            listingData.city || ''
+          );
+          if (coordinates) {
+            listingData.latitude = coordinates.latitude;
+            listingData.longitude = coordinates.longitude;
+            console.log('Geocoding successful on admin update:', coordinates);
+          } else {
+            console.log('Geocoding failed or no results found on admin update');
+          }
+        }
+      }
+      
+      const updatedListing = await storage.updateListing(listingId, listingData);
       res.json(updatedListing);
     } catch (error: any) {
       console.error("Error updating listing:", error);
