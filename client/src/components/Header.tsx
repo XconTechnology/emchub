@@ -58,32 +58,20 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
               </Link>
-              <Link href="/directory" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-directory">
-                Directory
+              <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
+                Map
+              </Link>
+              <Link href="/explore" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-explore">
+                Explore
+              </Link>
+              <Link href="/about-us" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
+                About Us
               </Link>
               {user?.isAdmin && (
                 <Link href="/admin" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
                   Admin
                 </Link>
               )}
-              <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
-                Map of Listings
-              </Link>
-              <div className="relative group">
-                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-listings">
-                  All Listings
-                  <ChevronDown className="ml-1 w-4 h-4" />
-                </a>
-              </div>
-              <div className="relative group">
-                <a href="#" className={`nav-link font-medium flex items-center transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-blog">
-                  Blog
-                  <ChevronDown className="ml-1 w-4 h-4" />
-                </a>
-              </div>
-              <a href="#" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
-                About Us
-              </a>
             </div>
 
             {/* User Actions */}
