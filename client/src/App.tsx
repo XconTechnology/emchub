@@ -25,8 +25,12 @@ function Router() {
       <Route path="/map" component={MapPage} />
       <Route path="/business/:id" component={BusinessDetail} />
       <ProtectedRoute path="/profile" component={Profile} />
-      <Route path="/admin/:rest*" component={AdminRouter} />
       <Route path="/admin" component={AdminRouter} />
+      <Route path="/admin/listings" component={AdminRouter} />
+      <Route path="/admin/listings/new" component={AdminRouter} />
+      <Route path="/admin/listings/edit/:id" component={AdminRouter} />
+      <Route path="/admin/users" component={AdminRouter} />
+      <Route path="/admin/recycle-bin" component={AdminRouter} />
       <Route component={NotFound} />
     </Switch>
   );
