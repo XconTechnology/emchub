@@ -3,6 +3,7 @@ import AdminDashboardLayout from "@/components/AdminDashboardLayout";
 import AdminOverview from "./admin-overview";
 import AdminListings from "./admin-listings";
 import AdminAddListing from "./admin-add-listing";
+import AdminEditListing from "./admin-edit-listing";
 import AdminUsers from "./admin-users";
 import AdminRecycleBin from "./admin-recycle-bin";
 import AdminLogin from "../admin-login";
@@ -31,6 +32,7 @@ export default function AdminRouter() {
         <Route path="/admin" component={AdminOverview} />
         <Route path="/admin/listings" component={AdminListings} />
         <Route path="/admin/listings/new" component={AdminAddListing} />
+        <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/recycle-bin" component={AdminRecycleBin} />
       </Switch>
