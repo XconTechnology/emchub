@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import AdminLogin from "./admin-login";
+import DashboardLayout from "@/components/DashboardLayout";
 import type { Listing, User as UserType, Category } from "@shared/schema";
 
 interface ModerationAction {
@@ -647,32 +648,26 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage listings and monitor users</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="default" 
-            onClick={() => setCreateDialogOpen(true)}
-            data-testid="button-add-listing"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Listing
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleLogout}
-            className="text-red-600 border-red-300 hover:bg-red-50"
-            data-testid="button-admin-logout"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </div>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        <Card className="wp-card mb-6">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h2>
+                <p className="text-gray-600 dark:text-gray-300">Manage listings and monitor users</p>
+              </div>
+              <Button 
+                variant="default" 
+                onClick={() => setCreateDialogOpen(true)}
+                data-testid="button-add-listing"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Listing
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
@@ -1523,5 +1518,6 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
     </div>
+    </DashboardLayout>
   );
 }
