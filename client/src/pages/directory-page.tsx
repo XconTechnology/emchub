@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Phone, Globe, Clock, Star } from 'lucide-react';
 import { Listing, Category } from '@shared/schema';
+import DashboardLayout from '@/components/DashboardLayout';
 
 export default function DirectoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -170,8 +171,9 @@ export default function DirectoryPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-8">
         {/* Filters Sidebar */}
         <div className="lg:w-1/4">
           <Card>
@@ -339,5 +341,6 @@ export default function DirectoryPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }
