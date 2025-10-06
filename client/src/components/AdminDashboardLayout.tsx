@@ -56,11 +56,6 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       icon: List,
     },
     {
-      title: "Add New Listing",
-      url: "/admin/listings/new",
-      icon: Plus,
-    },
-    {
       title: "Users",
       url: "/admin/users",
       icon: Users,
