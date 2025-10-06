@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import type { Listing, Category } from "@shared/schema";
 
 export default function AdminListings() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
 
@@ -123,11 +124,12 @@ export default function AdminListings() {
             Manage all listings across your platform
           </p>
         </div>
-        <Link href="/admin/listings/new">
-          <Button data-testid="button-add-listing">
-            Add New Listing
-          </Button>
-        </Link>
+        <Button 
+          onClick={() => setLocation('/admin/listings/new')}
+          data-testid="button-add-listing"
+        >
+          Add New Listing
+        </Button>
       </div>
 
       {allListings.length === 0 ? (
@@ -162,26 +164,24 @@ export default function AdminListings() {
                     </div>
                   </div>
                   <div className="flex space-x-2 flex-wrap ml-4">
-                    <Link href={`/business/${listing.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        data-testid={`button-view-${listing.id}`}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                    </Link>
-                    <Link href={`/admin/listings/edit/${listing.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        data-testid={`button-edit-${listing.id}`}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation(`/business/${listing.id}`)}
+                      data-testid={`button-view-${listing.id}`}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation(`/admin/listings/edit/${listing.id}`)}
+                      data-testid={`button-edit-${listing.id}`}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"
