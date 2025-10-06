@@ -13,6 +13,7 @@ import DirectoryPage from "@/pages/directory-page";
 import MapPage from "@/pages/map-page";
 import BusinessDetail from "@/pages/business-detail";
 import CategoryPage from "@/pages/category-page";
+import AllCategoriesPage from "@/pages/all-categories-page";
 import AdminRouter from "@/pages/admin/admin-router";
 import NotFound from "@/pages/not-found";
 
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       <Route path="/directory" component={DirectoryPage} />
       <Route path="/map" component={MapPage} />
+      <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />
       <ProtectedRoute path="/profile" component={Profile} />
