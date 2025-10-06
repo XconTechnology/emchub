@@ -269,14 +269,15 @@ export default function BusinessDetail() {
         {/* Content Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
-        {/* Images Section - Optional */}
-        {listing.images && Array.isArray(listing.images) && listing.images.length > 0 && (
-          <Card className="mb-8 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">Images</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Description Card */}
+        <Card className="mb-8 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl">Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Images within Description */}
+            {listing.images && Array.isArray(listing.images) && listing.images.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {listing.images.map((imageUrl: string, index: number) => (
                   <div key={index} className="relative rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow">
                     <img
@@ -288,16 +289,8 @@ export default function BusinessDetail() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Description Card */}
-        <Card className="mb-8 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl">About</CardTitle>
-          </CardHeader>
-          <CardContent>
+            )}
+            
             <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line" data-testid="business-description">
               {listing.description}
             </p>
