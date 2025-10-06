@@ -35,14 +35,14 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { isAdminAuthenticated, adminLogout } = useAdminAuth();
 
   const handleLogout = () => {
     if (location === "/admin") {
       adminLogout();
     } else {
-      logout();
+      logoutMutation.mutate();
     }
   };
 

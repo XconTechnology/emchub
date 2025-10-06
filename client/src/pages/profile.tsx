@@ -7,6 +7,7 @@ import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCirc
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import AddListingModal from "@/components/AddListingModal";
+import DashboardLayout from "@/components/DashboardLayout";
 import type { Listing } from "@shared/schema";
 
 export default function Profile() {
@@ -43,84 +44,88 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              Please sign in to view your profile and manage your listings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button onClick={() => window.location.href = '/'}>
-              Go to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <Card className="w-full max-w-md wp-card">
+            <CardHeader className="text-center">
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>
+                Please sign in to view your profile and manage your listings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button onClick={() => window.location.href = '/'}>
+                Go to Home
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {user?.profileImageUrl ? (
-                <img
-                  src={user.profileImageUrl}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="profile-name">
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}` 
-                    : user?.username || 'User'}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300" data-testid="profile-email">
-                  {user?.email}
-                </p>
-                {user?.isAdmin && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 mt-1">
-                    Administrator
-                  </Badge>
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        {/* Profile Header */}
+        <Card className="wp-card mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                {user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    </span>
+                  </div>
                 )}
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="profile-name">
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName} ${user.lastName}` 
+                      : user?.username || 'User'}
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-300" data-testid="profile-email">
+                    {user?.email}
+                  </p>
+                  {user?.isAdmin && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 mt-1">
+                      Administrator
+                    </Badge>
+                  )}
+                </div>
               </div>
+              <Button 
+                onClick={() => setIsAddListingModalOpen(true)}
+                className="bg-primary hover:bg-primary/90"
+                data-testid="button-add-new-listing"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Listing
+              </Button>
             </div>
-            <Button 
-              onClick={() => setIsAddListingModalOpen(true)}
-              className="bg-primary hover:bg-primary/90"
-              data-testid="button-add-new-listing"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Listing
-            </Button>
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
 
-      {/* My Listings Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* My Listings Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             My Listings
@@ -305,6 +310,6 @@ export default function Profile() {
         isOpen={isAddListingModalOpen}
         onClose={() => setIsAddListingModalOpen(false)}
       />
-    </div>
+    </DashboardLayout>
   );
 }
