@@ -185,8 +185,8 @@ export default function MapPage() {
 
           {/* Listings */}
           <div className="flex-1 overflow-y-scroll min-h-0" style={{
-            scrollbarWidth: 'auto',
-            scrollbarColor: '#94a3b8 #e2e8f0'
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e0 transparent'
           }}>
             {isLoading ? (
               <div className="p-8 text-center text-gray-500">Loading...</div>
