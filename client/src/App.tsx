@@ -12,7 +12,7 @@ import AuthPage from "@/pages/auth-page";
 import DirectoryPage from "@/pages/directory-page";
 import MapPage from "@/pages/map-page";
 import BusinessDetail from "@/pages/business-detail";
-import AdminDashboard from "@/pages/admin-dashboard";
+import AdminRouter from "@/pages/admin/admin-router";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,7 +25,8 @@ function Router() {
       <Route path="/map" component={MapPage} />
       <Route path="/business/:id" component={BusinessDetail} />
       <ProtectedRoute path="/profile" component={Profile} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/:rest*" component={AdminRouter} />
+      <Route path="/admin" component={AdminRouter} />
       <Route component={NotFound} />
     </Switch>
   );

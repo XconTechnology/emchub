@@ -71,6 +71,15 @@ export interface IStorage {
   permanentlyDeleteListing(id: string): Promise<void>;
   updateListingStatus(id: string, status: string): Promise<Listing>;
   
+  // Dashboard statistics
+  getDashboardStats(): Promise<{
+    totalListings: number;
+    publishedListings: number;
+    draftListings: number;
+    deletedListings: number;
+    totalUsers: number;
+  }>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -402,6 +411,53 @@ export class DatabaseStorage implements IStorage {
       .where(eq(listings.id, id))
       .returning();
     return listing;
+  }
+  
+  // Dashboard statistics
+  async getDashboardStats(): Promise<{
+    totalListings: number;
+    publishedListings: number;
+    draftListings: number;
+    deletedListings: number;
+    totalUsers: number;
+  }> {
+    // Count total listings (excluding deleted)
+    const totalListingsResult = await db.select({ count: sql<number>`count(*)` })
+      .from(listings)
+      .where(sql`${listings.deletedAt} IS NULL`);
+    
+    // Count published listings
+    const publishedListingsResult = await db.select({ count: sql<number>`count(*)` })
+      .from(listings)
+      .where(and(
+        eq(listings.status, 'published'),
+        sql`${listings.deletedAt} IS NULL`
+      ));
+    
+    // Count draft listings
+    const draftListingsResult = await db.select({ count: sql<number>`count(*)` })
+      .from(listings)
+      .where(and(
+        eq(listings.status, 'draft'),
+        sql`${listings.deletedAt} IS NULL`
+      ));
+    
+    // Count deleted listings
+    const deletedListingsResult = await db.select({ count: sql<number>`count(*)` })
+      .from(listings)
+      .where(sql`${listings.deletedAt} IS NOT NULL`);
+    
+    // Count total users
+    const totalUsersResult = await db.select({ count: sql<number>`count(*)` })
+      .from(users);
+    
+    return {
+      totalListings: Number(totalListingsResult[0]?.count || 0),
+      publishedListings: Number(publishedListingsResult[0]?.count || 0),
+      draftListings: Number(draftListingsResult[0]?.count || 0),
+      deletedListings: Number(deletedListingsResult[0]?.count || 0),
+      totalUsers: Number(totalUsersResult[0]?.count || 0),
+    };
   }
 }
 
