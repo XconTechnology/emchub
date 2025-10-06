@@ -37,7 +37,8 @@ export interface IStorage {
   // Enhanced listing operations
   createListing(listing: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing>;
   getListings(filters?: { 
-    categories?: string[], 
+    categories?: string[],
+    categoryId?: string,
     type?: string, 
     search?: string,
     isOnlineOnly?: boolean,
@@ -146,7 +147,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getListings(filters?: { 
-    categories?: string[], 
+    categories?: string[],
+    categoryId?: string,
     type?: string, 
     search?: string,
     isOnlineOnly?: boolean,
@@ -166,6 +168,10 @@ export class DatabaseStorage implements IStorage {
     
     if (filters?.categories && filters.categories.length > 0) {
       conditions.push(inArray(listings.categoryId, filters.categories));
+    }
+    
+    if (filters?.categoryId) {
+      conditions.push(eq(listings.categoryId, filters.categoryId));
     }
     
     if (filters?.type) {

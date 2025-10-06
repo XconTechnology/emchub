@@ -125,11 +125,14 @@ export function registerRoutes(app: Express): Server {
     console.log('Query params:', req.query);
     
     try {
-      const { categories, type, search, isOnlineOnly } = req.query;
+      const { categories, categoryId, type, search, isOnlineOnly } = req.query;
       
       const filters: any = {};
       if (categories && typeof categories === 'string') {
         filters.categories = categories.split(',');
+      }
+      if (categoryId && typeof categoryId === 'string') {
+        filters.categoryId = categoryId;
       }
       if (type && typeof type === 'string') {
         filters.type = type;
