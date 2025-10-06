@@ -141,9 +141,9 @@ export default function MapPage() {
     <div className="min-h-screen flex flex-col bg-white">
       <Header forceSolid={true} />
       
-      <div className="flex-1 pt-16 flex">
+      <div className="flex-1 pt-16 flex h-[calc(100vh-4rem)]">
         {/* Left Sidebar */}
-        <div className="w-full md:w-96 border-r border-gray-200 flex flex-col bg-white">
+        <div className="w-full md:w-96 border-r border-gray-200 flex flex-col bg-white h-full">
           {/* Locations Found Count */}
           <div className="px-4 py-3 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700" data-testid="text-locations-count">
