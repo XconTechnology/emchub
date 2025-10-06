@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Listing, Category } from "@shared/schema";
 import { MapPin, ExternalLink, Search } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -380,6 +381,7 @@ export default function MapPage() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
