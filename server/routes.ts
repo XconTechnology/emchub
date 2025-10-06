@@ -603,6 +603,74 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin route to geocode all listings without coordinates
+  app.post('/api/admin/listings/geocode-all', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      console.log('Starting geocoding for all listings without coordinates...');
+      const allListings = await storage.getListings({});
+      
+      let geocodedCount = 0;
+      let failedCount = 0;
+      const results = [];
+      
+      for (const listing of allListings) {
+        // Skip if already has coordinates or is online only
+        if (listing.isOnlineOnly || (listing.latitude && listing.longitude)) {
+          continue;
+        }
+        
+        // Skip if no address information
+        if (!listing.address && !listing.city) {
+          continue;
+        }
+        
+        console.log(`Geocoding listing ${listing.id}: ${listing.title}`);
+        const coordinates = await geocodeAddress(
+          listing.address || '', 
+          listing.city || ''
+        );
+        
+        if (coordinates) {
+          await storage.updateListing(listing.id, {
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude
+          });
+          geocodedCount++;
+          results.push({
+            id: listing.id,
+            title: listing.title,
+            success: true,
+            coordinates
+          });
+          console.log(`Successfully geocoded listing ${listing.id}`);
+        } else {
+          failedCount++;
+          results.push({
+            id: listing.id,
+            title: listing.title,
+            success: false,
+            address: listing.address,
+            city: listing.city
+          });
+          console.log(`Failed to geocode listing ${listing.id}`);
+        }
+        
+        // Add a small delay to avoid overwhelming the geocoding service
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      res.json({ 
+        message: "Geocoding completed",
+        geocodedCount,
+        failedCount,
+        results
+      });
+    } catch (error) {
+      console.error("Error geocoding listings:", error);
+      res.status(500).json({ message: "Failed to geocode listings" });
+    }
+  });
+
   // Admin reset categories route - keeps only specified categories
   app.post('/api/admin/reset-categories', isAdminAuthenticated, async (req: any, res) => {
     try {
