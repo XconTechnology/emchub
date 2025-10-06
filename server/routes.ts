@@ -99,13 +99,11 @@ export function registerRoutes(app: Express): Server {
       console.log('Parsed listing data:', listingData);
       
       // Auto-geocode if address exists but coordinates don't
-      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+      if (listingData.address && !listingData.isOnlineOnly) {
         if (!listingData.latitude || !listingData.longitude) {
-          console.log('Attempting to geocode address:', listingData.address, listingData.city);
-          const coordinates = await geocodeAddress(
-            listingData.address || '', 
-            listingData.city || ''
-          );
+          console.log('Attempting to geocode address:', listingData.address);
+          // If the address already includes location info, just use it directly
+          const coordinates = await geocodeAddress(listingData.address, '');
           if (coordinates) {
             listingData.latitude = coordinates.latitude;
             listingData.longitude = coordinates.longitude;
@@ -221,13 +219,10 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Auto-geocode if address exists but coordinates don't
-      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+      if (listingData.address && !listingData.isOnlineOnly) {
         if (!listingData.latitude || !listingData.longitude) {
-          console.log('Attempting to geocode address on update:', listingData.address, listingData.city);
-          const coordinates = await geocodeAddress(
-            listingData.address || '', 
-            listingData.city || ''
-          );
+          console.log('Attempting to geocode address on update:', listingData.address);
+          const coordinates = await geocodeAddress(listingData.address, '');
           if (coordinates) {
             listingData.latitude = coordinates.latitude;
             listingData.longitude = coordinates.longitude;
@@ -507,13 +502,10 @@ export function registerRoutes(app: Express): Server {
       const listingData = req.body;
       
       // Auto-geocode if address exists but coordinates don't
-      if ((listingData.address || listingData.city) && !listingData.isOnlineOnly) {
+      if (listingData.address && !listingData.isOnlineOnly) {
         if (!listingData.latitude || !listingData.longitude) {
-          console.log('Attempting to geocode address on admin update:', listingData.address, listingData.city);
-          const coordinates = await geocodeAddress(
-            listingData.address || '', 
-            listingData.city || ''
-          );
+          console.log('Attempting to geocode address on admin update:', listingData.address);
+          const coordinates = await geocodeAddress(listingData.address, '');
           if (coordinates) {
             listingData.latitude = coordinates.latitude;
             listingData.longitude = coordinates.longitude;
