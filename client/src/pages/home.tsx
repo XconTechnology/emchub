@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import Stats from "@/components/Stats";
 import FeaturedBusinesses from "@/components/FeaturedBusinesses";
 import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
@@ -13,7 +12,6 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
-        <Stats />
         <FeaturedBusinesses />
         <HowItWorks />
         <Testimonials />

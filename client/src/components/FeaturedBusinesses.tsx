@@ -33,10 +33,10 @@ export default function FeaturedBusinesses() {
       return groups;
     }, {}) : {};
 
-  // Get featured listings (max 6 total)
+  // Get featured listings (max 3 total)
   const featuredListings = Object.values(groupedListings)
     .flat()
-    .slice(0, 6);
+    .slice(0, 3);
 
   if (isLoading) {
     return (
@@ -48,7 +48,7 @@ export default function FeaturedBusinesses() {
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(3)].map((_, i) => (
               <Card key={i} className="animate-pulse bg-white/90 dark:bg-card/90 rounded-3xl overflow-hidden">
                 <div className="w-full h-56 bg-gray-200 dark:bg-gray-700"></div>
                 <CardContent className="p-8">
@@ -206,7 +206,7 @@ export default function FeaturedBusinesses() {
         </div>
 
         <div className="text-center mt-16 fade-in">
-          <Link href="/directory">
+          <Link href="/map">
             <Button className="relative bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground px-12 py-6 rounded-3xl font-black text-lg shadow-2xl" data-testid="button-view-all-businesses">
               <span className="relative z-10 flex items-center">
                 View All Businesses
