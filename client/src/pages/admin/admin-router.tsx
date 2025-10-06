@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Router, Switch, Route } from "wouter";
 import AdminDashboardLayout from "@/components/AdminDashboardLayout";
 import AdminOverview from "./admin-overview";
 import AdminListings from "./admin-listings";
@@ -27,15 +27,17 @@ export default function AdminRouter() {
   }
 
   return (
-    <AdminDashboardLayout>
-      <Switch>
-        <Route path="/admin/listings/new" component={AdminAddListing} />
-        <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
-        <Route path="/admin/listings" component={AdminListings} />
-        <Route path="/admin/users" component={AdminUsers} />
-        <Route path="/admin/recycle-bin" component={AdminRecycleBin} />
-        <Route path="/admin" component={AdminOverview} />
-      </Switch>
-    </AdminDashboardLayout>
+    <Router base="/admin">
+      <AdminDashboardLayout>
+        <Switch>
+          <Route path="/listings/new" component={AdminAddListing} />
+          <Route path="/listings/edit/:id" component={AdminEditListing} />
+          <Route path="/listings" component={AdminListings} />
+          <Route path="/users" component={AdminUsers} />
+          <Route path="/recycle-bin" component={AdminRecycleBin} />
+          <Route path="/" component={AdminOverview} />
+        </Switch>
+      </AdminDashboardLayout>
+    </Router>
   );
 }
