@@ -184,7 +184,7 @@ export default function MapPage() {
           </div>
 
           {/* Listings */}
-          <div className="flex-1 overflow-y-scroll min-h-0" style={{
+          <div className="flex-1 overflow-y-scroll min-h-0 max-h-[calc(100vh-280px)]" style={{
             scrollbarWidth: 'thin',
             scrollbarColor: '#cbd5e0 transparent'
           }}>
