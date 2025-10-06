@@ -543,6 +543,86 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin reset categories route - keeps only specified categories
+  app.post('/api/admin/reset-categories', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const requiredCategories = [
+        { name: 'School', description: 'Educational institutions and schools' },
+        { name: 'Online', description: 'Online services and businesses' },
+        { name: 'Provision Store', description: 'Grocery and provision stores' },
+        { name: 'Masjid', description: 'Mosques and Islamic centers' },
+        { name: 'Services Store', description: 'Service-based businesses' },
+        { name: 'Virtual Kitchen', description: 'Virtual and cloud kitchens' },
+        { name: 'Arts Henna', description: 'Arts, henna, and creative services' },
+        { name: 'Restaurant', description: 'Restaurants and dining establishments' },
+      ];
+
+      // Get all existing categories
+      const existingCategories = await storage.getCategories();
+      
+      // First, create new categories if they don't exist
+      const schoolCategory = requiredCategories.find(c => c.name === 'School');
+      let schoolCategoryId = existingCategories.find(c => c.name === 'School')?.id;
+      if (!schoolCategoryId && schoolCategory) {
+        const newCat = await storage.createCategory(schoolCategory);
+        schoolCategoryId = newCat.id;
+      }
+      
+      // Update listings that use categories to be deleted to use School category
+      let updatedListings = 0;
+      for (const category of existingCategories) {
+        if (!requiredCategories.find(rc => rc.name === category.name)) {
+          // Get all listings using this category
+          const listingsToUpdate = await storage.getListings({});
+          for (const listing of listingsToUpdate) {
+            if (listing.categoryId === category.id && schoolCategoryId) {
+              await storage.updateListing(listing.id, { categoryId: schoolCategoryId });
+              updatedListings++;
+            }
+          }
+        }
+      }
+      
+      // Now delete categories that are not in the required list
+      let deletedCount = 0;
+      for (const category of existingCategories) {
+        if (!requiredCategories.find(rc => rc.name === category.name)) {
+          try {
+            await storage.deleteCategory(category.id);
+            deletedCount++;
+          } catch (error) {
+            console.error(`Failed to delete category ${category.name}:`, error);
+          }
+        }
+      }
+
+      // Create missing categories
+      let createdCount = 0;
+      for (const reqCat of requiredCategories) {
+        const exists = existingCategories.find(ec => ec.name === reqCat.name);
+        if (!exists) {
+          await storage.createCategory(reqCat);
+          createdCount++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Categories reset successfully',
+        deleted: deletedCount,
+        created: createdCount,
+        updatedListings,
+        total: requiredCategories.length,
+      });
+    } catch (error: any) {
+      console.error("Error resetting categories:", error);
+      res.status(500).json({ 
+        message: "Failed to reset categories", 
+        error: error.message || String(error),
+      });
+    }
+  });
+
   // Admin seed endpoint for demo data
   app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
     try {

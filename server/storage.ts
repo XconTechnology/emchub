@@ -32,6 +32,7 @@ export interface IStorage {
   // Category operations
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
+  deleteCategory(id: string): Promise<void>;
   
   // Enhanced listing operations
   createListing(listing: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing>;
@@ -129,6 +130,10 @@ export class DatabaseStorage implements IStorage {
       .values(categoryData)
       .returning();
     return category;
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await db.delete(categories).where(eq(categories.id, id));
   }
 
   // Enhanced listing operations
