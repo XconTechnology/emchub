@@ -1,9 +1,30 @@
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, GraduationCap, Globe, Store, MapPin } from "lucide-react";
+import { Search, GraduationCap, Globe, Store, MapPin, Wrench, ChefHat, Palette, Utensils } from "lucide-react";
+import type { Category } from "@shared/schema";
 
 export default function Hero() {
+  const { data: categories, isLoading } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  const getCategoryIcon = (categoryName: string) => {
+    const iconMap: Record<string, any> = {
+      'School': GraduationCap,
+      'Online': Globe,
+      'Provision Store': Store,
+      'Masjid': MapPin,
+      'Services Store': Wrench,
+      'Virtual Kitchen': ChefHat,
+      'Arts Henna': Palette,
+      'Restaurant': Utensils,
+    };
+    const IconComponent = iconMap[categoryName] || Store;
+    return <IconComponent className="w-7 h-7 text-white" />;
+  };
   return (
     <section className="pt-24 pb-16" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 50%, hsl(86 49% 38%) 100%)"}}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,35 +89,32 @@ export default function Hero() {
           <div>
             <h2 className="text-xl font-semibold text-white mb-8">Browse by category</h2>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-school">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
-                  <GraduationCap className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-center font-semibold text-gray-800 text-sm">School</h3>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-white/50 rounded-2xl p-6 shadow-xl animate-pulse">
+                    <div className="w-14 h-14 rounded-2xl mx-auto mb-4 bg-gray-300"></div>
+                    <div className="h-4 bg-gray-300 rounded mx-auto w-20"></div>
+                  </div>
+                ))}
               </div>
-              
-              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-online">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
-                  <Globe className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-center font-semibold text-gray-800 text-sm">Online</h3>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                {categories?.map((category) => (
+                  <Link key={category.id} href={`/category/${category.id}`}>
+                    <div 
+                      className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" 
+                      data-testid={`category-${category.name.toLowerCase().replace(/ /g, '-')}`}
+                    >
+                      <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
+                        {getCategoryIcon(category.name)}
+                      </div>
+                      <h3 className="text-center font-semibold text-gray-800 text-sm">{category.name}</h3>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              
-              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-provision-store">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
-                  <Store className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-center font-semibold text-gray-800 text-sm">Provision Store</h3>
-              </div>
-              
-              <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" data-testid="category-masjid">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
-                  <MapPin className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-center font-semibold text-gray-800 text-sm">Masjid</h3>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
