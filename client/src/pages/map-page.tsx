@@ -184,7 +184,7 @@ export default function MapPage() {
           </div>
 
           {/* Listings */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="p-8 text-center text-gray-500">Loading...</div>
             ) : filteredListings.length === 0 ? (
