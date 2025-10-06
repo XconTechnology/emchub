@@ -90,8 +90,8 @@ export default function Hero() {
             <h2 className="text-xl font-semibold text-white mb-8">Browse by category</h2>
             
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                {[...Array(8)].map((_, i) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto mb-6">
+                {[...Array(4)].map((_, i) => (
                   <div key={i} className="bg-white/50 rounded-2xl p-6 shadow-xl animate-pulse">
                     <div className="w-14 h-14 rounded-2xl mx-auto mb-4 bg-gray-300"></div>
                     <div className="h-4 bg-gray-300 rounded mx-auto w-20"></div>
@@ -99,21 +99,36 @@ export default function Hero() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                {categories?.map((category) => (
-                  <Link key={category.id} href={`/category/${category.id}`}>
-                    <div 
-                      className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" 
-                      data-testid={`category-${category.name.toLowerCase().replace(/ /g, '-')}`}
-                    >
-                      <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
-                        {getCategoryIcon(category.name)}
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto mb-6">
+                  {categories?.slice(0, 4).map((category) => (
+                    <Link key={category.id} href={`/category/${category.id}`}>
+                      <div 
+                        className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-1" 
+                        data-testid={`category-${category.name.toLowerCase().replace(/ /g, '-')}`}
+                      >
+                        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg" style={{background: "linear-gradient(135deg, hsl(86 49% 53%) 0%, hsl(86 49% 45%) 100%)"}}>
+                          {getCategoryIcon(category.name)}
+                        </div>
+                        <h3 className="text-center font-semibold text-gray-800 text-sm">{category.name}</h3>
                       </div>
-                      <h3 className="text-center font-semibold text-gray-800 text-sm">{category.name}</h3>
-                    </div>
+                    </Link>
+                  ))}
+                </div>
+                
+                {/* View All Categories Button */}
+                <div className="text-center">
+                  <Link href="/categories">
+                    <Button 
+                      variant="outline" 
+                      className="bg-white/20 backdrop-blur-sm text-white border-white/40 hover:bg-white/30 hover:border-white/60 px-8 py-3 rounded-xl font-semibold transition-all shadow-lg"
+                      data-testid="button-view-all-categories"
+                    >
+                      View All Categories
+                    </Button>
                   </Link>
-                ))}
-              </div>
+                </div>
+              </>
             )}
           </div>
         </div>
