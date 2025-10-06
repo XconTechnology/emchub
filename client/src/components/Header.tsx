@@ -59,7 +59,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                 Home
               </Link>
               <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
-                Map
+                Map of Listings
               </Link>
               <Link href="/explore" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-explore">
                 Explore
