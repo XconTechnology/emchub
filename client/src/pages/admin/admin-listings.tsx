@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import {
   Dialog,
@@ -111,6 +112,89 @@ export default function AdminListings() {
     });
   };
 
+  const draftListings = allListings.filter(listing => listing.status === 'draft');
+  const publishedListings = allListings.filter(listing => listing.status === 'published');
+
+  const renderListingCard = (listing: Listing) => {
+    const listingCategory = categories.find(cat => cat.id === listing.categoryId);
+    return (
+      <Card key={listing.id} className="mb-4" data-testid={`listing-card-${listing.id}`}>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <CardTitle className="text-lg">{listing.title}</CardTitle>
+                {listing.status === 'draft' ? (
+                  <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100" data-testid={`status-draft-${listing.id}`}>Draft</Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100" data-testid={`status-published-${listing.id}`}>Published</Badge>
+                )}
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{listing.description}</p>
+              <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                <span className="flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {formatDate(listing.createdAt)}
+                </span>
+                <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
+              </div>
+            </div>
+            <div className="flex space-x-2 flex-wrap ml-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation(`/business/${listing.id}`)}
+                data-testid={`button-view-${listing.id}`}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                View
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation(`/admin/listings/edit/${listing.id}`)}
+                data-testid={`button-edit-${listing.id}`}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDelete(listing)}
+                data-testid={`button-delete-${listing.id}`}
+              >
+                <Trash className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+              {listing.status === 'draft' ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'published' })}
+                  disabled={updateStatusMutation.isPending}
+                  data-testid={`button-publish-${listing.id}`}
+                >
+                  Publish
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'draft' })}
+                  disabled={updateStatusMutation.isPending}
+                  data-testid={`button-draft-${listing.id}`}
+                >
+                  Move to Draft
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  };
+
   if (isLoading) {
     return <div className="text-center py-8">Loading listings...</div>;
   }
@@ -132,93 +216,55 @@ export default function AdminListings() {
         </Button>
       </div>
 
-      {allListings.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No listings found</p>
-          </CardContent>
-        </Card>
-      ) : (
-        allListings.map((listing) => {
-          const listingCategory = categories.find(cat => cat.id === listing.categoryId);
-          return (
-            <Card key={listing.id} className="mb-4" data-testid={`listing-card-${listing.id}`}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-lg">{listing.title}</CardTitle>
-                      {listing.status === 'draft' ? (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-800" data-testid={`status-draft-${listing.id}`}>Draft</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800" data-testid={`status-published-${listing.id}`}>Published</Badge>
-                      )}
-                    </div>
-                    <p className="text-gray-600 text-sm mb-2">{listing.description}</p>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {formatDate(listing.createdAt)}
-                      </span>
-                      <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2 flex-wrap ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLocation(`/business/${listing.id}`)}
-                      data-testid={`button-view-${listing.id}`}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setLocation(`/admin/listings/edit/${listing.id}`)}
-                      data-testid={`button-edit-${listing.id}`}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(listing)}
-                      data-testid={`button-delete-${listing.id}`}
-                    >
-                      <Trash className="w-4 h-4 mr-1" />
-                      Delete
-                    </Button>
-                    {listing.status === 'draft' ? (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'published' })}
-                        disabled={updateStatusMutation.isPending}
-                        data-testid={`button-publish-${listing.id}`}
-                      >
-                        Publish
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateStatusMutation.mutate({ id: listing.id, status: 'draft' })}
-                        disabled={updateStatusMutation.isPending}
-                        data-testid={`button-draft-${listing.id}`}
-                      >
-                        Move to Draft
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList>
+          <TabsTrigger value="all" data-testid="tab-all-listings">
+            All Listings ({allListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="published" data-testid="tab-published-listings">
+            Published ({publishedListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="draft" data-testid="tab-draft-listings">
+            Draft ({draftListings.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          {allListings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No listings found</p>
+              </CardContent>
             </Card>
-          );
-        })
-      )}
+          ) : (
+            allListings.map(renderListingCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="published" className="mt-6">
+          {publishedListings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No published listings found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            publishedListings.map(renderListingCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="draft" className="mt-6">
+          {draftListings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No draft listings found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            draftListings.map(renderListingCard)
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>

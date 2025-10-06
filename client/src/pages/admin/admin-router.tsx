@@ -29,12 +29,12 @@ export default function AdminRouter() {
   return (
     <AdminDashboardLayout>
       <Switch>
-        <Route path="/admin" component={AdminOverview} />
-        <Route path="/admin/listings" component={AdminListings} />
-        <Route path="/admin/listings/new" component={AdminAddListing} />
-        <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
-        <Route path="/admin/users" component={AdminUsers} />
-        <Route path="/admin/recycle-bin" component={AdminRecycleBin} />
+        <Route path="/" component={AdminOverview} />
+        <Route path="/listings" component={AdminListings} />
+        <Route path="/listings/new" component={AdminAddListing} />
+        <Route path="/listings/edit/:id" component={AdminEditListing} />
+        <Route path="/users" component={AdminUsers} />
+        <Route path="/recycle-bin" component={AdminRecycleBin} />
       </Switch>
     </AdminDashboardLayout>
   );
