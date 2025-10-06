@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { Icon } from "leaflet";
 import { 
   MapPin, 
   Phone, 
@@ -26,6 +28,17 @@ import {
   Flag
 } from "lucide-react";
 import type { Listing, Category } from "@shared/schema";
+import "leaflet/dist/leaflet.css";
+
+const customIcon = new Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 export default function BusinessDetail() {
   const { id } = useParams();
@@ -382,6 +395,45 @@ export default function BusinessDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Location Map */}
+          {listing.latitude && listing.longitude && !listing.isOnlineOnly && (
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  Location
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px] rounded-lg overflow-hidden" data-testid="map-container">
+                  <MapContainer
+                    center={[parseFloat(listing.latitude), parseFloat(listing.longitude)]}
+                    zoom={15}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker 
+                      position={[parseFloat(listing.latitude), parseFloat(listing.longitude)]}
+                      icon={customIcon}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <p className="font-bold">{listing.title}</p>
+                          {listing.address && <p>{listing.address}</p>}
+                          {listing.city && <p>{listing.city}</p>}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </MapContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Additional Details */}
           <Card className="bg-white/90 dark:bg-card/90 backdrop-blur-xl shadow-xl">
