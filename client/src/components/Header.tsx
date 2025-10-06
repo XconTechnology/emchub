@@ -139,7 +139,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                   <Link href="/auth">
                     <Button 
                       variant="ghost" 
-                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-gray-700' : 'text-white hover:text-gray-900'}`}
                       data-testid="button-signin"
                     >
                       Sign In
@@ -148,7 +148,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                   <Link href="/auth">
                     <Button 
                       variant="ghost" 
-                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
+                      className={`font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-gray-700' : 'text-white hover:text-gray-900'}`}
                       data-testid="button-signup"
                     >
                       Sign Up
