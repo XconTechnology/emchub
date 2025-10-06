@@ -11,6 +11,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
@@ -718,6 +719,57 @@ export function registerRoutes(app: Express): Server {
     res.json({ message: "This is a protected route", userId });
   });
 
+  // Object Storage routes - for listing images
+  app.post("/api/objects/upload", isAdminAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.put("/api/listing-images", isAdminAuthenticated, async (req, res) => {
+    if (!req.body.imageURL) {
+      return res.status(400).json({ error: "imageURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.imageURL,
+        {
+          owner: "admin",
+          visibility: "public",
+        },
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting listing image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

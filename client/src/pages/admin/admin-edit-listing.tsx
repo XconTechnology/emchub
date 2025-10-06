@@ -26,14 +26,18 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Category, Listing } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
+import { Upload, X } from "lucide-react";
 
 export default function AdminEditListing() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const params = useParams();
   const listingId = params.id;
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const { data: listing, isLoading: isLoadingListing } = useQuery<Listing>({
     queryKey: ['/api/listings', listingId],
@@ -88,6 +92,7 @@ export default function AdminEditListing() {
         isVerified: listing.isVerified || false,
         status: (listing.status === "published" ? "published" : "draft") as "draft" | "published",
       });
+      setUploadedImages(listing.images || []);
     }
   }, [listing, form]);
 
@@ -255,20 +260,77 @@ export default function AdminEditListing() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Images (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter image URLs, one per line&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                        value={Array.isArray(field.value) ? field.value.join('\n') : ''}
-                        onChange={(e) => {
-                          const urls = e.target.value.split('\n').map(url => url.trim()).filter(url => url.length > 0);
-                          field.onChange(urls.length > 0 ? urls : undefined);
+                    <div className="space-y-3">
+                      <ObjectUploader
+                        maxNumberOfFiles={5}
+                        maxFileSize={10485760}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch('/api/objects/upload', {
+                            method: 'POST',
+                            credentials: 'include',
+                          });
+                          if (!response.ok) throw new Error('Failed to get upload URL');
+                          const { uploadURL } = await response.json();
+                          return { method: 'PUT' as const, url: uploadURL };
                         }}
-                        rows={4}
-                        data-testid="input-images"
-                      />
-                    </FormControl>
+                        onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                          const urls = result.successful?.map(file => file.uploadURL) || [];
+                          for (const url of urls) {
+                            try {
+                              const response = await fetch('/api/listing-images', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ imageURL: url }),
+                              });
+                              if (response.ok) {
+                                const { objectPath } = await response.json();
+                                setUploadedImages(prev => [...prev, objectPath]);
+                                const currentImages = field.value || [];
+                                field.onChange([...currentImages, objectPath]);
+                              }
+                            } catch (error) {
+                              console.error('Error processing upload:', error);
+                            }
+                          }
+                          toast({
+                            title: "Images Uploaded",
+                            description: `${urls.length} image(s) uploaded successfully`,
+                          });
+                        }}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Images
+                      </ObjectUploader>
+                      
+                      {uploadedImages.length > 0 && (
+                        <div className="grid grid-cols-4 gap-3">
+                          {uploadedImages.map((imagePath, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={imagePath} 
+                                alt={`Upload ${index + 1}`} 
+                                className="w-full h-24 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUploadedImages(prev => prev.filter((_, i) => i !== index));
+                                  const currentImages = field.value || [];
+                                  field.onChange(currentImages.filter((_, i) => i !== index));
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                data-testid={`button-remove-image-${index}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      First image will be shown in the hero section
+                      First image will be shown in the hero section. Max 5 images, 10MB each.
                     </p>
                     <FormMessage />
                   </FormItem>
