@@ -744,6 +744,18 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Authentication required" });
       }
       
+      // Get all categories and create a mapping
+      const allCategories = await storage.getCategories();
+      const categoryMap = new Map<string, string>();
+      
+      // Map by name (case-insensitive)
+      for (const cat of allCategories) {
+        categoryMap.set(cat.name.toLowerCase(), cat.id);
+      }
+      
+      // Find a default category (School)
+      const defaultCategoryId = allCategories.find(c => c.name === 'School')?.id || allCategories[0]?.id;
+      
       let importedCount = 0;
       let skippedCount = 0;
       let errorCount = 0;
@@ -763,12 +775,19 @@ export function registerRoutes(app: Express): Server {
           const images = row.Images ? row.Images.toString().split(',').map((i: string) => i.trim()).filter(Boolean) : [];
           const tags = row.Tags ? row.Tags.toString().split(',').map((t: string) => t.trim()).filter(Boolean) : [];
           
+          // Map category name to ID
+          let categoryId = defaultCategoryId;
+          if (row.Category) {
+            const categoryName = row.Category.toString().trim().toLowerCase();
+            categoryId = categoryMap.get(categoryName) || defaultCategoryId;
+          }
+          
           // Prepare listing data
           const listingData: any = {
             title,
             type: 'business',
             description: row.Description?.toString() || '',
-            categoryId: row.Category?.toString() || '',
+            categoryId,
             address: row.Address?.toString() || '',
             city: row.City?.toString() || '',
             postalCode: row.PostalCode?.toString() || '',
