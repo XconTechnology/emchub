@@ -793,29 +793,16 @@ export function registerRoutes(app: Express): Server {
             moderationStatus: 'approved',
           };
           
-          // Auto-geocode if address exists but coordinates don't
-          if (listingData.address && !listingData.isOnlineOnly) {
-            if (!row.Latitude || !row.Longitude) {
-              const coordinates = await geocodeAddress(listingData.address, listingData.city || '');
-              if (coordinates) {
-                listingData.latitude = coordinates.latitude;
-                listingData.longitude = coordinates.longitude;
-              }
-            } else {
-              listingData.latitude = row.Latitude?.toString() || '';
-              listingData.longitude = row.Longitude?.toString() || '';
-            }
+          // Use coordinates from Excel if provided
+          if (row.Latitude && row.Longitude) {
+            listingData.latitude = row.Latitude?.toString() || '';
+            listingData.longitude = row.Longitude?.toString() || '';
           }
           
           // Create the listing
           await storage.createListing(listingData);
           importedCount++;
           results.push({ row, status: 'imported', title });
-          
-          // Add delay to respect geocoding rate limits
-          if (listingData.address && !listingData.latitude) {
-            await delay(1000);
-          }
         } catch (error: any) {
           errorCount++;
           results.push({ row, status: 'error', reason: error.message });
