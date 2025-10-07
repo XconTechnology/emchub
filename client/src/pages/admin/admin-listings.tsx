@@ -89,6 +89,87 @@ export default function AdminListings() {
     }
   });
 
+  // Export listings to Excel
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/admin/listings/export', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error('Failed to export listings');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `listings-export-${Date.now()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "Listings have been exported to Excel.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export listings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Import listings from Excel
+  const importMutation = useMutation({
+    mutationFn: async (fileData: string) => {
+      const response = await fetch('/api/admin/listings/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ fileData }),
+      });
+      if (!response.ok) throw new Error('Failed to import listings');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${data.importedCount} listing(s). Skipped ${data.skippedCount} duplicate(s). ${data.errorCount} error(s).`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import listings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result?.toString().split(',')[1];
+        if (base64) {
+          importMutation.mutate(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
   const handleDelete = (listing: Listing) => {
     setListingToDelete(listing);
     setDeleteDialogOpen(true);
@@ -208,12 +289,31 @@ export default function AdminListings() {
             Manage all listings across your platform
           </p>
         </div>
-        <Button 
-          onClick={() => setLocation('/admin/listings/new')}
-          data-testid="button-add-listing"
-        >
-          Add New Listing
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleExport}
+            data-testid="button-export"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleImport}
+            disabled={importMutation.isPending}
+            data-testid="button-import"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            {importMutation.isPending ? 'Importing...' : 'Import'}
+          </Button>
+          <Button 
+            onClick={() => setLocation('/admin/listings/new')}
+            data-testid="button-add-listing"
+          >
+            Add New Listing
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="all" className="w-full">
