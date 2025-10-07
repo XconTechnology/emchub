@@ -744,10 +744,6 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      // Get all existing listings for duplicate checking
-      const existingListings = await storage.getListings({});
-      const existingTitles = new Set(existingListings.map(l => l.title.toLowerCase().trim()));
-      
       let importedCount = 0;
       let skippedCount = 0;
       let errorCount = 0;
@@ -755,7 +751,7 @@ export function registerRoutes(app: Express): Server {
       
       for (const row of data as any[]) {
         try {
-          let title = row.Title?.toString().trim();
+          const title = row.Title?.toString().trim();
           
           if (!title) {
             skippedCount++;
@@ -763,24 +759,13 @@ export function registerRoutes(app: Express): Server {
             continue;
           }
           
-          // Make title unique if it already exists by appending a number
-          let uniqueTitle = title;
-          let counter = 1;
-          while (existingTitles.has(uniqueTitle.toLowerCase())) {
-            uniqueTitle = `${title} (${counter})`;
-            counter++;
-          }
-          
-          // Add the new title to existing set to prevent duplicates in this import batch
-          existingTitles.add(uniqueTitle.toLowerCase());
-          
           // Parse images and tags
           const images = row.Images ? row.Images.toString().split(',').map((i: string) => i.trim()).filter(Boolean) : [];
           const tags = row.Tags ? row.Tags.toString().split(',').map((t: string) => t.trim()).filter(Boolean) : [];
           
           // Prepare listing data
           const listingData: any = {
-            title: uniqueTitle,
+            title,
             description: row.Description?.toString() || '',
             categoryId: row.Category?.toString() || '',
             address: row.Address?.toString() || '',
@@ -806,7 +791,7 @@ export function registerRoutes(app: Express): Server {
           // Create the listing
           await storage.createListing(listingData);
           importedCount++;
-          results.push({ row, status: 'imported', title: uniqueTitle });
+          results.push({ row, status: 'imported', title });
         } catch (error: any) {
           errorCount++;
           results.push({ row, status: 'error', reason: error.message });
