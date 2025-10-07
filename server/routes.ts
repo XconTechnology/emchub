@@ -174,7 +174,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/listings/:id', async (req, res) => {
+  app.get('/api/listings/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
       const listing = await storage.getListing(id);
@@ -183,8 +183,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Listing not found" });
       }
       
-      // Only show approved and published listings to public
-      if (listing.moderationStatus !== 'approved' || listing.status !== 'published') {
+      // Check if user is admin
+      const isAdmin = req.session?.adminAuth === true;
+      
+      // Only show approved and published listings to public, but admins can see all
+      if (!isAdmin && (listing.moderationStatus !== 'approved' || listing.status !== 'published')) {
         return res.status(404).json({ message: "Listing not found" });
       }
       
@@ -753,6 +756,8 @@ export function registerRoutes(app: Express): Server {
         categoryMap.set(cat.name.toLowerCase(), cat.id);
       }
       
+      console.log('Available categories:', Array.from(categoryMap.keys()));
+      
       // Find a default category (School)
       const defaultCategoryId = allCategories.find(c => c.name === 'School')?.id || allCategories[0]?.id;
       
@@ -780,6 +785,9 @@ export function registerRoutes(app: Express): Server {
           if (row.Category) {
             const categoryName = row.Category.toString().trim().toLowerCase();
             categoryId = categoryMap.get(categoryName) || defaultCategoryId;
+            if (!categoryMap.get(categoryName)) {
+              console.log(`Category "${row.Category}" not found, using default. Available:`, Array.from(categoryMap.keys()));
+            }
           }
           
           // Prepare listing data
