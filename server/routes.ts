@@ -747,7 +747,6 @@ export function registerRoutes(app: Express): Server {
       // Get all existing listings for duplicate checking
       const existingListings = await storage.getListings({});
       const existingTitles = new Set(existingListings.map(l => l.title.toLowerCase().trim()));
-      const existingIds = new Set(existingListings.map(l => l.id));
       
       let importedCount = 0;
       let skippedCount = 0;
@@ -756,9 +755,8 @@ export function registerRoutes(app: Express): Server {
       
       for (const row of data as any[]) {
         try {
-          // Check for duplicates by title or ID
+          // Check for duplicates by title only (ignore ID from Excel)
           const title = row.Title?.toString().trim();
-          const id = row.ID?.toString().trim();
           
           if (!title) {
             skippedCount++;
@@ -766,9 +764,9 @@ export function registerRoutes(app: Express): Server {
             continue;
           }
           
-          if (existingTitles.has(title.toLowerCase()) || (id && existingIds.has(id))) {
+          if (existingTitles.has(title.toLowerCase())) {
             skippedCount++;
-            results.push({ row, status: 'skipped', reason: 'Duplicate listing (title or ID already exists)' });
+            results.push({ row, status: 'skipped', reason: 'Duplicate listing (title already exists)' });
             continue;
           }
           
