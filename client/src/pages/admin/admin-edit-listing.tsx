@@ -104,7 +104,7 @@ export default function AdminEditListing() {
           value === '' ? undefined : value
         ])
       );
-      return apiRequest('PATCH', `/api/listings/${listingId}`, cleanedData);
+      return apiRequest('PATCH', `/api/admin/listings/${listingId}`, cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
