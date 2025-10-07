@@ -755,8 +755,7 @@ export function registerRoutes(app: Express): Server {
       
       for (const row of data as any[]) {
         try {
-          // Check for duplicates by title only (ignore ID from Excel)
-          const title = row.Title?.toString().trim();
+          let title = row.Title?.toString().trim();
           
           if (!title) {
             skippedCount++;
@@ -764,11 +763,16 @@ export function registerRoutes(app: Express): Server {
             continue;
           }
           
-          if (existingTitles.has(title.toLowerCase())) {
-            skippedCount++;
-            results.push({ row, status: 'skipped', reason: 'Duplicate listing (title already exists)' });
-            continue;
+          // Make title unique if it already exists by appending a number
+          let uniqueTitle = title;
+          let counter = 1;
+          while (existingTitles.has(uniqueTitle.toLowerCase())) {
+            uniqueTitle = `${title} (${counter})`;
+            counter++;
           }
+          
+          // Add the new title to existing set to prevent duplicates in this import batch
+          existingTitles.add(uniqueTitle.toLowerCase());
           
           // Parse images and tags
           const images = row.Images ? row.Images.toString().split(',').map((i: string) => i.trim()).filter(Boolean) : [];
@@ -776,7 +780,7 @@ export function registerRoutes(app: Express): Server {
           
           // Prepare listing data
           const listingData: any = {
-            title,
+            title: uniqueTitle,
             description: row.Description?.toString() || '',
             categoryId: row.Category?.toString() || '',
             address: row.Address?.toString() || '',
@@ -802,7 +806,7 @@ export function registerRoutes(app: Express): Server {
           // Create the listing
           await storage.createListing(listingData);
           importedCount++;
-          results.push({ row, status: 'imported', title });
+          results.push({ row, status: 'imported', title: uniqueTitle });
         } catch (error: any) {
           errorCount++;
           results.push({ row, status: 'error', reason: error.message });
