@@ -663,6 +663,181 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin route to export all listings to Excel
+  app.get('/api/admin/listings/export', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const XLSX = (await import('xlsx')).default;
+      const allListings = await storage.getListings({});
+      
+      // Prepare data for Excel
+      const exportData = allListings.map(listing => ({
+        ID: listing.id,
+        Title: listing.title,
+        Description: listing.description || '',
+        Category: listing.categoryId || '',
+        Address: listing.address || '',
+        City: listing.city || '',
+        PostalCode: listing.postalCode || '',
+        Latitude: listing.latitude || '',
+        Longitude: listing.longitude || '',
+        Phone: listing.phone || '',
+        Email: listing.email || '',
+        Website: listing.website || '',
+        Images: Array.isArray(listing.images) ? listing.images.join(', ') : '',
+        Tags: Array.isArray(listing.tags) ? listing.tags.join(', ') : '',
+        Status: listing.status || 'draft',
+        IsOnlineOnly: listing.isOnlineOnly ? 'Yes' : 'No',
+        ModerationStatus: listing.moderationStatus || 'pending',
+        CreatedAt: listing.createdAt ? new Date(listing.createdAt).toISOString() : '',
+      }));
+      
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      // Auto-size columns
+      const cols = Object.keys(exportData[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
+      ws['!cols'] = cols;
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Listings');
+      
+      // Generate buffer
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      
+      // Send file
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=listings-export-${Date.now()}.xlsx`);
+      res.send(buf);
+    } catch (error) {
+      console.error('Error exporting listings:', error);
+      res.status(500).json({ message: 'Failed to export listings' });
+    }
+  });
+
+  // Admin route to import listings from Excel
+  app.post('/api/admin/listings/import', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const XLSX = (await import('xlsx')).default;
+      
+      if (!req.body.fileData) {
+        return res.status(400).json({ message: 'No file data provided' });
+      }
+      
+      // Parse base64 file data
+      const buffer = Buffer.from(req.body.fileData, 'base64');
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+      
+      // Get admin user ID
+      let userId = req.user?.id;
+      const isAdmin = req.session?.adminAuth === true;
+      
+      if (isAdmin && !userId) {
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length > 0) {
+          userId = adminUsers[0].id;
+        }
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Get all existing listings for duplicate checking
+      const existingListings = await storage.getListings({});
+      const existingTitles = new Set(existingListings.map(l => l.title.toLowerCase().trim()));
+      const existingIds = new Set(existingListings.map(l => l.id));
+      
+      let importedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
+      const results = [];
+      
+      for (const row of data as any[]) {
+        try {
+          // Check for duplicates by title or ID
+          const title = row.Title?.toString().trim();
+          const id = row.ID?.toString().trim();
+          
+          if (!title) {
+            skippedCount++;
+            results.push({ row, status: 'skipped', reason: 'Missing title' });
+            continue;
+          }
+          
+          if (existingTitles.has(title.toLowerCase()) || (id && existingIds.has(id))) {
+            skippedCount++;
+            results.push({ row, status: 'skipped', reason: 'Duplicate listing (title or ID already exists)' });
+            continue;
+          }
+          
+          // Parse images and tags
+          const images = row.Images ? row.Images.toString().split(',').map((i: string) => i.trim()).filter(Boolean) : [];
+          const tags = row.Tags ? row.Tags.toString().split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+          
+          // Prepare listing data
+          const listingData: any = {
+            title,
+            description: row.Description?.toString() || '',
+            categoryId: row.Category?.toString() || '',
+            address: row.Address?.toString() || '',
+            city: row.City?.toString() || '',
+            postalCode: row.PostalCode?.toString() || '',
+            phone: row.Phone?.toString() || '',
+            email: row.Email?.toString() || '',
+            website: row.Website?.toString() || '',
+            images,
+            tags,
+            status: row.Status?.toString() || 'draft',
+            isOnlineOnly: row.IsOnlineOnly?.toString().toLowerCase() === 'yes',
+            userId,
+            moderationStatus: 'approved',
+          };
+          
+          // Auto-geocode if address exists but coordinates don't
+          if (listingData.address && !listingData.isOnlineOnly) {
+            if (!row.Latitude || !row.Longitude) {
+              const coordinates = await geocodeAddress(listingData.address, listingData.city || '');
+              if (coordinates) {
+                listingData.latitude = coordinates.latitude;
+                listingData.longitude = coordinates.longitude;
+              }
+            } else {
+              listingData.latitude = row.Latitude?.toString() || '';
+              listingData.longitude = row.Longitude?.toString() || '';
+            }
+          }
+          
+          // Create the listing
+          await storage.createListing(listingData);
+          importedCount++;
+          results.push({ row, status: 'imported', title });
+          
+          // Add delay to respect geocoding rate limits
+          if (listingData.address && !listingData.latitude) {
+            await delay(1000);
+          }
+        } catch (error: any) {
+          errorCount++;
+          results.push({ row, status: 'error', reason: error.message });
+        }
+      }
+      
+      res.json({
+        message: 'Import completed',
+        importedCount,
+        skippedCount,
+        errorCount,
+        total: data.length,
+        results
+      });
+    } catch (error) {
+      console.error('Error importing listings:', error);
+      res.status(500).json({ message: 'Failed to import listings' });
+    }
+  });
+
   // Admin reset categories route - keeps only specified categories
   app.post('/api/admin/reset-categories', isAdminAuthenticated, async (req: any, res) => {
     try {
