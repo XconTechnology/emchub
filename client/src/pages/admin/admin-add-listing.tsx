@@ -31,11 +31,13 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import { Upload, X } from "lucide-react";
 import { useState } from "react";
+import { Link as LinkIcon } from "lucide-react";
 
 export default function AdminAddListing() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -219,47 +221,78 @@ export default function AdminAddListing() {
                   <FormItem>
                     <FormLabel>Images (Optional)</FormLabel>
                     <div className="space-y-3">
-                      <ObjectUploader
-                        maxNumberOfFiles={5}
-                        maxFileSize={10485760}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch('/api/objects/upload', {
-                            method: 'POST',
-                            credentials: 'include',
-                          });
-                          if (!response.ok) throw new Error('Failed to get upload URL');
-                          const { uploadURL } = await response.json();
-                          return { method: 'PUT' as const, url: uploadURL };
-                        }}
-                        onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-                          const urls = result.successful?.map(file => file.uploadURL) || [];
-                          for (const url of urls) {
-                            try {
-                              const response = await fetch('/api/listing-images', {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({ imageURL: url }),
-                              });
-                              if (response.ok) {
-                                const { objectPath } = await response.json();
-                                setUploadedImages(prev => [...prev, objectPath]);
-                                const currentImages = field.value || [];
-                                field.onChange([...currentImages, objectPath]);
+                      <div className="flex gap-2">
+                        <ObjectUploader
+                          maxNumberOfFiles={5}
+                          maxFileSize={10485760}
+                          onGetUploadParameters={async () => {
+                            const response = await fetch('/api/objects/upload', {
+                              method: 'POST',
+                              credentials: 'include',
+                            });
+                            if (!response.ok) throw new Error('Failed to get upload URL');
+                            const { uploadURL } = await response.json();
+                            return { method: 'PUT' as const, url: uploadURL };
+                          }}
+                          onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                            const urls = result.successful?.map(file => file.uploadURL) || [];
+                            for (const url of urls) {
+                              try {
+                                const response = await fetch('/api/listing-images', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ imageURL: url }),
+                                });
+                                if (response.ok) {
+                                  const { objectPath } = await response.json();
+                                  setUploadedImages(prev => [...prev, objectPath]);
+                                  const currentImages = field.value || [];
+                                  field.onChange([...currentImages, objectPath]);
+                                }
+                              } catch (error) {
+                                console.error('Error processing upload:', error);
                               }
-                            } catch (error) {
-                              console.error('Error processing upload:', error);
                             }
-                          }
-                          toast({
-                            title: "Images Uploaded",
-                            description: `${urls.length} image(s) uploaded successfully`,
-                          });
-                        }}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Images
-                      </ObjectUploader>
+                            toast({
+                              title: "Images Uploaded",
+                              description: `${urls.length} image(s) uploaded successfully`,
+                            });
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Images
+                        </ObjectUploader>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="Or paste image URL here..." 
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          data-testid="input-image-url"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            if (imageUrl.trim()) {
+                              setUploadedImages(prev => [...prev, imageUrl.trim()]);
+                              const currentImages = field.value || [];
+                              field.onChange([...currentImages, imageUrl.trim()]);
+                              setImageUrl("");
+                              toast({
+                                title: "Image Added",
+                                description: "Image URL added successfully",
+                              });
+                            }
+                          }}
+                          data-testid="button-add-image-url"
+                        >
+                          <LinkIcon className="w-4 h-4 mr-2" />
+                          Add URL
+                        </Button>
+                      </div>
                       
                       {uploadedImages.length > 0 && (
                         <div className="grid grid-cols-4 gap-3">
