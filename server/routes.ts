@@ -766,6 +766,7 @@ export function registerRoutes(app: Express): Server {
           // Prepare listing data
           const listingData: any = {
             title,
+            type: 'business',
             description: row.Description?.toString() || '',
             categoryId: row.Category?.toString() || '',
             address: row.Address?.toString() || '',
