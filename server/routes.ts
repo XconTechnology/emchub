@@ -794,6 +794,7 @@ export function registerRoutes(app: Express): Server {
           importedCount++;
           results.push({ row, status: 'imported', title });
         } catch (error: any) {
+          console.error('Error importing listing:', error.message, 'Row:', row);
           errorCount++;
           results.push({ row, status: 'error', reason: error.message });
         }
