@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import {
   Dialog,
@@ -12,9 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, Edit, Trash, Calendar, Download, Upload } from "lucide-react";
+import { Eye, Edit, Trash, Calendar, Download, Upload, CheckSquare } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing, Category } from "@shared/schema";
 
@@ -23,6 +24,7 @@ export default function AdminListings() {
   const [, setLocation] = useLocation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
+  const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
 
   const { data: allListings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'all'],
@@ -84,6 +86,50 @@ export default function AdminListings() {
       toast({
         title: "Error",
         description: error.message || "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return apiRequest('POST', '/api/admin/listings/bulk-delete', { ids });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      setSelectedListings(new Set());
+      toast({
+        title: "Listings Deleted",
+        description: `${data.count} listing(s) moved to recycle bin.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete listings.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const bulkPublishMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      return apiRequest('POST', '/api/admin/listings/bulk-publish', { ids });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      setSelectedListings(new Set());
+      toast({
+        title: "Listings Published",
+        description: `${data.count} listing(s) published successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish listings.",
         variant: "destructive",
       });
     }
@@ -196,28 +242,65 @@ export default function AdminListings() {
   const draftListings = allListings.filter(listing => listing.status === 'draft');
   const publishedListings = allListings.filter(listing => listing.status === 'published');
 
+  const toggleListingSelection = (id: string) => {
+    const newSelected = new Set(selectedListings);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedListings(newSelected);
+  };
+
+  const toggleSelectAll = (listings: Listing[]) => {
+    if (selectedListings.size === listings.length && listings.length > 0) {
+      setSelectedListings(new Set());
+    } else {
+      setSelectedListings(new Set(listings.map(l => l.id)));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedListings.size === 0) return;
+    bulkDeleteMutation.mutate(Array.from(selectedListings));
+  };
+
+  const handleBulkPublish = () => {
+    if (selectedListings.size === 0) return;
+    bulkPublishMutation.mutate(Array.from(selectedListings));
+  };
+
   const renderListingCard = (listing: Listing) => {
     const listingCategory = categories.find(cat => cat.id === listing.categoryId);
+    const isSelected = selectedListings.has(listing.id);
+    
     return (
       <Card key={listing.id} className="mb-4" data-testid={`listing-card-${listing.id}`}>
         <CardHeader>
           <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <CardTitle className="text-lg">{listing.title}</CardTitle>
-                {listing.status === 'draft' ? (
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100" data-testid={`status-draft-${listing.id}`}>Draft</Badge>
-                ) : (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100" data-testid={`status-published-${listing.id}`}>Published</Badge>
-                )}
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{listing.description}</p>
-              <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {formatDate(listing.createdAt)}
-                </span>
-                <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
+            <div className="flex items-center gap-3 flex-1">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => toggleListingSelection(listing.id)}
+                data-testid={`checkbox-listing-${listing.id}`}
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <CardTitle className="text-lg">{listing.title}</CardTitle>
+                  {listing.status === 'draft' ? (
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100" data-testid={`status-draft-${listing.id}`}>Draft</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100" data-testid={`status-published-${listing.id}`}>Published</Badge>
+                  )}
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{listing.description}</p>
+                <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    {formatDate(listing.createdAt)}
+                  </span>
+                  <Badge variant="outline">{listingCategory?.name || 'Uncategorized'}</Badge>
+                </div>
               </div>
             </div>
             <div className="flex space-x-2 flex-wrap ml-4">
@@ -337,7 +420,45 @@ export default function AdminListings() {
               </CardContent>
             </Card>
           ) : (
-            allListings.map(renderListingCard)
+            <>
+              <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedListings.size === allListings.length && allListings.length > 0}
+                    onCheckedChange={() => toggleSelectAll(allListings)}
+                    data-testid="checkbox-select-all-listings"
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedListings.size > 0 ? `${selectedListings.size} selected` : 'Select All'}
+                  </span>
+                </div>
+                {selectedListings.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkPublish}
+                      disabled={bulkPublishMutation.isPending}
+                      data-testid="button-bulk-publish"
+                    >
+                      <CheckSquare className="w-4 h-4 mr-2" />
+                      Publish Selected
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleteMutation.isPending}
+                      data-testid="button-bulk-delete"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {allListings.map(renderListingCard)}
+            </>
           )}
         </TabsContent>
 
@@ -349,7 +470,35 @@ export default function AdminListings() {
               </CardContent>
             </Card>
           ) : (
-            publishedListings.map(renderListingCard)
+            <>
+              <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedListings.size === publishedListings.length && publishedListings.length > 0}
+                    onCheckedChange={() => toggleSelectAll(publishedListings)}
+                    data-testid="checkbox-select-all-published"
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedListings.size > 0 ? `${selectedListings.size} selected` : 'Select All'}
+                  </span>
+                </div>
+                {selectedListings.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleteMutation.isPending}
+                      data-testid="button-bulk-delete-published"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {publishedListings.map(renderListingCard)}
+            </>
           )}
         </TabsContent>
 
@@ -361,7 +510,45 @@ export default function AdminListings() {
               </CardContent>
             </Card>
           ) : (
-            draftListings.map(renderListingCard)
+            <>
+              <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedListings.size === draftListings.length && draftListings.length > 0}
+                    onCheckedChange={() => toggleSelectAll(draftListings)}
+                    data-testid="checkbox-select-all-draft"
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedListings.size > 0 ? `${selectedListings.size} selected` : 'Select All'}
+                  </span>
+                </div>
+                {selectedListings.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkPublish}
+                      disabled={bulkPublishMutation.isPending}
+                      data-testid="button-bulk-publish-draft"
+                    >
+                      <CheckSquare className="w-4 h-4 mr-2" />
+                      Publish Selected
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleteMutation.isPending}
+                      data-testid="button-bulk-delete-draft"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {draftListings.map(renderListingCard)}
+            </>
           )}
         </TabsContent>
       </Tabs>

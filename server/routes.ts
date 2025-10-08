@@ -598,6 +598,47 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Bulk operations
+  app.post('/api/admin/listings/bulk-delete', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request. Provide an array of listing IDs." });
+      }
+      
+      let count = 0;
+      for (const id of ids) {
+        await storage.softDeleteListing(id);
+        count++;
+      }
+      
+      res.json({ message: `${count} listing(s) moved to recycle bin`, count });
+    } catch (error) {
+      console.error("Error bulk deleting listings:", error);
+      res.status(500).json({ message: "Failed to delete listings" });
+    }
+  });
+
+  app.post('/api/admin/listings/bulk-publish', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request. Provide an array of listing IDs." });
+      }
+      
+      let count = 0;
+      for (const id of ids) {
+        await storage.updateListingStatus(id, 'published');
+        count++;
+      }
+      
+      res.json({ message: `${count} listing(s) published successfully`, count });
+    } catch (error) {
+      console.error("Error bulk publishing listings:", error);
+      res.status(500).json({ message: "Failed to publish listings" });
+    }
+  });
+
   // Admin route to geocode all listings without coordinates
   app.post('/api/admin/listings/geocode-all', isAdminAuthenticated, async (req: any, res) => {
     try {
