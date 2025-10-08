@@ -699,6 +699,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/admin/users/:id/role', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      const validRoles = ['consumer', 'vendor', 'staff', 'admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be one of: consumer, vendor, staff, admin" });
+      }
+      
+      const user = await storage.updateUserRole(id, role);
+      res.json({ message: "User role updated successfully", user });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   // Admin route to geocode all listings without coordinates
   app.post('/api/admin/listings/geocode-all', isAdminAuthenticated, async (req: any, res) => {
     try {

@@ -2,6 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar, Mail, User, Trash } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -35,6 +42,27 @@ export default function AdminUsers() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete users",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const res = await apiRequest('PATCH', `/api/admin/users/${userId}/role`, { role });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "Success",
+        description: data.message || "User role updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
         variant: "destructive",
       });
     },
@@ -152,14 +180,32 @@ export default function AdminUsers() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <Mail className="w-4 h-4 mr-2" />
                     {user.email}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <User className="w-4 h-4 mr-2" />
                     User ID: {user.id}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Role:</span>
+                    <Select
+                      value={user.role}
+                      onValueChange={(role) => updateRoleMutation.mutate({ userId: user.id, role })}
+                      disabled={updateRoleMutation.isPending}
+                    >
+                      <SelectTrigger className="w-[140px] h-8" data-testid={`select-role-${user.id}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="consumer">Consumer</SelectItem>
+                        <SelectItem value="vendor">Vendor</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardContent>
