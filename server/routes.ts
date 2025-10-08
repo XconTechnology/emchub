@@ -496,7 +496,7 @@ export function registerRoutes(app: Express): Server {
   // Admin route to get pending approvals with user info
   app.get('/api/admin/pending-approvals', isAdminAuthenticated, async (req: any, res) => {
     try {
-      const { listings, users as usersTable } = await import("@shared/schema");
+      const { listings, users } = await import("@shared/schema");
       const pendingListings = await db
         .select({
           id: listings.id,
@@ -538,14 +538,14 @@ export function registerRoutes(app: Express): Server {
           updatedAt: listings.updatedAt,
           deletedAt: listings.deletedAt,
           user: {
-            username: usersTable.username,
-            email: usersTable.email,
-            firstName: usersTable.firstName,
-            lastName: usersTable.lastName,
+            username: users.username,
+            email: users.email,
+            firstName: users.firstName,
+            lastName: users.lastName,
           }
         })
         .from(listings)
-        .leftJoin(usersTable, eq(listings.userId, usersTable.id))
+        .leftJoin(users, eq(listings.userId, users.id))
         .where(eq(listings.status, 'pending'));
       
       res.json(pendingListings);
