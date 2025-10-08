@@ -6,6 +6,7 @@ import AdminAddListing from "./admin-add-listing";
 import AdminEditListing from "./admin-edit-listing";
 import AdminUsers from "./admin-users";
 import AdminRecycleBin from "./admin-recycle-bin";
+import AdminPendingApprovals from "./admin-pending-approvals";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,7 @@ export default function AdminRouter() {
   return (
     <AdminDashboardLayout>
       <Switch>
+        <Route path="/admin/pending-approvals" component={AdminPendingApprovals} />
         <Route path="/admin/listings/new" component={AdminAddListing} />
         <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
         <Route path="/admin/listings" component={AdminListings} />

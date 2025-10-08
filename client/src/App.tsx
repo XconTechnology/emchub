@@ -49,6 +49,7 @@ function Router() {
       <Route path="/dashboard/services" component={UserDashboardRouter} />
       <Route path="/dashboard/whatsapp" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
+      <Route path="/admin/pending-approvals" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />
       <Route path="/admin/listings/new" component={AdminRouter} />
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />

@@ -493,13 +493,80 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin route to get pending approvals with user info
+  app.get('/api/admin/pending-approvals', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { listings, users as usersTable } = await import("@shared/schema");
+      const pendingListings = await db
+        .select({
+          id: listings.id,
+          userId: listings.userId,
+          type: listings.type,
+          title: listings.title,
+          description: listings.description,
+          categoryId: listings.categoryId,
+          address: listings.address,
+          city: listings.city,
+          postalCode: listings.postalCode,
+          latitude: listings.latitude,
+          longitude: listings.longitude,
+          isOnlineOnly: listings.isOnlineOnly,
+          phone: listings.phone,
+          email: listings.email,
+          website: listings.website,
+          images: listings.images,
+          operatingHours: listings.operatingHours,
+          tags: listings.tags,
+          sku: listings.sku,
+          price: listings.price,
+          inventory: listings.inventory,
+          paymentMethods: listings.paymentMethods,
+          duration: listings.duration,
+          eventDate: listings.eventDate,
+          eventEndDate: listings.eventEndDate,
+          capacity: listings.capacity,
+          attendeeCount: listings.attendeeCount,
+          eventPrice: listings.eventPrice,
+          isActive: listings.isActive,
+          isVerified: listings.isVerified,
+          status: listings.status,
+          moderationStatus: listings.moderationStatus,
+          moderationNotes: listings.moderationNotes,
+          moderatedBy: listings.moderatedBy,
+          moderatedAt: listings.moderatedAt,
+          createdAt: listings.createdAt,
+          updatedAt: listings.updatedAt,
+          deletedAt: listings.deletedAt,
+          user: {
+            username: usersTable.username,
+            email: usersTable.email,
+            firstName: usersTable.firstName,
+            lastName: usersTable.lastName,
+          }
+        })
+        .from(listings)
+        .leftJoin(usersTable, eq(listings.userId, usersTable.id))
+        .where(eq(listings.status, 'pending'));
+      
+      res.json(pendingListings);
+    } catch (error) {
+      console.error("Error fetching pending approvals:", error);
+      res.status(500).json({ message: "Failed to fetch pending approvals" });
+    }
+  });
+
   app.patch('/api/admin/listings/:id/approve', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const { notes } = req.body;
-      const adminId = req.session?.adminAuth?.userId || 'system';
-      await storage.adminApproveListing(listingId, adminId, notes);
-      res.json({ message: "Listing approved successfully" });
+      const { listings } = await import("@shared/schema");
+      await db
+        .update(listings)
+        .set({ 
+          status: 'published',
+          updatedAt: new Date()
+        })
+        .where(eq(listings.id, listingId));
+      res.json({ message: "Listing approved and published successfully" });
     } catch (error) {
       console.error("Error approving listing:", error);
       res.status(500).json({ message: "Failed to approve listing" });
@@ -509,9 +576,14 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/admin/listings/:id/reject', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const { reason } = req.body;
-      const adminId = req.session?.adminAuth?.userId || 'system';
-      await storage.adminRejectListing(listingId, adminId, reason);
+      const { listings } = await import("@shared/schema");
+      await db
+        .update(listings)
+        .set({ 
+          status: 'rejected',
+          updatedAt: new Date()
+        })
+        .where(eq(listings.id, listingId));
       res.json({ message: "Listing rejected successfully" });
     } catch (error) {
       console.error("Error rejecting listing:", error);

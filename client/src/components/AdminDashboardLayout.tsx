@@ -6,6 +6,7 @@ import {
   Users,
   Trash2,
   LogOut,
+  Clock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Dashboard",
       url: "/admin",
       icon: LayoutDashboard,
+    },
+    {
+      title: "Pending Approvals",
+      url: "/admin/pending-approvals",
+      icon: Clock,
     },
     {
       title: "All Listings",
