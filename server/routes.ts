@@ -39,6 +39,27 @@ const isAuthenticatedOrAdmin = async (req: any, res: any, next: any) => {
   return isAuthenticated(req, res, next);
 };
 
+// Role-based authentication middleware factory
+function requireRole(allowedRoles: string[]) {
+  return (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Authentication required.' });
+    }
+    
+    const userRole = req.user?.role || 'consumer';
+    if (allowedRoles.includes(userRole)) {
+      return next();
+    }
+    
+    res.status(403).json({ message: 'Access denied. Insufficient privileges.' });
+  };
+}
+
+// Specific role middleware
+const requireAdmin = requireRole(['admin']);
+const requireStaffOrAbove = requireRole(['staff', 'admin']);
+const requireVendorOrAbove = requireRole(['vendor', 'staff', 'admin']);
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication middleware and routes (from blueprint: javascript_auth_all_persistance)
   setupAuth(app);

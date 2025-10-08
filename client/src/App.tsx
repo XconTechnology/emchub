@@ -17,6 +17,7 @@ import AllCategoriesPage from "@/pages/all-categories-page";
 import AboutUs from "@/pages/about-us";
 import Explore from "@/pages/explore";
 import AdminRouter from "@/pages/admin/admin-router";
+import AccessDenied from "@/pages/access-denied";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />
       <Route path="/admin/users" component={AdminRouter} />
       <Route path="/admin/recycle-bin" component={AdminRouter} />
+      <Route path="/access-denied" component={AccessDenied} />
       <Route component={NotFound} />
     </Switch>
   );
