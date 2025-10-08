@@ -679,6 +679,26 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/admin/users/bulk-delete', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request. Provide an array of user IDs." });
+      }
+      
+      let count = 0;
+      for (const id of ids) {
+        await storage.deleteUser(id);
+        count++;
+      }
+      
+      res.json({ message: `${count} user(s) deleted successfully`, count });
+    } catch (error) {
+      console.error("Error bulk deleting users:", error);
+      res.status(500).json({ message: "Failed to delete users" });
+    }
+  });
+
   // Admin route to geocode all listings without coordinates
   app.post('/api/admin/listings/geocode-all', isAdminAuthenticated, async (req: any, res) => {
     try {
