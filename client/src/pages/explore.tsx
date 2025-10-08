@@ -16,13 +16,15 @@ export default function Explore() {
     queryKey: ['/api/listings'],
   });
 
-  // Count listings per category
-  const categoryListingCounts = listings.reduce((acc, listing) => {
-    if (listing.categoryId) {
-      acc[listing.categoryId] = (acc[listing.categoryId] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
+  // Count published listings per category
+  const categoryListingCounts = listings
+    .filter(listing => listing.status === 'published' && !listing.deletedAt)
+    .reduce((acc, listing) => {
+      if (listing.categoryId) {
+        acc[listing.categoryId] = (acc[listing.categoryId] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
 
   // Define category colors using brand green variations
   const categoryColors = [

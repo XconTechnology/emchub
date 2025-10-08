@@ -2,7 +2,7 @@
 
 ## Overview
 
-EMC HUB is a web platform designed to connect Hong Kong's ethnic minority community through digital discovery. The application serves as a comprehensive business directory that allows users to find, explore, and support ethnic minority-owned businesses across Hong Kong. The platform features business listings, search functionality, location-based discovery, and community engagement tools.
+EMC HUB is a web platform designed to connect Hong Kong's ethnic minority community through digital discovery. The application serves as a comprehensive marketplace that allows users to find, explore, and support ethnic minority-owned businesses, products, and services across Hong Kong. The platform features business listings, product marketplace, service directory, TimeDollars exchange system, search functionality, location-based discovery, and community engagement tools.
 
 ## User Preferences
 
