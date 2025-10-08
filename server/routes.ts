@@ -639,6 +639,46 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/admin/listings/bulk-restore', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request. Provide an array of listing IDs." });
+      }
+      
+      let count = 0;
+      for (const id of ids) {
+        await storage.restoreListing(id);
+        count++;
+      }
+      
+      res.json({ message: `${count} listing(s) restored successfully`, count });
+    } catch (error) {
+      console.error("Error bulk restoring listings:", error);
+      res.status(500).json({ message: "Failed to restore listings" });
+    }
+  });
+
+  app.post('/api/admin/listings/bulk-permanent-delete', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request. Provide an array of listing IDs." });
+      }
+      
+      let count = 0;
+      for (const id of ids) {
+        await storage.permanentlyDeleteListing(id);
+        count++;
+      }
+      
+      res.json({ message: `${count} listing(s) permanently deleted`, count });
+    } catch (error) {
+      console.error("Error bulk permanently deleting listings:", error);
+      res.status(500).json({ message: "Failed to permanently delete listings" });
+    }
+  });
+
   // Admin route to geocode all listings without coordinates
   app.post('/api/admin/listings/geocode-all', isAdminAuthenticated, async (req: any, res) => {
     try {
