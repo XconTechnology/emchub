@@ -17,6 +17,7 @@ import AllCategoriesPage from "@/pages/all-categories-page";
 import AboutUs from "@/pages/about-us";
 import Explore from "@/pages/explore";
 import AdminRouter from "@/pages/admin/admin-router";
+import UserDashboardRouter from "@/pages/user-dashboard/user-dashboard-router";
 import AccessDenied from "@/pages/access-denied";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
@@ -41,6 +42,12 @@ function Router() {
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />
       <ProtectedRoute path="/profile" component={Profile} />
+      <Route path="/dashboard" component={UserDashboardRouter} />
+      <Route path="/dashboard/browse" component={UserDashboardRouter} />
+      <Route path="/dashboard/reviews" component={UserDashboardRouter} />
+      <Route path="/dashboard/timedollars" component={UserDashboardRouter} />
+      <Route path="/dashboard/services" component={UserDashboardRouter} />
+      <Route path="/dashboard/whatsapp" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />
       <Route path="/admin/listings/new" component={AdminRouter} />
