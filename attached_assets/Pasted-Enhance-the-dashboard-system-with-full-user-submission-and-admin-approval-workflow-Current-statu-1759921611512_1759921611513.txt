@@ -1,0 +1,76 @@
+Enhance the dashboard system with full user submission and admin approval workflow.
+
+Current status:
+- Users can add Listings.
+- Need to add Products and Services as well.
+- Also add admin control for approval (Publish/Reject).
+
+Requirements:
+
+1. In the user dashboard:
+   - Add three buttons (side by side or stacked on mobile):
+     • Add Listing
+     • Add Product
+     • Add Service
+
+2. Each button opens its respective form:
+   - Add Listing → existing listing form.
+   - Add Product → fields:
+       - Product Name
+       - Category
+       - Price
+       - Description
+       - Image Upload
+       - Stock Quantity
+   - Add Service → fields:
+       - Service Title
+       - Category
+       - Description
+       - Price or TimeDollar Cost
+       - Image Upload
+       - Availability (Active / Inactive)
+
+3. When user submits any of them (Listing / Product / Service):
+   - It will be saved in the database with status = "Pending".
+   - Pending means the admin needs to review and approve it before it appears live.
+
+4. In Admin Dashboard:
+   - Add separate sections or tabs:
+       • All Listings
+       • All Products
+       • All Services
+   - Each should display:
+       - Title
+       - Submitted By (User name + email)
+       - Submission Date
+       - Status (Pending / Approved / Rejected)
+       - Buttons: View | Approve | Reject | Delete
+
+5. Workflow:
+   - When a user adds new item → status = "Pending"
+   - Admin reviews → if clicks “Approve”, status = “Published” (visible on site)
+   - If “Reject”, status = “Rejected” (hidden from public)
+   - If “Delete”, remove from system or send to Recycle Bin.
+
+6. In User Dashboard:
+   - Show item status clearly:
+       • Pending → “Awaiting Approval”
+       • Published → “Live on Site”
+       • Rejected → “Rejected by Admin”
+   - User can still Edit or Delete their item anytime (except Published ones unless Admin unpublishes).
+
+7. On Live Website:
+   - Only “Published” items appear publicly.
+   - Pending / Rejected / Draft items are hidden.
+
+8. Notifications:
+   - When Admin approves/rejects an item, the user gets a dashboard notification (or email if enabled).
+   - Example: “Your listing ‘XYZ’ has been approved and is now live!”
+
+9. Maintain same design & card layout for all three types (Listings, Products, Services).
+   - Include responsive view.
+   - Use consistent styling like the existing dashboard.
+
+Optional (for later):
+   - Add Import/Export for all three types via Excel.
+   - Allow bulk approval/rejection by Admin.

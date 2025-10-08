@@ -20,7 +20,7 @@ const productSchema = insertListingSchema.extend({
   title: z.string().min(1, "Product name is required"),
   price: z.string().min(1, "Price is required"),
   inventory: z.string().min(1, "Stock quantity is required"),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "pending", "rejected"]),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -48,7 +48,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
       categoryId: "",
       price: "",
       inventory: "",
-      status: "draft",
+      status: "pending",
     },
   });
 

@@ -21,7 +21,7 @@ const serviceSchema = insertListingSchema.extend({
   title: z.string().min(1, "Service title is required"),
   price: z.string().optional(),
   isActive: z.boolean(),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "pending", "rejected"]),
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -50,7 +50,7 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
       categoryId: "",
       price: "",
       isActive: true,
-      status: "draft",
+      status: "pending",
     },
   });
 

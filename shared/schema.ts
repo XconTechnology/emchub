@@ -107,7 +107,7 @@ export const listings = pgTable("listings", {
   // Status and verification
   isActive: boolean("is_active").default(true),
   isVerified: boolean("is_verified").default(false),
-  status: varchar("status").notNull().default("draft"), // 'draft' | 'published'
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'published' | 'rejected'
   
   // Moderation fields
   moderationStatus: varchar("moderation_status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
