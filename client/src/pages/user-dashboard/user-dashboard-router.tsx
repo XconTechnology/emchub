@@ -11,8 +11,18 @@ import {
   Menu,
   X,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  Settings,
+  LayoutDashboard
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import UserDashboardHome from "./user-dashboard-home";
 import UserBrowse from "./user-browse";
 import UserReviews from "./user-reviews";
@@ -99,24 +109,6 @@ export default function UserDashboardRouter() {
               );
             })}
           </ul>
-
-          {/* Profile Section */}
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <Link href="/profile">
-              <a
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive("/profile")
-                    ? "bg-brand-green text-white"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-                data-testid="nav-profile"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <UserIcon className="w-5 h-5" />
-                <span className="font-medium">Profile</span>
-              </a>
-            </Link>
-          </div>
         </nav>
 
         {/* Logout button */}
@@ -141,8 +133,57 @@ export default function UserDashboardRouter() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto p-4 lg:p-8 mt-16 lg:mt-0">
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex justify-end items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-profile-menu">
+                <div className="w-10 h-10 rounded-full bg-brand-green flex items-center justify-center">
+                  <UserIcon className="w-5 h-5 text-white" />
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.username}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>My Dashboard</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="menu-profile">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => {
+                  logoutMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      setLocation("/");
+                    }
+                  });
+                }}
+                data-testid="menu-logout"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
+        {/* Content */}
+        <div className="flex-1 container mx-auto p-4 lg:p-8">
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
             <Route path="/dashboard/browse" component={UserBrowse} />
