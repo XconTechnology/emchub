@@ -8,6 +8,14 @@ EMC HUB is a web platform designed to connect Hong Kong's ethnic minority commun
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Updates
+
+### Search Functionality (October 2025)
+- **Admin Listings Search**: Added comprehensive search functionality to the admin listings page, allowing administrators to search listings by title, description, address, city, phone, and email. The search is real-time, case-insensitive, and works across all tabs (All, Published, Draft).
+
+### Navigation Improvements (October 2025)
+- **User Dashboard Access**: Added "My Dashboard" link to the sidebar navigation for authenticated users, providing easy access to the user dashboard from any page in the application. The link appears in the Account section alongside the Profile link.
+
 ## System Architecture
 
 ### Frontend Architecture
