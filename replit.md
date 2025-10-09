@@ -10,6 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### Custom Category System (October 2025)
+- **Free-Text Product Categories**: Implemented custom category system allowing vendors to enter free-text categories for products. Categories are entered as comma-separated values in a text input field instead of selecting from a predefined dropdown.
+- **Admin Approval for Products**: All new products are automatically submitted with "pending" status and require admin approval before being published. This ensures quality control and oversight of product listings.
+- **Category Display**: Custom categories are displayed as badges across all views - directory page, vendor dashboard, and admin approval interface. Categories are properly split by commas and empty values are filtered out.
+- **Backward Compatibility**: The customCategory field was added alongside the existing categoryId field to maintain compatibility with listings that use the traditional category system.
+
 ### Search Functionality (October 2025)
 - **Admin Listings Search**: Added comprehensive search functionality to the admin listings page, allowing administrators to search listings by title, description, address, city, phone, and email. The search is real-time, case-insensitive, and works across all tabs (All, Published, Draft).
 
