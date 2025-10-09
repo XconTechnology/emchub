@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign } from "lucide-react";
+import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import AddProductModal from "@/components/AddProductModal";
 import AddServiceModal from "@/components/AddServiceModal";
+import { BecomeVendorModal } from "@/components/BecomeVendorModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import type { Listing } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -30,6 +31,7 @@ export default function Profile() {
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
+  const [isBecomeVendorModalOpen, setIsBecomeVendorModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Listing | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Listing | null>(null);
   const { toast } = useToast();
@@ -350,49 +352,87 @@ export default function Profile() {
                   )}
                 </div>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button 
-                  onClick={() => setIsAddListingModalOpen(true)}
-                  className="bg-primary hover:bg-primary/90"
-                  data-testid="button-add-listing"
-                >
-                  <Store className="w-4 h-4 mr-2" />
-                  Add Listing
-                </Button>
-                <Button 
-                  onClick={() => setIsAddProductModalOpen(true)}
-                  className="bg-primary hover:bg-primary/90"
-                  data-testid="button-add-product"
-                >
-                  <Package className="w-4 h-4 mr-2" />
-                  Add Product
-                </Button>
-                <Button 
-                  onClick={() => setIsAddServiceModalOpen(true)}
-                  className="bg-primary hover:bg-primary/90"
-                  data-testid="button-add-service"
-                >
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  Add Service
-                </Button>
+              <div className="flex gap-2 flex-wrap items-center">
+                {user?.vendorStatus === 'none' || !user?.vendorStatus ? (
+                  <Button 
+                    onClick={() => setIsBecomeVendorModalOpen(true)}
+                    className="bg-primary hover:bg-primary/90"
+                    data-testid="button-become-vendor"
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    Become a Vendor
+                  </Button>
+                ) : user?.vendorStatus === 'pending' ? (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                    <span className="text-yellow-800 font-medium">Your vendor verification request is pending review</span>
+                  </div>
+                ) : user?.vendorStatus === 'rejected' ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
+                      <XCircle className="w-4 h-4 text-red-600" />
+                      <span className="text-red-800 font-medium">Your vendor verification request was rejected</span>
+                    </div>
+                    <Button 
+                      onClick={() => setIsBecomeVendorModalOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-reapply-vendor"
+                    >
+                      Reapply for Vendor Status
+                    </Button>
+                  </div>
+                ) : user?.vendorStatus === 'verified' ? (
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid="badge-verified-vendor">
+                      <ShieldCheck className="w-3 h-3" />
+                      Verified Vendor
+                    </Badge>
+                    <Button 
+                      onClick={() => setIsAddListingModalOpen(true)}
+                      className="bg-primary hover:bg-primary/90"
+                      data-testid="button-add-listing"
+                    >
+                      <Store className="w-4 h-4 mr-2" />
+                      Add Listing
+                    </Button>
+                    <Button 
+                      onClick={() => setIsAddProductModalOpen(true)}
+                      className="bg-primary hover:bg-primary/90"
+                      data-testid="button-add-product"
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      Add Product
+                    </Button>
+                    <Button 
+                      onClick={() => setIsAddServiceModalOpen(true)}
+                      className="bg-primary hover:bg-primary/90"
+                      data-testid="button-add-service"
+                    >
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      Add Service
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tabs for Listings, Products, Services */}
-        <Tabs defaultValue="listings" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-            <TabsTrigger value="listings" data-testid="tab-listings">
-              Listings ({listingItems.length})
-            </TabsTrigger>
-            <TabsTrigger value="products" data-testid="tab-products">
-              Products ({productItems.length})
-            </TabsTrigger>
-            <TabsTrigger value="services" data-testid="tab-services">
-              Services ({serviceItems.length})
-            </TabsTrigger>
-          </TabsList>
+        {/* Tabs for Listings, Products, Services - Only for verified vendors */}
+        {user?.vendorStatus === 'verified' ? (
+          <Tabs defaultValue="listings" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
+              <TabsTrigger value="listings" data-testid="tab-listings">
+                Listings ({listingItems.length})
+              </TabsTrigger>
+              <TabsTrigger value="products" data-testid="tab-products">
+                Products ({productItems.length})
+              </TabsTrigger>
+              <TabsTrigger value="services" data-testid="tab-services">
+                Services ({serviceItems.length})
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="listings">
             <div className="mb-4">
@@ -502,6 +542,29 @@ export default function Profile() {
             )}
           </TabsContent>
         </Tabs>
+        ) : (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="text-gray-300 mb-4 flex justify-center">
+                <AlertCircle className="w-16 h-16" />
+              </div>
+              <CardTitle className="mb-2">Vendor Verification Required</CardTitle>
+              <CardDescription className="mb-4">
+                You need to be a verified vendor to manage listings, products, and services.
+              </CardDescription>
+              {(user?.vendorStatus === 'none' || !user?.vendorStatus) && (
+                <Button 
+                  onClick={() => setIsBecomeVendorModalOpen(true)}
+                  className="bg-primary hover:bg-primary/90"
+                  data-testid="button-become-vendor-cta"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Apply for Vendor Status
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Add Modals */}
@@ -551,6 +614,12 @@ export default function Profile() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Become Vendor Modal */}
+      <BecomeVendorModal 
+        isOpen={isBecomeVendorModalOpen}
+        onClose={() => setIsBecomeVendorModalOpen(false)}
+      />
     </DashboardLayout>
   );
 }

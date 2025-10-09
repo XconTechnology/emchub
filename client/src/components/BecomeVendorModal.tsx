@@ -27,8 +27,6 @@ import { Upload, FileText, Building2, Home } from "lucide-react";
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
 import AwsS3 from "@uppy/aws-s3";
-import "@uppy/core/dist/style.min.css";
-import "@uppy/dashboard/dist/style.min.css";
 
 const vendorRequestSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
