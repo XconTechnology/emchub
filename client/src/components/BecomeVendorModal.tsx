@@ -75,7 +75,6 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
 
     uppy.use(AwsS3, {
       endpoint: "/api/upload",
-      method: "POST",
       shouldUseMultipart: false,
     });
 
@@ -115,11 +114,7 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: VendorRequestFormData) => {
-      return apiRequest("/api/vendor-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/vendor-requests", data);
     },
     onSuccess: () => {
       toast({
