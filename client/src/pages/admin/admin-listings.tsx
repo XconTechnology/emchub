@@ -14,11 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, Edit, Trash, Calendar, Download, Upload, CheckSquare, Search } from "lucide-react";
+import { Eye, Edit, Trash, Calendar, Download, Upload, CheckSquare, Search, ShoppingBag } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing, Category } from "@shared/schema";
+import ProductDetailModal from "@/components/ProductDetailModal";
 
 export default function AdminListings() {
   const { toast } = useToast();
@@ -27,6 +28,8 @@ export default function AdminListings() {
   const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
+  const [productPreviewOpen, setProductPreviewOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Listing | null>(null);
 
   const { data: allListings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'all'],
@@ -288,6 +291,11 @@ export default function AdminListings() {
     bulkPublishMutation.mutate(Array.from(selectedListings));
   };
 
+  const handleViewProduct = (listing: Listing) => {
+    setSelectedProduct(listing);
+    setProductPreviewOpen(true);
+  };
+
   const renderListingCard = (listing: Listing) => {
     const listingCategory = categories.find(cat => cat.id === listing.categoryId);
     const isSelected = selectedListings.has(listing.id);
@@ -322,6 +330,18 @@ export default function AdminListings() {
               </div>
             </div>
             <div className="flex space-x-2 flex-wrap ml-4">
+              {listing.type === 'product' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleViewProduct(listing)}
+                  className="bg-primary hover:bg-primary/90"
+                  data-testid={`button-view-product-${listing.id}`}
+                >
+                  <ShoppingBag className="w-4 h-4 mr-1" />
+                  View Product
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -658,6 +678,15 @@ export default function AdminListings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={productPreviewOpen}
+        onClose={() => {
+          setProductPreviewOpen(false);
+          setSelectedProduct(null);
+        }}
+      />
     </div>
   );
 }
