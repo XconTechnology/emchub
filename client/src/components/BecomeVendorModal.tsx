@@ -154,24 +154,25 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="businessName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business Name or Full Name *</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    placeholder="Enter your business or full name"
-                    data-testid="input-business-name"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="businessName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Name or Full Name *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      placeholder="Enter your business or full name"
+                      data-testid="input-business-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
           <div className="space-y-4">
             <div className="space-y-2">
@@ -319,7 +320,8 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
               {mutation.isPending ? "Submitting..." : "Submit Application"}
             </Button>
           </div>
-        </form>
+          </form>
+        </Form>
 
         {/* Uppy Upload Modals */}
         {uploadingDoc === "id" && (
