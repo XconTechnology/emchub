@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
-import { Link } from "wouter";
+import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import AddListingModal from "./AddListingModal";
 import { BecomeVendorModal } from "./BecomeVendorModal";
 import emcLogo from "@assets/image_1756989816731.png";
@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -24,6 +25,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const { user, isLoading, logoutMutation } = useAuth();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -97,49 +99,48 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className={`relative h-10 px-4 rounded-md transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
-                        data-testid="button-profile"
+                        size="icon"
+                        className="rounded-full"
+                        data-testid="button-profile-menu"
                       >
-                        <User className="h-5 w-5 mr-2" />
-                        Profile
+                        <div className="w-10 h-10 rounded-full bg-[hsl(86,49%,53%)] flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end" forceMount>
-                      <div className="flex items-center justify-start gap-2 p-2">
-                        <div className="flex flex-col space-y-1 leading-none">
-                          {(user.firstName || user.lastName) && (
-                            <p className="font-medium">
-                              {user.firstName} {user.lastName}
-                            </p>
-                          )}
-                          {user.email && (
-                            <p className="w-[200px] truncate text-sm text-muted-foreground">
-                              {user.email}
-                            </p>
-                          )}
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.username}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                         </div>
-                      </div>
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/profile" className="cursor-pointer" data-testid="link-profile">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>My Profile</span>
-                        </Link>
+                      <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>My Dashboard</span>
                       </DropdownMenuItem>
-                      {user.vendorStatus !== 'verified' && (
-                        <DropdownMenuItem onClick={() => setIsVendorModalOpen(true)} className="cursor-pointer" data-testid="link-become-vendor">
-                          <ChevronDown className="mr-2 h-4 w-4" />
-                          <span>Become a Vendor</span>
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="menu-profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => logoutMutation.mutate()}
-                        className="cursor-pointer"
-                        data-testid="button-logout"
+                        onClick={() => {
+                          logoutMutation.mutate(undefined, {
+                            onSuccess: () => {
+                              setLocation("/");
+                            }
+                          });
+                        }}
+                        data-testid="menu-logout"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
+                        <span>Logout</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
