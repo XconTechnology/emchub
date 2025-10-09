@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, Edit, Trash, Calendar, Download, Upload, CheckSquare } from "lucide-react";
+import { Eye, Edit, Trash, Calendar, Download, Upload, CheckSquare, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,7 @@ export default function AdminListings() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data: allListings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/admin/listings', 'all'],
@@ -239,8 +241,23 @@ export default function AdminListings() {
     });
   };
 
-  const draftListings = allListings.filter(listing => listing.status === 'draft');
-  const publishedListings = allListings.filter(listing => listing.status === 'published');
+  // Filter listings by search term
+  const filteredListings = allListings.filter(listing => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      listing.title?.toLowerCase().includes(searchLower) ||
+      listing.description?.toLowerCase().includes(searchLower) ||
+      listing.address?.toLowerCase().includes(searchLower) ||
+      listing.city?.toLowerCase().includes(searchLower) ||
+      listing.phone?.toLowerCase().includes(searchLower) ||
+      listing.email?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const draftListings = filteredListings.filter(listing => listing.status === 'draft');
+  const publishedListings = filteredListings.filter(listing => listing.status === 'published');
 
   const toggleListingSelection = (id: string) => {
     const newSelected = new Set(selectedListings);
@@ -399,10 +416,23 @@ export default function AdminListings() {
         </div>
       </div>
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Input
+          type="text"
+          placeholder="Search listings by title, description, address, phone, or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 w-full"
+          data-testid="input-search-listings"
+        />
+      </div>
+
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
           <TabsTrigger value="all" data-testid="tab-all-listings">
-            All Listings ({allListings.length})
+            All Listings ({filteredListings.length})
           </TabsTrigger>
           <TabsTrigger value="published" data-testid="tab-published-listings">
             Published ({publishedListings.length})
@@ -413,10 +443,12 @@ export default function AdminListings() {
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          {allListings.length === 0 ? (
+          {filteredListings.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">No listings found</p>
+                <p className="text-muted-foreground">
+                  {searchTerm ? `No listings found matching "${searchTerm}"` : "No listings found"}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -424,8 +456,8 @@ export default function AdminListings() {
               <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center gap-3">
                   <Checkbox
-                    checked={selectedListings.size === allListings.length && allListings.length > 0}
-                    onCheckedChange={() => toggleSelectAll(allListings)}
+                    checked={selectedListings.size === filteredListings.length && filteredListings.length > 0}
+                    onCheckedChange={() => toggleSelectAll(filteredListings)}
                     data-testid="checkbox-select-all-listings"
                   />
                   <span className="text-sm font-medium">
@@ -457,7 +489,7 @@ export default function AdminListings() {
                   </div>
                 )}
               </div>
-              {allListings.map(renderListingCard)}
+              {filteredListings.map(renderListingCard)}
             </>
           )}
         </TabsContent>
@@ -466,7 +498,9 @@ export default function AdminListings() {
           {publishedListings.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">No published listings found</p>
+                <p className="text-muted-foreground">
+                  {searchTerm ? `No published listings found matching "${searchTerm}"` : "No published listings found"}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -506,7 +540,9 @@ export default function AdminListings() {
           {draftListings.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">No draft listings found</p>
+                <p className="text-muted-foreground">
+                  {searchTerm ? `No draft listings found matching "${searchTerm}"` : "No draft listings found"}
+                </p>
               </CardContent>
             </Card>
           ) : (
