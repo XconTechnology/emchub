@@ -20,6 +20,8 @@ import AdminRouter from "@/pages/admin/admin-router";
 import UserDashboardRouter from "@/pages/user-dashboard/user-dashboard-router";
 import AccessDenied from "@/pages/access-denied";
 import NotFound from "@/pages/not-found";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import { useEffect } from "react";
 
 function Router() {
@@ -34,6 +36,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/directory" component={DirectoryPage} />
       <Route path="/map" component={MapPage} />
       <Route path="/explore" component={Explore} />

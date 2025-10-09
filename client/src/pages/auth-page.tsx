@@ -1,7 +1,7 @@
 // Blueprint: javascript_auth_all_persistance - Authentication page with signup and signin
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,7 +113,14 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <div className="flex items-center justify-between">
+                              <FormLabel>Password</FormLabel>
+                              <Link href="/forgot-password">
+                                <a className="text-sm text-[hsl(86,49%,53%)] hover:underline" data-testid="link-forgot-password">
+                                  Forgot Password?
+                                </a>
+                              </Link>
+                            </div>
                             <FormControl>
                               <Input 
                                 type="password" 
