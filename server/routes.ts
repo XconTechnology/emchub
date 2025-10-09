@@ -802,8 +802,16 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Invalid request. Provide an array of user IDs." });
       }
       
+      // Prevent deleting the current admin user
+      const currentUserId = req.user?.id;
+      const filteredIds = ids.filter(id => id !== currentUserId);
+      
+      if (filteredIds.length !== ids.length) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
       let count = 0;
-      for (const id of ids) {
+      for (const id of filteredIds) {
         await storage.deleteUser(id);
         count++;
       }

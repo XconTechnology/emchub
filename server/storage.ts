@@ -567,9 +567,16 @@ export class DatabaseStorage implements IStorage {
       updatedAt: new Date(),
     };
     
-    // If status is verified, also update role to vendor
+    // If status is verified, update role to vendor
     if (status === 'verified') {
       updateData.role = 'vendor';
+    }
+    // If status is rejected or pending, downgrade role to consumer (unless they are admin/staff)
+    else if (status === 'rejected' || status === 'pending') {
+      const [currentUser] = await db.select().from(users).where(eq(users.id, userId));
+      if (currentUser && currentUser.role === 'vendor') {
+        updateData.role = 'consumer';
+      }
     }
     
     const [user] = await db
