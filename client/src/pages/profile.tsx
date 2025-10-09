@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle, User as UserIcon } from "lucide-react";
+import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle, User as UserIcon, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
@@ -44,6 +44,15 @@ export default function Profile() {
     email: '',
     phone: '',
   });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -116,6 +125,31 @@ export default function Profile() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete listing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      return apiRequest("POST", "/api/update-password", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Password updated successfully",
+      });
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setIsChangingPassword(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password",
         variant: "destructive",
       });
     },
@@ -548,6 +582,150 @@ export default function Profile() {
               </div>
             )}
           </CardContent>
+        </Card>
+
+        {/* Security - Change Password */}
+        <Card className="wp-card mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Security
+                </CardTitle>
+                <CardDescription>Manage your password and security settings</CardDescription>
+              </div>
+              {!isChangingPassword && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsChangingPassword(true)}
+                  data-testid="button-change-password"
+                >
+                  Change Password
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          {isChangingPassword && (
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                    data-testid="input-current-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    data-testid="input-new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+                {passwordData.newPassword && passwordData.newPassword.length < 6 && (
+                  <p className="text-sm text-red-500">Password must be at least 6 characters</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    data-testid="input-confirm-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+                {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                  <p className="text-sm text-red-500">Passwords do not match</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsChangingPassword(false);
+                    setPasswordData({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: '',
+                    });
+                  }}
+                  data-testid="button-cancel-password"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (passwordData.newPassword !== passwordData.confirmPassword) {
+                      toast({
+                        title: "Error",
+                        description: "Passwords do not match",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (passwordData.newPassword.length < 6) {
+                      toast({
+                        title: "Error",
+                        description: "Password must be at least 6 characters",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    changePasswordMutation.mutate({
+                      currentPassword: passwordData.currentPassword,
+                      newPassword: passwordData.newPassword,
+                    });
+                  }}
+                  disabled={changePasswordMutation.isPending || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                  data-testid="button-save-password"
+                >
+                  {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
+                </Button>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* Verified Vendor Actions */}
