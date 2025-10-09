@@ -101,6 +101,7 @@ export const listings = pgTable("listings", {
   title: varchar("title").notNull(),
   description: text("description"),
   categoryId: varchar("category_id").references(() => categories.id),
+  customCategory: text("custom_category"), // Free-text category for products (comma-separated)
   
   // Location data
   address: varchar("address"),
