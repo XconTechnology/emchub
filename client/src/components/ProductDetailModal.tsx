@@ -2,7 +2,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Star, 
   ShoppingCart, 
@@ -26,16 +26,22 @@ interface ProductDetailModalProps {
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [product, isOpen]);
+
   if (!product) return null;
 
   const images = product.images || [];
   const hasImages = images.length > 0;
 
   const nextImage = () => {
+    if (images.length === 0) return;
     setSelectedImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = () => {
+    if (images.length === 0) return;
     setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
