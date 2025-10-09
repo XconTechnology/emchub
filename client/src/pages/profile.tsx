@@ -36,6 +36,14 @@ export default function Profile() {
   const [itemToEdit, setItemToEdit] = useState<Listing | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openVendor') === 'true') {
+      setIsBecomeVendorModalOpen(true);
+      window.history.replaceState({}, '', '/profile');
+    }
+  }, []);
+
   const { data: listings, isLoading: loadingListings, refetch } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
@@ -353,44 +361,15 @@ export default function Profile() {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap items-center">
-                {user?.vendorStatus === 'none' || !user?.vendorStatus ? (
-                  <Button 
-                    onClick={() => setIsBecomeVendorModalOpen(true)}
-                    className="bg-primary hover:bg-primary/90"
-                    data-testid="button-become-vendor"
-                  >
-                    <ShieldCheck className="w-4 h-4 mr-2" />
-                    Become a Vendor
-                  </Button>
-                ) : user?.vendorStatus === 'pending' ? (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
-                    <Clock className="w-4 h-4 text-yellow-600" />
-                    <span className="text-yellow-800 font-medium">Your vendor verification request is pending review</span>
-                  </div>
-                ) : user?.vendorStatus === 'rejected' ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
-                      <XCircle className="w-4 h-4 text-red-600" />
-                      <span className="text-red-800 font-medium">Your vendor verification request was rejected</span>
-                    </div>
-                    <Button 
-                      onClick={() => setIsBecomeVendorModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      data-testid="button-reapply-vendor"
-                    >
-                      Reapply for Vendor Status
-                    </Button>
-                  </div>
-                ) : user?.vendorStatus === 'verified' ? (
+                {user?.vendorStatus === 'verified' ? (
                   <div className="flex gap-2 flex-wrap items-center">
                     <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid="badge-verified-vendor">
-                      <ShieldCheck className="w-3 h-3" />
-                      Verified Vendor
+                      <CheckCircle className="w-3 h-3" />
+                      Verified Vendor ✅
                     </Badge>
                     <Button 
                       onClick={() => setIsAddListingModalOpen(true)}
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
                       data-testid="button-add-listing"
                     >
                       <Store className="w-4 h-4 mr-2" />
@@ -398,7 +377,7 @@ export default function Profile() {
                     </Button>
                     <Button 
                       onClick={() => setIsAddProductModalOpen(true)}
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
                       data-testid="button-add-product"
                     >
                       <Package className="w-4 h-4 mr-2" />
@@ -406,14 +385,37 @@ export default function Profile() {
                     </Button>
                     <Button 
                       onClick={() => setIsAddServiceModalOpen(true)}
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
                       data-testid="button-add-service"
                     >
                       <Briefcase className="w-4 h-4 mr-2" />
                       Add Service
                     </Button>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="flex flex-col gap-2 w-full">
+                    {user?.vendorStatus === 'pending' && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
+                        <Clock className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-800 font-medium">Your vendor verification request has been submitted for review.</span>
+                      </div>
+                    )}
+                    {user?.vendorStatus === 'rejected' && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
+                        <XCircle className="w-4 h-4 text-red-600" />
+                        <span className="text-red-800 font-medium">Your vendor verification request was rejected.</span>
+                      </div>
+                    )}
+                    <Button 
+                      onClick={() => setIsBecomeVendorModalOpen(true)}
+                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)] w-fit"
+                      data-testid="button-become-vendor"
+                    >
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      {user?.vendorStatus === 'rejected' ? 'Reapply for Vendor Status' : 'Become a Vendor'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
