@@ -89,7 +89,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         ...data,
         type: "product",
         userId: user?.id,
-        price: parseFloat(data.price),
+        price: data.price,
         inventory: parseInt(data.inventory),
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
@@ -165,7 +165,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
               id="customCategory"
               {...form.register("customCategory")}
               placeholder="e.g., Electronics, Mobile Accessories, Smart Devices"
-              data-testid="input-category"
+              data-testid="input-customCategory"
             />
             <p className="text-xs text-muted-foreground">
               Enter categories separated by commas. You can create new categories freely.
