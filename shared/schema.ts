@@ -38,6 +38,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin'
   vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
+  resetPasswordToken: varchar("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
