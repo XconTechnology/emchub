@@ -70,16 +70,24 @@ export default function UserDashboardRouter() {
         {/* User info */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-green flex items-center justify-center">
-              <UserIcon className="w-5 h-5 text-white" />
-            </div>
+            {user.profileImageUrl ? (
+              <img 
+                src={user.profileImageUrl} 
+                alt="Profile" 
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center">
+                <span className="text-white font-semibold text-lg">
+                  {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
+                  {user.lastName?.[0]?.toUpperCase() || ''}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 dark:text-white truncate" data-testid="text-username">
                 {user.username}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate capitalize">
-                {user.role || 'consumer'}
-              </p>
             </div>
           </div>
         </div>
