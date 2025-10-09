@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import AddListingModal from "./AddListingModal";
+import { BecomeVendorModal } from "./BecomeVendorModal";
 import emcLogo from "@assets/image_1756989816731.png";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -21,6 +22,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const { user, isLoading, logoutMutation } = useAuth();
 
   useEffect(() => {
@@ -125,11 +127,9 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                         </Link>
                       </DropdownMenuItem>
                       {user.vendorStatus !== 'verified' && (
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile?openVendor=true" className="cursor-pointer" data-testid="link-become-vendor">
-                            <ChevronDown className="mr-2 h-4 w-4" />
-                            <span>Become a Vendor</span>
-                          </Link>
+                        <DropdownMenuItem onClick={() => setIsVendorModalOpen(true)} className="cursor-pointer" data-testid="link-become-vendor">
+                          <ChevronDown className="mr-2 h-4 w-4" />
+                          <span>Become a Vendor</span>
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
@@ -213,15 +213,17 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                   </Button>
                 </Link>
                 {user.vendorStatus !== 'verified' && (
-                  <Link href="/profile?openVendor=true">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start"
-                      data-testid="mobile-link-become-vendor"
-                    >
-                      Become a Vendor
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      setIsVendorModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start"
+                    data-testid="mobile-link-become-vendor"
+                  >
+                    Become a Vendor
+                  </Button>
                 )}
                 <Button 
                   variant="ghost" 
@@ -254,6 +256,12 @@ export default function Header({ forceSolid = false }: HeaderProps) {
       <AddListingModal 
         isOpen={isAddListingModalOpen} 
         onClose={() => setIsAddListingModalOpen(false)} 
+      />
+      
+      {/* Become a Vendor Modal */}
+      <BecomeVendorModal 
+        isOpen={isVendorModalOpen} 
+        onClose={() => setIsVendorModalOpen(false)} 
       />
     </>
   );
