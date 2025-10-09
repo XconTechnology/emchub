@@ -7,6 +7,7 @@ import {
   Trash2,
   LogOut,
   Clock,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -55,6 +56,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Pending Approvals",
       url: "/admin/pending-approvals",
       icon: Clock,
+    },
+    {
+      title: "Vendor Requests",
+      url: "/admin/vendor-requests",
+      icon: ShieldCheck,
     },
     {
       title: "All Listings",
