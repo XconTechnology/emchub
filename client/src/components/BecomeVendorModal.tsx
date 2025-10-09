@@ -31,7 +31,7 @@ import AwsS3 from "@uppy/aws-s3";
 const vendorRequestSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
   identificationDoc: z.string().min(1, "Identification document is required"),
-  businessRegistrationDoc: z.string().optional(),
+  businessRegistrationDoc: z.string().min(1, "Business registration document is required"),
   addressProofDoc: z.string().min(1, "Address proof document is required"),
   description: z.string().min(10, "Please provide at least 10 characters"),
 });
@@ -220,41 +220,50 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
               )}
             />
 
-            <div className="space-y-2">
-              <FormLabel className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Business Registration Document (Optional)
-              </FormLabel>
-              <div className="border-2 border-dashed rounded-lg p-4">
-                {!businessDocUrl ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setUploadingDoc("business")}
-                    data-testid="button-upload-business"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Business Registration
-                  </Button>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setBusinessDocUrl("");
-                        form.setValue("businessRegistrationDoc", "");
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="businessRegistrationDoc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Business Registration Document *
+                  </FormLabel>
+                  <FormControl>
+                    <div className="border-2 border-dashed rounded-lg p-4">
+                      {!businessDocUrl ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setUploadingDoc("business")}
+                          data-testid="button-upload-business"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Business Registration
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setBusinessDocUrl("");
+                              form.setValue("businessRegistrationDoc", "");
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
