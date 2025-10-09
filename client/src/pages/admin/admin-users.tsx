@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Mail, User, Trash } from "lucide-react";
+import { Calendar, Mail, User, Trash, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -161,8 +161,49 @@ export default function AdminUsers() {
                       onCheckedChange={() => toggleUserSelection(user.id)}
                       data-testid={`checkbox-user-${user.id}`}
                     />
+                    {user.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt={`${user.firstName} ${user.lastName}`}
+                        className="w-12 h-12 rounded-full object-cover"
+                        data-testid={`img-user-profile-${user.id}`}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                        <span className="text-lg font-bold text-white">
+                          {user.firstName?.[0]}{user.lastName?.[0] || user.username?.[0]}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{user.firstName} {user.lastName}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg" data-testid={`text-user-name-${user.id}`}>
+                          {user.firstName} {user.lastName}
+                        </CardTitle>
+                        {user.vendorStatus === 'verified' && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid={`badge-verified-${user.id}`}>
+                            <CheckCircle className="w-3 h-3" />
+                            Verified
+                          </Badge>
+                        )}
+                        {user.vendorStatus === 'pending' && (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 flex items-center gap-1" data-testid={`badge-pending-${user.id}`}>
+                            <Clock className="w-3 h-3" />
+                            Pending
+                          </Badge>
+                        )}
+                        {user.vendorStatus === 'rejected' && (
+                          <Badge variant="secondary" className="bg-red-100 text-red-800 flex items-center gap-1" data-testid={`badge-rejected-${user.id}`}>
+                            <XCircle className="w-3 h-3" />
+                            Rejected
+                          </Badge>
+                        )}
+                        {user.vendorStatus === 'none' && (
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-800" data-testid={`badge-not-verified-${user.id}`}>
+                            Not Verified
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} data-testid={`user-role-${user.id}`}>
                           {user.role}
@@ -183,8 +224,14 @@ export default function AdminUsers() {
                 <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <Mail className="w-4 h-4 mr-2" />
-                    {user.email}
+                    <span data-testid={`text-user-email-${user.id}`}>{user.email || 'No email'}</span>
                   </div>
+                  {user.phone && (
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <Phone className="w-4 h-4 mr-2" />
+                      <span data-testid={`text-user-phone-${user.id}`}>{user.phone}</span>
+                    </div>
+                  )}
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <User className="w-4 h-4 mr-2" />
                     User ID: {user.id}
