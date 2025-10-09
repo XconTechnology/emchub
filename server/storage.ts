@@ -135,10 +135,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: string): Promise<void> {
-    // First delete all user's listings
+    // Delete all related records before deleting the user
+    // 1. Delete user's listings
     await db.delete(listings).where(eq(listings.userId, id));
     
-    // Then delete the user
+    // 2. Clear moderatedBy references in listings
+    await db.update(listings)
+      .set({ moderatedBy: null })
+      .where(eq(listings.moderatedBy, id));
+    
+    // 3. Delete user's bookings
+    await db.delete(bookings).where(eq(bookings.userId, id));
+    
+    // 4. Delete user's business listings (deprecated table)
+    await db.delete(businessListings).where(eq(businessListings.userId, id));
+    
+    // 5. Delete user's vendor requests
+    await db.delete(vendorRequests).where(eq(vendorRequests.userId, id));
+    
+    // 6. Clear reviewedBy references in vendor requests
+    await db.update(vendorRequests)
+      .set({ reviewedBy: null })
+      .where(eq(vendorRequests.reviewedBy, id));
+    
+    // Finally, delete the user
     await db.delete(users).where(eq(users.id, id));
   }
 
