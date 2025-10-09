@@ -135,15 +135,13 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      // Auto-approve listings created by admins
-      const moderationStatus = isAdmin ? 'approved' : 'pending';
+      // Use the status from the request, or default to 'pending' for new listings
+      const status = listingData.status || 'pending';
       
-      // New listings default to 'draft' status
       const listing = await storage.createListing({
         ...listingData,
         userId,
-        moderationStatus,
-        status: 'draft',
+        status,
       });
       
       console.log('Created listing:', listing);
@@ -195,6 +193,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // IMPORTANT: Specific routes like /api/listings/user must come BEFORE parameterized routes like /api/listings/:id
+  app.get('/api/listings/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const listings = await storage.getUserListings(userId);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching user listings:", error);
+      res.status(500).json({ message: "Failed to fetch user listings" });
+    }
+  });
+
   app.get('/api/listings/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -207,8 +217,8 @@ export function registerRoutes(app: Express): Server {
       // Check if user is admin
       const isAdmin = req.session?.adminAuth === true;
       
-      // Only show approved and published listings to public, but admins can see all
-      if (!isAdmin && (listing.moderationStatus !== 'approved' || listing.status !== 'published')) {
+      // Only show published listings to public, but admins can see all
+      if (!isAdmin && listing.status !== 'published') {
         return res.status(404).json({ message: "Listing not found" });
       }
       
@@ -216,17 +226,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching listing:", error);
       res.status(500).json({ message: "Failed to fetch listing" });
-    }
-  });
-
-  app.get('/api/listings/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const listings = await storage.getUserListings(userId);
-      res.json(listings);
-    } catch (error) {
-      console.error("Error fetching user listings:", error);
-      res.status(500).json({ message: "Failed to fetch user listings" });
     }
   });
 

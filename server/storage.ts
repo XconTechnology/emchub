@@ -37,7 +37,7 @@ export interface IStorage {
   deleteCategory(id: string): Promise<void>;
   
   // Enhanced listing operations
-  createListing(listing: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing>;
+  createListing(listing: InsertListing & { userId: string }): Promise<Listing>;
   getListings(filters?: { 
     categories?: string[],
     categoryId?: string,
@@ -156,7 +156,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Enhanced listing operations
-  async createListing(listingData: InsertListing & { userId: string, moderationStatus?: string }): Promise<Listing> {
+  async createListing(listingData: InsertListing & { userId: string }): Promise<Listing> {
     const [listing] = await db
       .insert(listings)
       .values(listingData as any)
@@ -172,17 +172,15 @@ export class DatabaseStorage implements IStorage {
     isOnlineOnly?: boolean,
     status?: string
   }): Promise<Listing[]> {
-    // Only show approved, active, and non-deleted listings for public directory
+    // Only show published, active, and non-deleted listings for public directory
     let conditions = [
       eq(listings.isActive, true),
-      eq(listings.moderationStatus, "approved"),
       sql`${listings.deletedAt} IS NULL`
     ];
     
-    // Filter by status if provided (draft or published)
-    if (filters?.status) {
-      conditions.push(eq(listings.status, filters.status));
-    }
+    // Filter by status - default to published for public listings
+    const statusFilter = filters?.status || 'published';
+    conditions.push(eq(listings.status, statusFilter));
     
     if (filters?.categories && filters.categories.length > 0) {
       conditions.push(inArray(listings.categoryId, filters.categories));
