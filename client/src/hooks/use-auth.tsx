@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<(SelectUser & { isAdmin?: boolean }) | undefined, Error>({
     queryKey: ["/api/me"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    refetchInterval: 5000, // Poll every 5 seconds for real-time vendor status updates
   });
 
   const loginMutation = useMutation({
