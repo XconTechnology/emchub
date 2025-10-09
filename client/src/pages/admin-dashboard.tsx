@@ -178,7 +178,6 @@ export default function AdminDashboard() {
   // Fetch all users
   const { data: users = [], isLoading: isUsersLoading } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],
-    queryFn: () => fetch('/api/admin/users', { credentials: 'include' }).then(res => res.json()),
     enabled: isAdminAuthenticated,
   });
 

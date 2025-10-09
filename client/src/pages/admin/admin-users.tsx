@@ -22,7 +22,6 @@ export default function AdminUsers() {
   
   const { data: users = [], isLoading } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users'],
-    queryFn: () => fetch('/api/admin/users', { credentials: 'include' }).then(res => res.json()),
   });
 
   const bulkDeleteMutation = useMutation({
