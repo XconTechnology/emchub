@@ -258,6 +258,7 @@ export default function AdminListings() {
 
   const draftListings = filteredListings.filter(listing => listing.status === 'draft');
   const publishedListings = filteredListings.filter(listing => listing.status === 'published');
+  const acceptedProducts = filteredListings.filter(listing => listing.type === 'product' && listing.status === 'published');
 
   const toggleListingSelection = (id: string) => {
     const newSelected = new Set(selectedListings);
@@ -434,6 +435,9 @@ export default function AdminListings() {
           <TabsTrigger value="all" data-testid="tab-all-listings">
             All Listings ({filteredListings.length})
           </TabsTrigger>
+          <TabsTrigger value="accepted" data-testid="tab-accepted-products">
+            Accepted Products ({acceptedProducts.length})
+          </TabsTrigger>
           <TabsTrigger value="published" data-testid="tab-published-listings">
             Published ({publishedListings.length})
           </TabsTrigger>
@@ -490,6 +494,48 @@ export default function AdminListings() {
                 )}
               </div>
               {filteredListings.map(renderListingCard)}
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="accepted" className="mt-6">
+          {acceptedProducts.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  {searchTerm ? `No accepted products found matching "${searchTerm}"` : "No accepted products found"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedListings.size === acceptedProducts.length && acceptedProducts.length > 0}
+                    onCheckedChange={() => toggleSelectAll(acceptedProducts)}
+                    data-testid="checkbox-select-all-accepted"
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedListings.size > 0 ? `${selectedListings.size} selected` : 'Select All'}
+                  </span>
+                </div>
+                {selectedListings.size > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleteMutation.isPending}
+                      data-testid="button-bulk-delete-accepted"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete Selected
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {acceptedProducts.map(renderListingCard)}
             </>
           )}
         </TabsContent>
