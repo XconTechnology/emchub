@@ -236,6 +236,19 @@ export default function AdminPendingApprovals() {
                 </div>
               )}
 
+              {selectedItem.customCategory && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Categories</p>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    {selectedItem.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
+                      <Badge key={index} variant="outline">
+                        {cat.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {selectedItem.images && selectedItem.images.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Images</p>

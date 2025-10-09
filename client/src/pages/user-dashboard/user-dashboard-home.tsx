@@ -89,7 +89,7 @@ export default function UserDashboardHome() {
               {item.type === 'product' && item.price && (
                 <Badge variant="outline">${parseFloat(item.price.toString()).toFixed(2)}</Badge>
               )}
-              {item.customCategory && item.customCategory.split(',').map((cat, index) => (
+              {item.customCategory && item.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
                 <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   {cat.trim()}
                 </Badge>

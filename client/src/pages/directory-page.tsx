@@ -85,7 +85,7 @@ export default function DirectoryPage() {
                 <Badge variant="secondary" data-testid={`badge-type-${listing.id}`}>
                   {listing.type}
                 </Badge>
-                {listing.customCategory && listing.customCategory.split(',').map((cat, index) => (
+                {listing.customCategory && listing.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
                   <Badge key={index} variant="outline" data-testid={`badge-custom-category-${listing.id}-${index}`}>
                     {cat.trim()}
                   </Badge>
