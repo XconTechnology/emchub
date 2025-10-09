@@ -203,8 +203,8 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   address: z.string().optional(),
   city: z.string().optional(),
   
-  // Status field - can be 'draft' or 'published'
-  status: z.enum(["draft", "published"]).optional().default("draft"),
+  // Status field - pending (awaiting approval), published (approved and live), rejected (not approved)
+  status: z.enum(["pending", "published", "rejected"]).optional().default("pending"),
   
   // Optional arrays
   tags: z.array(z.string()).optional(),
