@@ -5,6 +5,7 @@ import {
   listings,
   bookings,
   coupons,
+  vendorRequests,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -17,6 +18,8 @@ import {
   type InsertBooking,
   type Coupon,
   type InsertCoupon,
+  type VendorRequest,
+  type InsertVendorRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ilike, inArray, sql } from "drizzle-orm";
@@ -83,6 +86,14 @@ export interface IStorage {
     deletedListings: number;
     totalUsers: number;
   }>;
+  
+  // Vendor request operations
+  createVendorRequest(request: InsertVendorRequest & { userId: string }): Promise<VendorRequest>;
+  getVendorRequests(status?: string): Promise<VendorRequest[]>;
+  getUserVendorRequest(userId: string): Promise<VendorRequest | undefined>;
+  approveVendorRequest(id: string, adminId: string): Promise<VendorRequest>;
+  rejectVendorRequest(id: string, adminId: string, reason: string): Promise<VendorRequest>;
+  updateUserVendorStatus(userId: string, status: string): Promise<User>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -485,6 +496,68 @@ export class DatabaseStorage implements IStorage {
       deletedListings: Number(deletedListingsResult[0]?.count || 0),
       totalUsers: Number(totalUsersResult[0]?.count || 0),
     };
+  }
+
+  // Vendor request operations
+  async createVendorRequest(requestData: InsertVendorRequest & { userId: string }): Promise<VendorRequest> {
+    const [request] = await db
+      .insert(vendorRequests)
+      .values(requestData as any)
+      .returning();
+    return request;
+  }
+
+  async getVendorRequests(status?: string): Promise<VendorRequest[]> {
+    if (status) {
+      return db.select().from(vendorRequests).where(eq(vendorRequests.status, status)).orderBy(vendorRequests.createdAt);
+    }
+    return db.select().from(vendorRequests).orderBy(vendorRequests.createdAt);
+  }
+
+  async getUserVendorRequest(userId: string): Promise<VendorRequest | undefined> {
+    const [request] = await db.select().from(vendorRequests).where(eq(vendorRequests.userId, userId));
+    return request;
+  }
+
+  async approveVendorRequest(id: string, adminId: string): Promise<VendorRequest> {
+    const [request] = await db
+      .update(vendorRequests)
+      .set({
+        status: 'approved',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(vendorRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async rejectVendorRequest(id: string, adminId: string, reason: string): Promise<VendorRequest> {
+    const [request] = await db
+      .update(vendorRequests)
+      .set({
+        status: 'rejected',
+        rejectionReason: reason,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(vendorRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async updateUserVendorStatus(userId: string, status: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        vendorStatus: status,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 }
 

@@ -37,6 +37,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin'
+  vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -49,6 +50,37 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Vendor Requests table - for tracking vendor verification applications
+export const vendorRequests = pgTable("vendor_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  businessName: varchar("business_name").notNull(),
+  identificationDoc: varchar("identification_doc"), // URL to uploaded ID document
+  businessRegistrationDoc: varchar("business_registration_doc"), // URL to business registration (optional)
+  addressProofDoc: varchar("address_proof_doc"), // URL to address proof document
+  description: text("description"), // Reason for becoming a vendor
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+  rejectionReason: text("rejection_reason"), // Optional reason for rejection
+  reviewedBy: varchar("reviewed_by").references(() => users.id), // Admin who reviewed
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertVendorRequestSchema = createInsertSchema(vendorRequests).omit({
+  id: true,
+  userId: true,
+  status: true,
+  rejectionReason: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type VendorRequest = typeof vendorRequests.$inferSelect;
+export type InsertVendorRequest = z.infer<typeof insertVendorRequestSchema>;
 
 // Categories table
 export const categories = pgTable("categories", {
