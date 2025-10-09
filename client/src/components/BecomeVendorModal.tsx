@@ -24,9 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, FileText, Building2, Home } from "lucide-react";
-import Uppy from "@uppy/core";
-import { Dashboard } from "@uppy/react";
-import AwsS3 from "@uppy/aws-s3";
+import { DocumentUpload } from "./DocumentUpload";
 
 const vendorRequestSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -49,7 +47,6 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
   const [idDocUrl, setIdDocUrl] = useState<string>("");
   const [businessDocUrl, setBusinessDocUrl] = useState<string>("");
   const [addressDocUrl, setAddressDocUrl] = useState<string>("");
-  const [uploadingDoc, setUploadingDoc] = useState<"id" | "business" | "address" | null>(null);
 
   const form = useForm<VendorRequestFormData>({
     resolver: zodResolver(vendorRequestSchema),
@@ -61,56 +58,6 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
       description: "",
     },
   });
-
-  // Create Uppy instances for each document type
-  const createUppy = (docType: "id" | "business" | "address") => {
-    const uppy = new Uppy({
-      restrictions: {
-        maxNumberOfFiles: 1,
-        allowedFileTypes: ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'],
-        maxFileSize: 5 * 1024 * 1024, // 5MB
-      },
-      autoProceed: false,
-    });
-
-    uppy.use(AwsS3, {
-      endpoint: "/api/upload",
-      shouldUseMultipart: false,
-    });
-
-    uppy.on("upload-success", (file, response) => {
-      const url = response.uploadURL || (response.body as any)?.url;
-      if (url) {
-        if (docType === "id") {
-          setIdDocUrl(url);
-          form.setValue("identificationDoc", url);
-        } else if (docType === "business") {
-          setBusinessDocUrl(url);
-          form.setValue("businessRegistrationDoc", url);
-        } else if (docType === "address") {
-          setAddressDocUrl(url);
-          form.setValue("addressProofDoc", url);
-        }
-        setUploadingDoc(null);
-        toast({
-          title: "Document uploaded",
-          description: "Your document has been uploaded successfully.",
-        });
-      }
-    });
-
-    uppy.on("upload-error", (file, error) => {
-      console.error("Upload error:", error);
-      setUploadingDoc(null);
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: "Failed to upload document. Please try again.",
-      });
-    });
-
-    return uppy;
-  };
 
   const mutation = useMutation({
     mutationFn: async (data: VendorRequestFormData) => {
@@ -185,35 +132,19 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
                     Identification Document (ID/Passport) *
                   </FormLabel>
                   <FormControl>
-                    <div className="border-2 border-dashed rounded-lg p-4">
-                      {!idDocUrl ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => setUploadingDoc("id")}
-                          data-testid="button-upload-id"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload ID Document
-                        </Button>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setIdDocUrl("");
-                              form.setValue("identificationDoc", "");
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <DocumentUpload
+                      label="Upload ID Document"
+                      currentUrl={idDocUrl}
+                      onUploadSuccess={(url) => {
+                        setIdDocUrl(url);
+                        form.setValue("identificationDoc", url);
+                      }}
+                      onRemove={() => {
+                        setIdDocUrl("");
+                        form.setValue("identificationDoc", "");
+                      }}
+                      testId="button-upload-id"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -230,35 +161,19 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
                     Business Registration Document *
                   </FormLabel>
                   <FormControl>
-                    <div className="border-2 border-dashed rounded-lg p-4">
-                      {!businessDocUrl ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => setUploadingDoc("business")}
-                          data-testid="button-upload-business"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Business Registration
-                        </Button>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setBusinessDocUrl("");
-                              form.setValue("businessRegistrationDoc", "");
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <DocumentUpload
+                      label="Upload Business Registration"
+                      currentUrl={businessDocUrl}
+                      onUploadSuccess={(url) => {
+                        setBusinessDocUrl(url);
+                        form.setValue("businessRegistrationDoc", url);
+                      }}
+                      onRemove={() => {
+                        setBusinessDocUrl("");
+                        form.setValue("businessRegistrationDoc", "");
+                      }}
+                      testId="button-upload-business"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -275,35 +190,19 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
                     Address Proof Document *
                   </FormLabel>
                   <FormControl>
-                    <div className="border-2 border-dashed rounded-lg p-4">
-                      {!addressDocUrl ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => setUploadingDoc("address")}
-                          data-testid="button-upload-address"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Address Proof
-                        </Button>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setAddressDocUrl("");
-                              form.setValue("addressProofDoc", "");
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <DocumentUpload
+                      label="Upload Address Proof"
+                      currentUrl={addressDocUrl}
+                      onUploadSuccess={(url) => {
+                        setAddressDocUrl(url);
+                        form.setValue("addressProofDoc", url);
+                      }}
+                      onRemove={() => {
+                        setAddressDocUrl("");
+                        form.setValue("addressProofDoc", "");
+                      }}
+                      testId="button-upload-address"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -349,52 +248,6 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
           </div>
           </form>
         </Form>
-
-        {/* Uppy Upload Modals */}
-        {uploadingDoc === "id" && (
-          <Dialog open={true} onOpenChange={() => setUploadingDoc(null)}>
-            <DialogContent className="sm:max-w-xl">
-              <DialogHeader>
-                <DialogTitle>Upload Identification Document</DialogTitle>
-              </DialogHeader>
-              <Dashboard
-                uppy={createUppy("id")}
-                proudlyDisplayPoweredByUppy={false}
-                height={300}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
-        
-        {uploadingDoc === "business" && (
-          <Dialog open={true} onOpenChange={() => setUploadingDoc(null)}>
-            <DialogContent className="sm:max-w-xl">
-              <DialogHeader>
-                <DialogTitle>Upload Business Registration</DialogTitle>
-              </DialogHeader>
-              <Dashboard
-                uppy={createUppy("business")}
-                proudlyDisplayPoweredByUppy={false}
-                height={300}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
-        
-        {uploadingDoc === "address" && (
-          <Dialog open={true} onOpenChange={() => setUploadingDoc(null)}>
-            <DialogContent className="sm:max-w-xl">
-              <DialogHeader>
-                <DialogTitle>Upload Address Proof</DialogTitle>
-              </DialogHeader>
-              <Dashboard
-                uppy={createUppy("address")}
-                proudlyDisplayPoweredByUppy={false}
-                height={300}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
       </DialogContent>
     </Dialog>
   );
