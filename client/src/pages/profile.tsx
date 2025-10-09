@@ -191,14 +191,14 @@ export default function Profile() {
           )}
         </div>
 
-        {item.moderationStatus === 'rejected' && item.moderationNotes && (
+        {item.status === 'rejected' && item.moderationNotes && (
           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
             <strong className="text-red-800">Rejection Reason:</strong>
             <p className="text-red-700 mt-1">{item.moderationNotes}</p>
           </div>
         )}
 
-        {item.moderationStatus === 'pending' && (
+        {item.status === 'pending' && (
           <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
             <p className="text-yellow-700">Your listing is under review. You'll be notified once it's approved.</p>
           </div>
