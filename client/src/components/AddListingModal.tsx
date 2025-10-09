@@ -35,16 +35,8 @@ interface AddListingModalProps {
   onClose: () => void;
 }
 
-const listingTypes = [
-  { value: "business", label: "Business", icon: Store },
-  { value: "product", label: "Product", icon: Package },
-  { value: "service", label: "Service", icon: Clock },
-  { value: "event", label: "Event", icon: Calendar },
-];
-
 export default function AddListingModal({ isOpen, onClose }: AddListingModalProps) {
   const { toast } = useToast();
-  const [selectedType, setSelectedType] = useState<string>("business");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
 
@@ -56,7 +48,7 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
   const form = useForm<AddListingData>({
     resolver: zodResolver(insertListingSchema),
     defaultValues: {
-      type: "business",
+      type: "listing",
       title: "",
       description: "",
       categoryId: "",
@@ -81,13 +73,11 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
 
   const addListingMutation = useMutation({
     mutationFn: async (data: AddListingData) => {
-      // Transform form data for the API
+      // Transform form data for the API - hardcode type to "listing"
       const transformedData = {
         ...data,
-        type: selectedType,
-        // Convert string dates to proper format if provided
-        eventDate: data.eventDate || null,
-        eventEndDate: data.eventEndDate || null,
+        type: "listing",
+        status: "pending",
       };
 
       console.log('Sending to API:', transformedData);
@@ -121,7 +111,6 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
       });
       onClose();
       form.reset();
-      setSelectedType("business");
     },
     onError: (error: any) => {
       toast({
@@ -134,11 +123,11 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
 
   const onSubmit = (data: any) => {
     console.log('Form submitted with data:', data);
-    console.log('Selected type:', selectedType);
     // Include image URLs in the submission
     const submissionData = {
       ...data,
       images: imageUrls,
+      type: "listing",
     };
     addListingMutation.mutate(submissionData);
   };
@@ -158,11 +147,6 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
     form.setValue("images", newUrls);
   };
 
-  const handleTypeChange = (type: string) => {
-    setSelectedType(type);
-    form.setValue("type", type);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -172,28 +156,11 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
             Add New Listing
           </DialogTitle>
           <DialogDescription>
-            Add your business, product, service, or event to our directory to connect with the Hong Kong ethnic minority community.
+            Add your business to our directory to connect with the Hong Kong ethnic minority community.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Type Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Listing Type</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {listingTypes.map((type) => (
-                <div key={type.value} className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                  selectedType === type.value ? 'border-primary bg-primary/5' : 'border-muted hover:border-primary/50'
-                }`} onClick={() => handleTypeChange(type.value)}>
-                  <div className="flex items-center gap-2">
-                    <type.icon className="h-5 w-5" />
-                    <span className="font-medium">{type.label}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -204,7 +171,7 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
                 <Store className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="title"
-                  placeholder={`Enter your ${selectedType} name`}
+                  placeholder="Enter your business name"
                   className="pl-10"
                   data-testid="input-title"
                   {...form.register("title")}
@@ -242,7 +209,7 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                placeholder={`Describe your ${selectedType}, what makes it special, and what you offer...`}
+                placeholder="Describe your business, what makes it special, and what you offer..."
                 className="min-h-[100px]"
                 data-testid="textarea-description"
                 {...form.register("description")}
@@ -387,7 +354,7 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
 
           {/* Images Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Business Images</h3>
+            <h3 className="text-lg font-semibold">Images</h3>
             <p className="text-sm text-gray-600">Add images to showcase your business. Enter image URLs below.</p>
             
             <div className="space-y-3">
@@ -454,134 +421,6 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
             </div>
           </div>
 
-          {/* Type-specific fields */}
-          {selectedType === 'product' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Product Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="pl-10"
-                      data-testid="input-price"
-                      {...form.register("price")}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="inventory">Inventory</Label>
-                  <Input
-                    id="inventory"
-                    type="number"
-                    placeholder="0"
-                    data-testid="input-inventory"
-                    {...form.register("inventory", { valueAsNumber: true })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedType === 'service' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Service Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (minutes)</Label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="duration"
-                      type="number"
-                      placeholder="60"
-                      className="pl-10"
-                      data-testid="input-duration"
-                      {...form.register("duration", { valueAsNumber: true })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="pl-10"
-                      data-testid="input-service-price"
-                      {...form.register("price")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedType === 'event' && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Event Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="eventDate">Event Date</Label>
-                  <Input
-                    id="eventDate"
-                    type="datetime-local"
-                    data-testid="input-event-date"
-                    {...form.register("eventDate")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventEndDate">End Date (Optional)</Label>
-                  <Input
-                    id="eventEndDate"
-                    type="datetime-local"
-                    data-testid="input-event-end-date"
-                    {...form.register("eventEndDate")}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="capacity">Capacity</Label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="capacity"
-                      type="number"
-                      placeholder="50"
-                      className="pl-10"
-                      data-testid="input-capacity"
-                      {...form.register("capacity", { valueAsNumber: true })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="eventPrice">Ticket Price ($)</Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="eventPrice"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="pl-10"
-                      data-testid="input-event-price"
-                      {...form.register("eventPrice")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Additional Details */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Additional Details</h3>
@@ -617,7 +456,7 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
               disabled={addListingMutation.isPending}
               data-testid="button-submit"
             >
-              {addListingMutation.isPending ? "Adding..." : `Add ${selectedType}`}
+              {addListingMutation.isPending ? "Adding..." : "Add Listing"}
             </Button>
           </div>
         </form>
