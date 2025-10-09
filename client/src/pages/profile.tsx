@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,22 +6,67 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import AddProductModal from "@/components/AddProductModal";
 import AddServiceModal from "@/components/AddServiceModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import type { Listing } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Profile() {
   const { user, isLoading } = useAuth();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<Listing | null>(null);
+  const [itemToEdit, setItemToEdit] = useState<Listing | null>(null);
+  const { toast } = useToast();
 
-  const { data: listings, isLoading: loadingListings } = useQuery<Listing[]>({
+  const { data: listings, isLoading: loadingListings, refetch } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete listing');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
+      toast({
+        title: "Success!",
+        description: "Listing deleted successfully",
+      });
+      setItemToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete listing",
+        variant: "destructive",
+      });
+    },
   });
 
   const getStatusBadge = (status: string) => {
@@ -75,19 +120,24 @@ export default function Profile() {
               variant="ghost" 
               size="sm"
               onClick={() => {
-                // TODO: Implement edit modal for items
+                setItemToEdit(item);
+                if (item.type === 'listing') setIsAddListingModalOpen(true);
+                else if (item.type === 'product') setIsAddProductModalOpen(true);
+                else if (item.type === 'service') setIsAddServiceModalOpen(true);
               }}
               data-testid={`button-edit-${item.id}`}
+              disabled={item.status === 'pending'}
+              title={item.status === 'pending' ? 'Cannot edit while pending review' : 'Edit listing'}
             >
               <Edit className="w-4 h-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => {
-                // TODO: Implement delete functionality
-              }}
+              onClick={() => setItemToDelete(item)}
               data-testid={`button-delete-${item.id}`}
+              disabled={item.status === 'pending'}
+              title={item.status === 'pending' ? 'Cannot delete while pending review' : 'Delete listing'}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
             </Button>
@@ -457,16 +507,50 @@ export default function Profile() {
       {/* Add Modals */}
       <AddListingModal 
         isOpen={isAddListingModalOpen}
-        onClose={() => setIsAddListingModalOpen(false)}
+        onClose={() => {
+          setIsAddListingModalOpen(false);
+          setItemToEdit(null);
+        }}
+        editListing={itemToEdit?.type === 'listing' ? itemToEdit : undefined}
       />
       <AddProductModal 
         isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
+        onClose={() => {
+          setIsAddProductModalOpen(false);
+          setItemToEdit(null);
+        }}
+        editProduct={itemToEdit?.type === 'product' ? itemToEdit : undefined}
       />
       <AddServiceModal 
         isOpen={isAddServiceModalOpen}
-        onClose={() => setIsAddServiceModalOpen(false)}
+        onClose={() => {
+          setIsAddServiceModalOpen(false);
+          setItemToEdit(null);
+        }}
+        editService={itemToEdit?.type === 'service' ? itemToEdit : undefined}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {itemToDelete?.type}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

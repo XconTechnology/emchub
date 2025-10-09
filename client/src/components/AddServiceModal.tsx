@@ -29,13 +29,17 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 interface AddServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editService?: any;
 }
 
-export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProps) {
+export default function AddServiceModal({ isOpen, onClose, editService }: AddServiceModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [imageUrl, setImageUrl] = useState<string>("");
-  const [useTimeDollars, setUseTimeDollars] = useState(false);
+  const isEditing = !!editService;
+  const [imageUrl, setImageUrl] = useState<string>(editService?.images?.[0] || "");
+  const [useTimeDollars, setUseTimeDollars] = useState(
+    editService?.paymentMethods?.includes('td') || false
+  );
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -43,7 +47,15 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
-    defaultValues: {
+    defaultValues: editService ? {
+      type: "service",
+      title: editService.title || "",
+      description: editService.description || "",
+      categoryId: editService.categoryId || "",
+      price: editService.price?.toString() || "",
+      isActive: editService.isActive ?? true,
+      status: editService.status || "pending",
+    } : {
       type: "service",
       title: "",
       description: "",
@@ -89,20 +101,33 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
         price: data.price ? parseFloat(data.price) : undefined,
         paymentMethods: useTimeDollars ? ['td'] : data.price ? ['cash'] : [],
         images: imageUrl ? [imageUrl] : [],
+        status: isEditing ? editService.status : "pending",
       };
-      const res = await apiRequest("POST", "/api/listings", serviceData);
+      const res = await apiRequest(
+        isEditing ? "PUT" : "POST",
+        isEditing ? `/api/listings/${editService.id}` : "/api/listings",
+        serviceData
+      );
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
-      toast({ title: "Service added successfully!" });
+      toast({ 
+        title: isEditing ? "Service updated successfully!" : "Service added successfully!",
+        description: isEditing ? "Your changes have been saved and will be reviewed." : "Your service has been submitted for review.",
+      });
       form.reset();
       setImageUrl("");
       setUseTimeDollars(false);
       onClose();
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to add service", description: error.message, variant: "destructive" });
+      toast({ 
+        title: isEditing ? "Failed to update service" : "Failed to add service", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -121,8 +146,13 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Service</DialogTitle>
-          <DialogDescription>Add a service to your marketplace</DialogDescription>
+          <DialogTitle>{isEditing ? "Edit Service" : "Add New Service"}</DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? "Update your service details below." 
+              : "Add a service to your marketplace"
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -141,7 +171,10 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
 
           <div className="space-y-2">
             <Label htmlFor="categoryId">Category *</Label>
-            <Select onValueChange={(value) => form.setValue("categoryId", value)}>
+            <Select 
+              value={form.watch("categoryId") || ""} 
+              onValueChange={(value) => form.setValue("categoryId", value)}
+            >
               <SelectTrigger data-testid="select-category">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
@@ -240,7 +273,10 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
 
           <div className="space-y-2">
             <Label htmlFor="status">Status *</Label>
-            <Select onValueChange={(value) => form.setValue("status", value as "draft" | "published")} defaultValue="draft">
+            <Select 
+              value={form.watch("status") || "draft"} 
+              onValueChange={(value) => form.setValue("status", value as "draft" | "published")}
+            >
               <SelectTrigger data-testid="select-status">
                 <SelectValue />
               </SelectTrigger>
@@ -260,7 +296,10 @@ export default function AddServiceModal({ isOpen, onClose }: AddServiceModalProp
               disabled={createServiceMutation.isPending}
               data-testid="button-submit"
             >
-              {createServiceMutation.isPending ? "Adding..." : "Add Service"}
+              {createServiceMutation.isPending 
+                ? (isEditing ? "Updating..." : "Adding...") 
+                : (isEditing ? "Update Service" : "Add Service")
+              }
             </Button>
           </div>
         </form>

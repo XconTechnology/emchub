@@ -33,12 +33,14 @@ type AddListingData = z.infer<typeof insertListingSchema>;
 interface AddListingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editListing?: any;
 }
 
-export default function AddListingModal({ isOpen, onClose }: AddListingModalProps) {
+export default function AddListingModal({ isOpen, onClose, editListing }: AddListingModalProps) {
   const { toast } = useToast();
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>(editListing?.images || []);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+  const isEditing = !!editListing;
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -47,7 +49,28 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
 
   const form = useForm<AddListingData>({
     resolver: zodResolver(insertListingSchema),
-    defaultValues: {
+    defaultValues: editListing ? {
+      type: "listing",
+      title: editListing.title || "",
+      description: editListing.description || "",
+      categoryId: editListing.categoryId || "",
+      address: editListing.address || "",
+      city: editListing.city || "",
+      postalCode: editListing.postalCode || "",
+      isOnlineOnly: editListing.isOnlineOnly || false,
+      phone: editListing.phone || "",
+      email: editListing.email || "",
+      website: editListing.website || "",
+      images: editListing.images || [],
+      tags: editListing.tags || [],
+      price: editListing.price,
+      inventory: editListing.inventory,
+      duration: editListing.duration,
+      eventDate: editListing.eventDate,
+      eventEndDate: editListing.eventEndDate,
+      capacity: editListing.capacity,
+      eventPrice: editListing.eventPrice,
+    } : {
       type: "listing",
       title: "",
       description: "",
@@ -77,13 +100,13 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
       const transformedData = {
         ...data,
         type: "listing",
-        status: "pending",
+        status: isEditing ? editListing.status : "pending",
       };
 
       console.log('Sending to API:', transformedData);
 
-      const response = await fetch("/api/listings", {
-        method: "POST",
+      const response = await fetch(isEditing ? `/api/listings/${editListing.id}` : "/api/listings", {
+        method: isEditing ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -106,11 +129,12 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/listings/user"] });
       toast({
-        title: "Listing added successfully!",
-        description: "Your listing has been submitted for review.",
+        title: isEditing ? "Listing updated successfully!" : "Listing added successfully!",
+        description: isEditing ? "Your changes have been saved and will be reviewed." : "Your listing has been submitted for review.",
       });
       onClose();
       form.reset();
+      setImageUrls([]);
     },
     onError: (error: any) => {
       toast({
@@ -153,10 +177,13 @@ export default function AddListingModal({ isOpen, onClose }: AddListingModalProp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Store className="h-5 w-5" />
-            Add New Listing
+            {isEditing ? "Edit Listing" : "Add New Listing"}
           </DialogTitle>
           <DialogDescription>
-            Add your business to our directory to connect with the Hong Kong ethnic minority community.
+            {isEditing 
+              ? "Update your listing details below."
+              : "Add your business to our directory to connect with the Hong Kong ethnic minority community."
+            }
           </DialogDescription>
         </DialogHeader>
 

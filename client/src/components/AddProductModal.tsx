@@ -28,12 +28,14 @@ type ProductFormData = z.infer<typeof productSchema>;
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editProduct?: any;
 }
 
-export default function AddProductModal({ isOpen, onClose }: AddProductModalProps) {
+export default function AddProductModal({ isOpen, onClose, editProduct }: AddProductModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [imageUrl, setImageUrl] = useState<string>("");
+  const isEditing = !!editProduct;
+  const [imageUrl, setImageUrl] = useState<string>(editProduct?.images?.[0] || "");
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -41,7 +43,15 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
+    defaultValues: editProduct ? {
+      type: "product",
+      title: editProduct.title || "",
+      description: editProduct.description || "",
+      categoryId: editProduct.categoryId || "",
+      price: editProduct.price?.toString() || "",
+      inventory: editProduct.inventory?.toString() || "",
+      status: editProduct.status || "pending",
+    } : {
       type: "product",
       title: "",
       description: "",
@@ -87,19 +97,32 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
         price: parseFloat(data.price),
         inventory: parseInt(data.inventory),
         images: imageUrl ? [imageUrl] : [],
+        status: isEditing ? editProduct.status : "pending",
       };
-      const res = await apiRequest("POST", "/api/listings", productData);
+      const res = await apiRequest(
+        isEditing ? "PUT" : "POST",
+        isEditing ? `/api/listings/${editProduct.id}` : "/api/listings",
+        productData
+      );
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
-      toast({ title: "Product added successfully!" });
+      toast({ 
+        title: isEditing ? "Product updated successfully!" : "Product added successfully!",
+        description: isEditing ? "Your changes have been saved and will be reviewed." : "Your product has been submitted for review.",
+      });
       form.reset();
       setImageUrl("");
       onClose();
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to add product", description: error.message, variant: "destructive" });
+      toast({ 
+        title: isEditing ? "Failed to update product" : "Failed to add product", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -118,8 +141,13 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
-          <DialogDescription>Add a product to your marketplace</DialogDescription>
+          <DialogTitle>{isEditing ? "Edit Product" : "Add New Product"}</DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? "Update your product details below." 
+              : "Add a product to your marketplace"
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -138,7 +166,10 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
 
           <div className="space-y-2">
             <Label htmlFor="categoryId">Category *</Label>
-            <Select onValueChange={(value) => form.setValue("categoryId", value)}>
+            <Select 
+              value={form.watch("categoryId") || ""} 
+              onValueChange={(value) => form.setValue("categoryId", value)}
+            >
               <SelectTrigger data-testid="select-category">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
@@ -230,7 +261,10 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
 
           <div className="space-y-2">
             <Label htmlFor="status">Status *</Label>
-            <Select onValueChange={(value) => form.setValue("status", value as "draft" | "published")} defaultValue="draft">
+            <Select 
+              value={form.watch("status") || "draft"} 
+              onValueChange={(value) => form.setValue("status", value as "draft" | "published")}
+            >
               <SelectTrigger data-testid="select-status">
                 <SelectValue />
               </SelectTrigger>
@@ -250,7 +284,10 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
               disabled={createProductMutation.isPending}
               data-testid="button-submit"
             >
-              {createProductMutation.isPending ? "Adding..." : "Add Product"}
+              {createProductMutation.isPending 
+                ? (isEditing ? "Updating..." : "Adding...") 
+                : (isEditing ? "Update Product" : "Add Product")
+              }
             </Button>
           </div>
         </form>
