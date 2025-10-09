@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
@@ -34,6 +36,13 @@ export default function Profile() {
   const [isBecomeVendorModalOpen, setIsBecomeVendorModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Listing | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Listing | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,10 +53,42 @@ export default function Profile() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
   const { data: listings, isLoading: loadingListings, refetch } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchInterval: 5000,
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: typeof profileData) => {
+      return apiRequest("PATCH", "/api/users/profile", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Profile updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      setIsEditingProfile(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -326,100 +367,219 @@ export default function Profile() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Profile Header */}
+        {/* Editable Profile Section */}
         <Card className="wp-card mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                {user?.profileImageUrl ? (
-                  <img
-                    src={user.profileImageUrl}
-                    alt="Profile"
-                    className="w-16 h-16 rounded-full object-cover"
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl">My Profile</CardTitle>
+              {!isEditingProfile && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditingProfile(true)}
+                  data-testid="button-edit-profile"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              {user?.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">
+                    {profileData.firstName?.[0]}{profileData.lastName?.[0] || user?.username?.[0]}
+                  </span>
+                </div>
+              )}
+              {user?.isAdmin && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  Administrator
+                </Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                {isEditingProfile ? (
+                  <Input
+                    id="firstName"
+                    value={profileData.firstName}
+                    onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                    data-testid="input-first-name"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
-                    </span>
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="profile-name">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}` 
-                      : user?.username || 'User'}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300" data-testid="profile-email">
-                    {user?.email}
+                  <p className="text-gray-900 dark:text-white font-medium" data-testid="text-first-name">
+                    {profileData.firstName || 'Not set'}
                   </p>
-                  {user?.isAdmin && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 mt-1">
-                      Administrator
-                    </Badge>
-                  )}
-                </div>
+                )}
               </div>
-              <div className="flex gap-2 flex-wrap items-center">
-                {user?.vendorStatus === 'verified' ? (
-                  <div className="flex gap-2 flex-wrap items-center">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid="badge-verified-vendor">
-                      <CheckCircle className="w-3 h-3" />
-                      Verified Vendor ✅
-                    </Badge>
-                    <Button 
-                      onClick={() => setIsAddListingModalOpen(true)}
-                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
-                      data-testid="button-add-listing"
-                    >
-                      <Store className="w-4 h-4 mr-2" />
-                      Add Listing
-                    </Button>
-                    <Button 
-                      onClick={() => setIsAddProductModalOpen(true)}
-                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
-                      data-testid="button-add-product"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Add Product
-                    </Button>
-                    <Button 
-                      onClick={() => setIsAddServiceModalOpen(true)}
-                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
-                      data-testid="button-add-service"
-                    >
-                      <Briefcase className="w-4 h-4 mr-2" />
-                      Add Service
-                    </Button>
-                  </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                {isEditingProfile ? (
+                  <Input
+                    id="lastName"
+                    value={profileData.lastName}
+                    onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                    data-testid="input-last-name"
+                  />
                 ) : (
-                  <div className="flex flex-col gap-2 w-full">
-                    {user?.vendorStatus === 'pending' && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
-                        <Clock className="w-4 h-4 text-yellow-600" />
-                        <span className="text-yellow-800 font-medium">Your vendor verification request has been submitted for review.</span>
-                      </div>
-                    )}
-                    {user?.vendorStatus === 'rejected' && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
-                        <XCircle className="w-4 h-4 text-red-600" />
-                        <span className="text-red-800 font-medium">Your vendor verification request was rejected.</span>
-                      </div>
-                    )}
-                    <Button 
-                      onClick={() => setIsBecomeVendorModalOpen(true)}
-                      className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)] w-fit"
-                      data-testid="button-become-vendor"
-                    >
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      {user?.vendorStatus === 'rejected' ? 'Reapply for Vendor Status' : 'Become a Vendor'}
-                    </Button>
-                  </div>
+                  <p className="text-gray-900 dark:text-white font-medium" data-testid="text-last-name">
+                    {profileData.lastName || 'Not set'}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                {isEditingProfile ? (
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    data-testid="input-email-profile"
+                  />
+                ) : (
+                  <p className="text-gray-900 dark:text-white font-medium" data-testid="text-email">
+                    {profileData.email || 'Not set'}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                {isEditingProfile ? (
+                  <Input
+                    id="phone"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    data-testid="input-phone-profile"
+                  />
+                ) : (
+                  <p className="text-gray-900 dark:text-white font-medium" data-testid="text-phone">
+                    {profileData.phone || 'Not set'}
+                  </p>
                 )}
               </div>
             </div>
+
+            {isEditingProfile && (
+              <div className="flex gap-3 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditingProfile(false);
+                    setProfileData({
+                      firstName: user.firstName || '',
+                      lastName: user.lastName || '',
+                      email: user.email || '',
+                      phone: user.phone || '',
+                    });
+                  }}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => updateProfileMutation.mutate(profileData)}
+                  disabled={updateProfileMutation.isPending}
+                  data-testid="button-save-profile"
+                >
+                  {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Vendor Status Section */}
+        <Card className="wp-card mb-6">
+          <CardHeader>
+            <CardTitle>Vendor Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {user?.vendorStatus === 'verified' ? (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid="badge-verified-vendor">
+                  <CheckCircle className="w-4 h-4" />
+                  Verified Vendor ✅
+                </Badge>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {user?.vendorStatus === 'pending' && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                    <span className="text-yellow-800 font-medium">Your vendor verification request has been submitted for review.</span>
+                  </div>
+                )}
+                {user?.vendorStatus === 'rejected' && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-red-800 font-medium">Your vendor verification request was rejected.</span>
+                  </div>
+                )}
+                {user?.vendorStatus === 'none' && (
+                  <p className="text-gray-600 dark:text-gray-400">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services.</p>
+                )}
+                <Button 
+                  onClick={() => setIsBecomeVendorModalOpen(true)}
+                  className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
+                  data-testid="button-become-vendor"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  {user?.vendorStatus === 'rejected' ? 'Reapply for Vendor Status' : 'Become a Vendor'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Verified Vendor Actions */}
+        {user?.vendorStatus === 'verified' && (
+          <Card className="wp-card mb-6">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Add new listings, products, or services</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2 flex-wrap">
+              <Button 
+                onClick={() => setIsAddListingModalOpen(true)}
+                className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
+                data-testid="button-add-listing"
+              >
+                <Store className="w-4 h-4 mr-2" />
+                Add Listing
+              </Button>
+              <Button 
+                onClick={() => setIsAddProductModalOpen(true)}
+                className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
+                data-testid="button-add-product"
+              >
+                <Package className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+              <Button 
+                onClick={() => setIsAddServiceModalOpen(true)}
+                className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
+                data-testid="button-add-service"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Add Service
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs for Listings, Products, Services - Only for verified vendors */}
         {user?.vendorStatus === 'verified' ? (
@@ -544,72 +704,46 @@ export default function Profile() {
             )}
           </TabsContent>
         </Tabs>
-        ) : (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="text-gray-300 mb-4 flex justify-center">
-                <AlertCircle className="w-16 h-16" />
-              </div>
-              <CardTitle className="mb-2">Vendor Verification Required</CardTitle>
-              <CardDescription className="mb-4">
-                You need to be a verified vendor to manage listings, products, and services.
-              </CardDescription>
-              {(user?.vendorStatus === 'none' || !user?.vendorStatus) && (
-                <Button 
-                  onClick={() => setIsBecomeVendorModalOpen(true)}
-                  className="bg-primary hover:bg-primary/90"
-                  data-testid="button-become-vendor-cta"
-                >
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  Apply for Vendor Status
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        ) : null}
       </div>
 
-      {/* Add Modals */}
       <AddListingModal 
         isOpen={isAddListingModalOpen}
         onClose={() => {
           setIsAddListingModalOpen(false);
           setItemToEdit(null);
         }}
-        editListing={itemToEdit?.type === 'listing' ? itemToEdit : undefined}
       />
+
       <AddProductModal 
         isOpen={isAddProductModalOpen}
         onClose={() => {
           setIsAddProductModalOpen(false);
           setItemToEdit(null);
         }}
-        editProduct={itemToEdit?.type === 'product' ? itemToEdit : undefined}
       />
+
       <AddServiceModal 
         isOpen={isAddServiceModalOpen}
         onClose={() => {
           setIsAddServiceModalOpen(false);
           setItemToEdit(null);
         }}
-        editService={itemToEdit?.type === 'service' ? itemToEdit : undefined}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {itemToDelete?.type}?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{itemToDelete?.title}"? This action cannot be undone.
+              This action cannot be undone. This will permanently delete your listing.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
               onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete.id)}
               className="bg-red-600 hover:bg-red-700"
-              data-testid="button-confirm-delete"
             >
               Delete
             </AlertDialogAction>
@@ -617,7 +751,6 @@ export default function Profile() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Become Vendor Modal */}
       <BecomeVendorModal 
         isOpen={isBecomeVendorModalOpen}
         onClose={() => setIsBecomeVendorModalOpen(false)}
