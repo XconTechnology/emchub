@@ -81,11 +81,16 @@ export default function DirectoryPage() {
               <CardTitle className="text-lg" data-testid={`text-title-${listing.id}`}>
                 {listing.title}
               </CardTitle>
-              <CardDescription className="flex items-center gap-1 mt-1">
+              <CardDescription className="flex items-center gap-1 mt-1 flex-wrap">
                 <Badge variant="secondary" data-testid={`badge-type-${listing.id}`}>
                   {listing.type}
                 </Badge>
-                {category && (
+                {listing.customCategory && listing.customCategory.split(',').map((cat, index) => (
+                  <Badge key={index} variant="outline" data-testid={`badge-custom-category-${listing.id}-${index}`}>
+                    {cat.trim()}
+                  </Badge>
+                ))}
+                {!listing.customCategory && category && (
                   <Badge variant="outline" data-testid={`badge-category-${listing.id}`}>
                     {category.name}
                   </Badge>

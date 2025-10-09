@@ -82,13 +82,18 @@ export default function UserDashboardHome() {
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="text-lg">{item.title}</CardTitle>
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 flex-wrap">
               <Badge variant={item.status === 'published' ? 'default' : 'secondary'}>
                 {item.status}
               </Badge>
               {item.type === 'product' && item.price && (
                 <Badge variant="outline">${parseFloat(item.price.toString()).toFixed(2)}</Badge>
               )}
+              {item.customCategory && item.customCategory.split(',').map((cat, index) => (
+                <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {cat.trim()}
+                </Badge>
+              ))}
               {item.type === 'service' && item.paymentMethods?.includes('td') && (
                 <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                   TimeDollars
