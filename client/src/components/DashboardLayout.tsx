@@ -38,23 +38,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     logoutMutation.mutate();
   };
 
-  const mainNavItems = [
-    {
-      title: "Home",
-      url: "/",
-      icon: Home,
-    },
-    {
-      title: "Directory",
-      url: "/directory",
-      icon: List,
-    },
-    {
-      title: "Map View",
-      url: "/map",
-      icon: MapPin,
-    },
-  ];
+  const mainNavItems: {title: string; url: string; icon: any}[] = [];
 
   const userNavItems = user
     ? [
