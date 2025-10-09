@@ -3,13 +3,7 @@ import { Route, Switch, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { 
-  Home, 
-  Search, 
-  ShoppingCart, 
-  Star, 
-  DollarSign, 
-  Briefcase, 
-  MessageCircle,
+  LayoutDashboard,
   Menu,
   X,
   LogOut,
@@ -33,12 +27,8 @@ export default function UserDashboardRouter() {
   }
 
   const navigation = [
-    { name: "Dashboard", path: "/dashboard", icon: Home, testId: "nav-dashboard" },
-    { name: "Browse", path: "/dashboard/browse", icon: Search, testId: "nav-browse" },
-    { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
-    { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
-    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services" },
-    { name: "WhatsApp Group", path: "/dashboard/whatsapp", icon: MessageCircle, testId: "nav-whatsapp" },
+    { name: "My Dashboard", path: "/user-dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "Profile", path: "/profile", icon: UserIcon, testId: "nav-profile" },
   ];
 
   const isActive = (path: string) => location === path;
@@ -129,7 +119,7 @@ export default function UserDashboardRouter() {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto p-4 lg:p-8 mt-16 lg:mt-0">
           <Switch>
-            <Route path="/dashboard" component={UserDashboardHome} />
+            <Route path="/user-dashboard" component={UserDashboardHome} />
             <Route path="/dashboard/browse" component={UserBrowse} />
             <Route path="/dashboard/reviews" component={UserReviews} />
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
