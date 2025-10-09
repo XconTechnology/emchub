@@ -14,6 +14,7 @@ import AddProductModal from "@/components/AddProductModal";
 import AddServiceModal from "@/components/AddServiceModal";
 import { BecomeVendorModal } from "@/components/BecomeVendorModal";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ProfilePictureUpload } from "@/components/ProfilePictureUpload";
 import type { Listing } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -386,19 +387,23 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4 mb-6">
-              {user?.profileImageUrl ? (
-                <img
-                  src={user.profileImageUrl}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">
-                    {profileData.firstName?.[0]}{profileData.lastName?.[0] || user?.username?.[0]}
-                  </span>
-                </div>
-              )}
+              <div className="flex flex-col items-center gap-2">
+                {user?.profileImageUrl ? (
+                  <img
+                    src={user.profileImageUrl}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover"
+                    data-testid="img-profile-picture"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">
+                      {profileData.firstName?.[0]}{profileData.lastName?.[0] || user?.username?.[0]}
+                    </span>
+                  </div>
+                )}
+                <ProfilePictureUpload currentImageUrl={user?.profileImageUrl} />
+              </div>
               {user?.isAdmin && (
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                   Administrator
