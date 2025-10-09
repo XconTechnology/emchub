@@ -30,9 +30,9 @@ import AwsS3 from "@uppy/aws-s3";
 
 const vendorRequestSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
-  identificationDoc: z.string().optional(),
+  identificationDoc: z.string().min(1, "Identification document is required"),
   businessRegistrationDoc: z.string().optional(),
-  addressProofDoc: z.string().optional(),
+  addressProofDoc: z.string().min(1, "Address proof document is required"),
   description: z.string().min(10, "Please provide at least 10 characters"),
 });
 
@@ -175,41 +175,50 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
             />
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <FormLabel className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Identification Document (ID/Passport) *
-              </FormLabel>
-              <div className="border-2 border-dashed rounded-lg p-4">
-                {!idDocUrl ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setUploadingDoc("id")}
-                    data-testid="button-upload-id"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload ID Document
-                  </Button>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIdDocUrl("");
-                        form.setValue("identificationDoc", "");
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="identificationDoc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Identification Document (ID/Passport) *
+                  </FormLabel>
+                  <FormControl>
+                    <div className="border-2 border-dashed rounded-lg p-4">
+                      {!idDocUrl ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setUploadingDoc("id")}
+                          data-testid="button-upload-id"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload ID Document
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setIdDocUrl("");
+                              form.setValue("identificationDoc", "");
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="space-y-2">
               <FormLabel className="flex items-center gap-2">
@@ -247,41 +256,50 @@ export function BecomeVendorModal({ isOpen, onClose }: BecomeVendorModalProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <FormLabel className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Address Proof Document *
-              </FormLabel>
-              <div className="border-2 border-dashed rounded-lg p-4">
-                {!addressDocUrl ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setUploadingDoc("address")}
-                    data-testid="button-upload-address"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Address Proof
-                  </Button>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setAddressDocUrl("");
-                        form.setValue("addressProofDoc", "");
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="addressProofDoc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Address Proof Document *
+                  </FormLabel>
+                  <FormControl>
+                    <div className="border-2 border-dashed rounded-lg p-4">
+                      {!addressDocUrl ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setUploadingDoc("address")}
+                          data-testid="button-upload-address"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Address Proof
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-600 dark:text-green-400">✓ Document uploaded</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setAddressDocUrl("");
+                              form.setValue("addressProofDoc", "");
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <FormField
