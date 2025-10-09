@@ -562,12 +562,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserVendorStatus(userId: string, status: string): Promise<User> {
+    const updateData: any = {
+      vendorStatus: status,
+      updatedAt: new Date(),
+    };
+    
+    // If status is verified, also update role to vendor
+    if (status === 'verified') {
+      updateData.role = 'vendor';
+    }
+    
     const [user] = await db
       .update(users)
-      .set({
-        vendorStatus: status,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     return user;
