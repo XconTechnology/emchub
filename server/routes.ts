@@ -7,6 +7,7 @@ import {
   insertListingSchema,
   insertCategorySchema,
   insertBookingSchema,
+  insertVendorRequestSchema,
   users as usersTable
 } from "@shared/schema";
 import { db } from "./db";
@@ -806,6 +807,152 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating user role:", error);
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Vendor request routes
+  app.post('/api/vendor-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Check if user already has a pending or approved request
+      const existingRequest = await storage.getUserVendorRequest(req.user.id);
+      if (existingRequest && existingRequest.status === 'pending') {
+        return res.status(400).json({ message: "You already have a pending vendor request" });
+      }
+      if (existingRequest && existingRequest.status === 'approved') {
+        return res.status(400).json({ message: "You are already a verified vendor" });
+      }
+
+      const requestData = insertVendorRequestSchema.parse(req.body);
+      const vendorRequest = await storage.createVendorRequest({
+        ...requestData,
+        userId: req.user.id,
+      });
+
+      // Update user vendor status to pending
+      await storage.updateUserVendorStatus(req.user.id, 'pending');
+
+      res.json(vendorRequest);
+    } catch (error: any) {
+      console.error("Error creating vendor request:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to submit vendor request" });
+    }
+  });
+
+  app.get('/api/vendor-requests/my-request', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const request = await storage.getUserVendorRequest(req.user.id);
+      res.json(request || null);
+    } catch (error) {
+      console.error("Error fetching vendor request:", error);
+      res.status(500).json({ message: "Failed to fetch vendor request" });
+    }
+  });
+
+  // Admin vendor request routes
+  app.get('/api/admin/vendor-requests', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const status = req.query.status as string;
+      const requests = await storage.getVendorRequests(status);
+      
+      // Get user details for each request
+      const { users, vendorRequests } = await import("@shared/schema");
+      const requestsWithUsers = await db
+        .select({
+          id: vendorRequests.id,
+          userId: vendorRequests.userId,
+          businessName: vendorRequests.businessName,
+          identificationDoc: vendorRequests.identificationDoc,
+          businessRegistrationDoc: vendorRequests.businessRegistrationDoc,
+          addressProofDoc: vendorRequests.addressProofDoc,
+          description: vendorRequests.description,
+          status: vendorRequests.status,
+          rejectionReason: vendorRequests.rejectionReason,
+          reviewedBy: vendorRequests.reviewedBy,
+          reviewedAt: vendorRequests.reviewedAt,
+          createdAt: vendorRequests.createdAt,
+          updatedAt: vendorRequests.updatedAt,
+          userName: users.username,
+          userEmail: users.email,
+        })
+        .from(vendorRequests)
+        .leftJoin(users, eq(vendorRequests.userId, users.id))
+        .where(status ? eq(vendorRequests.status, status) : undefined)
+        .orderBy(vendorRequests.createdAt);
+
+      res.json(requestsWithUsers);
+    } catch (error) {
+      console.error("Error fetching vendor requests:", error);
+      res.status(500).json({ message: "Failed to fetch vendor requests" });
+    }
+  });
+
+  app.patch('/api/admin/vendor-requests/:id/approve', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get admin user ID
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+        } else {
+          return res.status(401).json({ message: "Admin user not found" });
+        }
+      }
+
+      const request = await storage.approveVendorRequest(id, adminId);
+      
+      // Update user vendor status to verified
+      await storage.updateUserVendorStatus(request.userId, 'verified');
+
+      res.json({ message: "Vendor request approved successfully", request });
+    } catch (error) {
+      console.error("Error approving vendor request:", error);
+      res.status(500).json({ message: "Failed to approve vendor request" });
+    }
+  });
+
+  app.patch('/api/admin/vendor-requests/:id/reject', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      if (!reason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+
+      // Get admin user ID
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+        } else {
+          return res.status(401).json({ message: "Admin user not found" });
+        }
+      }
+
+      const request = await storage.rejectVendorRequest(id, adminId, reason);
+      
+      // Update user vendor status to rejected
+      await storage.updateUserVendorStatus(request.userId, 'rejected');
+
+      res.json({ message: "Vendor request rejected successfully", request });
+    } catch (error) {
+      console.error("Error rejecting vendor request:", error);
+      res.status(500).json({ message: "Failed to reject vendor request" });
     }
   });
 
