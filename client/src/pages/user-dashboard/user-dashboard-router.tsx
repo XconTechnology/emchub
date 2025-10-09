@@ -41,6 +41,7 @@ export default function UserDashboardRouter() {
   }
 
   const navigation = [
+    { name: "Profile", path: "/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "Browse", path: "/dashboard/browse", icon: Search, testId: "nav-browse" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
@@ -65,19 +66,19 @@ export default function UserDashboardRouter() {
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-200 ease-in-out flex flex-col`}
+        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-brand-green border-r border-brand-green/20 transition-transform duration-200 ease-in-out flex flex-col`}
       >
         {/* User info */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 border-b border-white/20">
           <div className="flex items-center gap-3">
             {user.profileImageUrl ? (
               <img 
                 src={user.profileImageUrl} 
                 alt="Profile" 
-                className="w-12 h-12 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-brand-green flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30">
                 <span className="text-white font-semibold text-lg">
                   {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
                   {user.lastName?.[0]?.toUpperCase() || ''}
@@ -85,7 +86,7 @@ export default function UserDashboardRouter() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate" data-testid="text-username">
+              <h3 className="font-semibold text-white truncate" data-testid="text-username">
                 {user.username}
               </h3>
             </div>
@@ -103,8 +104,8 @@ export default function UserDashboardRouter() {
                     href={item.path}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive(item.path)
-                        ? "bg-brand-green text-white"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "bg-white/20 text-white font-semibold"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                     data-testid={item.testId}
                     onClick={() => setSidebarOpen(false)}
@@ -119,7 +120,7 @@ export default function UserDashboardRouter() {
         </nav>
 
         {/* Logout button */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-white/20">
           <Button
             onClick={() => {
               logoutMutation.mutate(undefined, {
@@ -129,7 +130,7 @@ export default function UserDashboardRouter() {
               });
             }}
             variant="outline"
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 border-white/30 text-white hover:bg-white/10 hover:text-white"
             data-testid="button-logout"
             disabled={logoutMutation.isPending}
           >
