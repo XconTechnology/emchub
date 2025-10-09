@@ -4,10 +4,8 @@ import {
   User,
   MapPin,
   List,
-  Settings,
   LogOut,
   Home,
-  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,7 +25,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useAdminAuth } from "@/hooks/use-admin-auth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,14 +33,9 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
-  const { isAdminAuthenticated, adminLogout } = useAdminAuth();
 
   const handleLogout = () => {
-    if (location === "/admin") {
-      adminLogout();
-    } else {
-      logoutMutation.mutate();
-    }
+    logoutMutation.mutate();
   };
 
   const mainNavItems = [
@@ -70,16 +62,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           title: "Profile",
           url: "/profile",
           icon: User,
-        },
-      ]
-    : [];
-
-  const adminNavItems = isAdminAuthenticated
-    ? [
-        {
-          title: "Admin Dashboard",
-          url: "/admin",
-          icon: ShieldCheck,
         },
       ]
     : [];
@@ -127,7 +109,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {(userNavItems.length > 0 || adminNavItems.length > 0) && (
+            {userNavItems.length > 0 && (
               <>
                 <Separator className="my-2" />
                 <SidebarGroup>
@@ -135,20 +117,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <SidebarGroupContent>
                     <SidebarMenu>
                       {userNavItems.map((item) => (
-                        <SidebarMenuItem key={item.url}>
-                          <SidebarMenuButton
-                            asChild
-                            isActive={location === item.url}
-                            data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                          >
-                            <Link href={item.url}>
-                              <item.icon className="w-4 h-4" />
-                              <span>{item.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                      {adminNavItems.map((item) => (
                         <SidebarMenuItem key={item.url}>
                           <SidebarMenuButton
                             asChild
