@@ -3,12 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
-import type { Category } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +18,7 @@ const productSchema = insertListingSchema.extend({
   title: z.string().min(1, "Product name is required"),
   price: z.string().min(1, "Price is required"),
   inventory: z.string().min(1, "Stock quantity is required"),
+  customCategory: z.string().optional(),
   status: z.enum(["draft", "published", "pending", "rejected"]),
 });
 
@@ -37,17 +36,13 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
   const isEditing = !!editProduct;
   const [imageUrl, setImageUrl] = useState<string>(editProduct?.images?.[0] || "");
 
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-  });
-
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: editProduct ? {
       type: "product",
       title: editProduct.title || "",
       description: editProduct.description || "",
-      categoryId: editProduct.categoryId || "",
+      customCategory: editProduct.customCategory || "",
       price: editProduct.price?.toString() || "",
       inventory: editProduct.inventory?.toString() || "",
       status: editProduct.status || "pending",
@@ -55,7 +50,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       type: "product",
       title: "",
       description: "",
-      categoryId: "",
+      customCategory: "",
       price: "",
       inventory: "",
       status: "pending",
@@ -165,22 +160,16 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Category *</Label>
-            <Select 
-              value={form.watch("categoryId") || ""} 
-              onValueChange={(value) => form.setValue("categoryId", value)}
-            >
-              <SelectTrigger data-testid="select-category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="customCategory">Category</Label>
+            <Input
+              id="customCategory"
+              {...form.register("customCategory")}
+              placeholder="e.g., Electronics, Mobile Accessories, Smart Devices"
+              data-testid="input-category"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter categories separated by commas. You can create new categories freely.
+            </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -257,22 +246,6 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
                 />
               </div>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status *</Label>
-            <Select 
-              value={form.watch("status") || "draft"} 
-              onValueChange={(value) => form.setValue("status", value as "draft" | "published")}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Publish</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
