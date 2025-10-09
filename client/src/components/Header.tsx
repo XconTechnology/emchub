@@ -82,13 +82,15 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                 </div>
               ) : user ? (
                 <>
-                  <Button 
-                    onClick={() => setIsAddListingModalOpen(true)}
-                    className="bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)] transition-colors" 
-                    data-testid="button-add-listing"
-                  >
-                    Add Listing
-                  </Button>
+                  {user.vendorStatus === 'verified' && (
+                    <Button 
+                      onClick={() => setIsAddListingModalOpen(true)}
+                      className="bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)] transition-colors" 
+                      data-testid="button-add-listing"
+                    >
+                      Add Listing
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -122,6 +124,14 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                           <span>My Profile</span>
                         </Link>
                       </DropdownMenuItem>
+                      {user.vendorStatus !== 'verified' && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/profile?openVendor=true" className="cursor-pointer" data-testid="link-become-vendor">
+                            <ChevronDown className="mr-2 h-4 w-4" />
+                            <span>Become a Vendor</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => logoutMutation.mutate()}
@@ -184,13 +194,15 @@ export default function Header({ forceSolid = false }: HeaderProps) {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
             {user ? (
               <>
-                <Button 
-                  onClick={() => setIsAddListingModalOpen(true)}
-                  className="w-full justify-start bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)]"
-                  data-testid="mobile-button-add-listing"
-                >
-                  Add Listing
-                </Button>
+                {user.vendorStatus === 'verified' && (
+                  <Button 
+                    onClick={() => setIsAddListingModalOpen(true)}
+                    className="w-full justify-start bg-[hsl(86,49%,53%)] text-white hover:bg-[hsl(86,49%,48%)]"
+                    data-testid="mobile-button-add-listing"
+                  >
+                    Add Listing
+                  </Button>
+                )}
                 <Link href="/profile">
                   <Button 
                     variant="ghost" 
@@ -200,6 +212,17 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     Profile
                   </Button>
                 </Link>
+                {user.vendorStatus !== 'verified' && (
+                  <Link href="/profile?openVendor=true">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start"
+                      data-testid="mobile-link-become-vendor"
+                    >
+                      Become a Vendor
+                    </Button>
+                  </Link>
+                )}
                 <Button 
                   variant="ghost" 
                   onClick={() => logoutMutation.mutate()}
