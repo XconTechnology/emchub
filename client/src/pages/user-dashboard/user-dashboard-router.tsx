@@ -99,6 +99,24 @@ export default function UserDashboardRouter() {
               );
             })}
           </ul>
+
+          {/* Profile Section */}
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Link href="/profile">
+              <a
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive("/profile")
+                    ? "bg-brand-green text-white"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                data-testid="nav-profile"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <UserIcon className="w-5 h-5" />
+                <span className="font-medium">Profile</span>
+              </a>
+            </Link>
+          </div>
         </nav>
 
         {/* Logout button */}
