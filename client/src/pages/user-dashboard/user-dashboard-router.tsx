@@ -91,19 +91,18 @@ export default function UserDashboardRouter() {
               const Icon = item.icon;
               return (
                 <li key={item.path}>
-                  <Link href={item.path}>
-                    <a
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        isActive(item.path)
-                          ? "bg-brand-green text-white"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
-                      data-testid={item.testId}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{item.name}</span>
-                    </a>
+                  <Link 
+                    href={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive(item.path)
+                        ? "bg-brand-green text-white"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                    data-testid={item.testId}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{item.name}</span>
                   </Link>
                 </li>
               );
