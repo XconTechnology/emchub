@@ -59,6 +59,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const userNavItems = user
     ? [
         {
+          title: "My Dashboard",
+          url: "/dashboard",
+          icon: LayoutDashboard,
+        },
+        {
           title: "Profile",
           url: "/profile",
           icon: User,
