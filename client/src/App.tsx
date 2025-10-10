@@ -8,6 +8,7 @@ import { AdminAuthProvider } from "@/hooks/use-admin-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
+import ProfileRedirect from "@/pages/profile-redirect";
 import AuthPage from "@/pages/auth-page";
 import DirectoryPage from "@/pages/directory-page";
 import MapPage from "@/pages/map-page";
@@ -45,8 +46,9 @@ function Router() {
       <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />
-      <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/profile" component={ProfileRedirect} />
       <Route path="/dashboard" component={UserDashboardRouter} />
+      <Route path="/dashboard/profile" component={UserDashboardRouter} />
       <Route path="/dashboard/browse" component={UserDashboardRouter} />
       <Route path="/dashboard/reviews" component={UserDashboardRouter} />
       <Route path="/dashboard/timedollars" component={UserDashboardRouter} />
