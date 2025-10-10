@@ -114,7 +114,7 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="px-4 lg:px-8 py-4 flex justify-between items-center border-b border-white/20" style={{ backgroundColor: '#8FC24C' }}>
+        <header className="sticky top-0 z-30 px-4 lg:px-8 py-4 flex justify-between items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
           <h1 className="text-xl font-semibold text-white">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/profile" && "Profile"}
