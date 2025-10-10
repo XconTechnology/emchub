@@ -66,7 +66,8 @@ export default function UserDashboardRouter() {
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-brand-green border-r border-brand-green/20 transition-transform duration-200 ease-in-out flex flex-col`}
+        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 transition-transform duration-200 ease-in-out flex flex-col`}
+        style={{ backgroundColor: '#8FC24C' }}
       >
         {/* User info */}
         <div className="p-6 border-b border-white/20">
@@ -105,7 +106,7 @@ export default function UserDashboardRouter() {
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive(item.path)
                         ? "bg-white/20 text-white font-semibold"
-                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                        : "text-white hover:bg-white/10 hover:text-white"
                     }`}
                     data-testid={item.testId}
                     onClick={() => setSidebarOpen(false)}
