@@ -58,19 +58,21 @@ Preferred communication style: Simple, everyday language.
 - **User Control**: Users can delete rejected items or reapply for approval as needed
 
 ### My Listings Management (October 2025)
-- **User-Accessible Listings**: Moved "My Listings" to base navigation - now accessible to ALL authenticated users (not just verified vendors)
-- **Create Listing Page**: Built user-friendly listing creation page at `/dashboard/create-listing` with:
-  - Category selection (traditional and custom categories)
+- **Verified-Vendor-Only Access**: "My Listings" section restricted to verified vendors only - non-verified users see "Become a Vendor" message with application button
+- **Modal-Based Creation**: Implemented AddListingModal component for streamlined listing creation/editing:
+  - Custom category system with free-text comma-separated input (no dropdown)
   - Business information form (name, description, contact details)
   - Location information with online-only option
-  - Image upload via object storage or URL
-  - Request Staff Help button for low-literacy users
+  - Image upload via object storage integration
+  - **Flexible Pricing Options**: Cash Only, TimeDollar Only, Both (Customer Choice), or Cash+TimeDollar Combo with percentage split
+  - Request Staff Help button integrated in modal header for low-literacy users
   - Auto-submission with "pending" status for admin approval
-- **My Listings Page**: Dedicated page at `/dashboard/my-listings` showing user's business listings with:
-  - Grid view of all user's business listings with status badges
+- **My Listings Page**: Dedicated page at `/dashboard/my-listings` showing vendor's business listings with:
+  - Stats cards showing Total, Published, and Pending counts (matching My Products design)
+  - Card-based grid layout with status badges (pending/published/rejected)
   - Edit and delete functionality for each listing
-  - Empty state with create listing call-to-action
-  - Status tracking (published, pending, rejected)
+  - Empty state with "Add Listing" button opening modal
+  - Status tracking and admin approval workflow
 
 ### Vendor Dashboard Restructure & Pricing System (October 2025)
 - **Dashboard Home Simplification**: Removed the tabbed interface (Listings/Products/Services tabs) from dashboard home page in favor of dedicated pages
