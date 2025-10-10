@@ -74,32 +74,13 @@ export default function UserDashboardRouter() {
       >
         {/* User info */}
         <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            {user.profileImageUrl ? (
-              <img 
-                src={user.profileImageUrl} 
-                alt="Profile" 
-                className="w-14 h-14 rounded-full object-cover border-3 border-white/30 shadow-lg"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center border-3 border-white/30 shadow-lg backdrop-blur-sm">
-                <span className="text-white font-bold text-xl">
-                  {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
-                  {user.lastName?.[0]?.toUpperCase() || ''}
-                </span>
-              </div>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-white text-lg truncate" data-testid="text-username">
+              {user.username}
+            </h3>
+            {user.vendorStatus === 'verified' && (
+              <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
             )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-bold text-white text-base truncate" data-testid="text-username">
-                  {user.username}
-                </h3>
-                {user.vendorStatus === 'verified' && (
-                  <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
-                )}
-              </div>
-              <p className="text-white/70 text-sm mt-0.5">{user.email}</p>
-            </div>
           </div>
         </div>
 
