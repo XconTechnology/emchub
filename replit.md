@@ -57,6 +57,21 @@ Preferred communication style: Simple, everyday language.
 - **Stat Descriptions**: Updated descriptions to clarify "Approved business listings", "Approved products", "Approved services"
 - **User Control**: Users can delete rejected items or reapply for approval as needed
 
+### My Listings Management (October 2025)
+- **User-Accessible Listings**: Moved "My Listings" to base navigation - now accessible to ALL authenticated users (not just verified vendors)
+- **Create Listing Page**: Built user-friendly listing creation page at `/dashboard/create-listing` with:
+  - Category selection (traditional and custom categories)
+  - Business information form (name, description, contact details)
+  - Location information with online-only option
+  - Image upload via object storage or URL
+  - Request Staff Help button for low-literacy users
+  - Auto-submission with "pending" status for admin approval
+- **My Listings Page**: Dedicated page at `/dashboard/my-listings` showing user's business listings with:
+  - Grid view of all user's business listings with status badges
+  - Edit and delete functionality for each listing
+  - Empty state with create listing call-to-action
+  - Status tracking (published, pending, rejected)
+
 ### Vendor Dashboard Restructure & Pricing System (October 2025)
 - **Dashboard Home Simplification**: Removed the tabbed interface (Listings/Products/Services tabs) from dashboard home page in favor of dedicated pages
 - **New Vendor-Only Sections**: Added six new dashboard sections visible only to verified vendors:
@@ -64,7 +79,7 @@ Preferred communication style: Simple, everyday language.
   - **My Services**: CRUD management for service offerings with duration and pricing details
   - **My Events**: CRUD management for event listings with attendee tracking and capacity management
   - **My Inventory**: Real-time stock tracking for all products with low-stock alerts
-  - **Coupons**: Discount code creation and management system (UI complete, backend pending)
+  - **Coupons**: Discount code creation and management system with admin approval workflow
   - **Pricing Settings**: Default payment method configuration with four options
 - **Advanced Pricing System**: Implemented flexible pricing options for products, services, and events:
   - **Cash Only**: Traditional cash-only payments

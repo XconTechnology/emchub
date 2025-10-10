@@ -69,7 +69,7 @@ export default function UserMyListings() {
           </p>
         </div>
         <Button
-          onClick={() => setLocation("/create-listing")}
+          onClick={() => setLocation("/dashboard/create-listing")}
           className="gap-2"
           style={{ backgroundColor: '#8FC24C' }}
           data-testid="button-create-listing"
@@ -88,7 +88,7 @@ export default function UserMyListings() {
             Create your first business listing to get started
           </p>
           <Button
-            onClick={() => setLocation("/create-listing")}
+            onClick={() => setLocation("/dashboard/create-listing")}
             style={{ backgroundColor: '#8FC24C' }}
             data-testid="button-create-first-listing"
           >

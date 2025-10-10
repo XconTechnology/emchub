@@ -45,6 +45,7 @@ import UserInventory from "./user-inventory";
 import UserCoupons from "./user-coupons";
 import UserPricing from "./user-pricing";
 import UserMyListings from "./user-my-listings";
+import UserCreateListing from "./user-create-listing";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -58,6 +59,7 @@ export default function UserDashboardRouter() {
 
   const baseNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "My Listings", path: "/dashboard/my-listings", icon: Store, testId: "nav-my-listings" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
@@ -68,7 +70,6 @@ export default function UserDashboardRouter() {
 
   // Vendor-only navigation sections
   const vendorNavigation = user?.vendorStatus === 'verified' ? [
-    { name: "My Listings", path: "/dashboard/my-listings", icon: Store, testId: "nav-my-listings" },
     { name: "My Products", path: "/dashboard/products", icon: Package, testId: "nav-products" },
     { name: "My Services", path: "/dashboard/my-services", icon: Briefcase, testId: "nav-my-services" },
     { name: "My Events", path: "/dashboard/events", icon: Calendar, testId: "nav-events" },
@@ -152,6 +153,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/services" && "Request Service"}
             {location === "/dashboard/whatsapp" && "WhatsApp Group"}
             {location === "/dashboard/my-listings" && "My Listings"}
+            {location === "/dashboard/create-listing" && "Create Listing"}
             {location === "/dashboard/products" && "My Products"}
             {location === "/dashboard/my-services" && "My Services"}
             {location === "/dashboard/events" && "My Events"}
@@ -200,6 +202,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/services" component={UserServices} />
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
             <Route path="/dashboard/my-listings" component={UserMyListings} />
+            <Route path="/dashboard/create-listing" component={UserCreateListing} />
             <Route path="/dashboard/products" component={UserProducts} />
             <Route path="/dashboard/my-services" component={UserMyServices} />
             <Route path="/dashboard/events" component={UserEvents} />
