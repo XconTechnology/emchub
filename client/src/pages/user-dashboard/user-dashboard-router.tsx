@@ -128,61 +128,21 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/whatsapp" && "WhatsApp Group"}
           </h1>
           
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => {
-                logoutMutation.mutate(undefined, {
-                  onSuccess: () => {
-                    setLocation("/");
-                  }
-                });
-              }}
-              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
-              data-testid="button-logout"
-              disabled={logoutMutation.isPending}
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 transition-all" data-testid="button-profile-menu">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
-                    <UserIcon className="w-5 h-5 text-white" />
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 shadow-xl border-0">
-                <DropdownMenuLabel className="py-3">
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex items-center gap-2">
-                      <p className="text-base font-semibold leading-none">{user?.username}</p>
-                      {user?.vendorStatus === 'verified' && (
-                        <BadgeCheck className="w-4 h-4 fill-blue-500 text-white flex-shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs leading-none text-muted-foreground font-normal">{user?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="my-1" />
-                <div className="py-1">
-                  <DropdownMenuItem onClick={() => setLocation("/dashboard")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-dashboard">
-                    <LayoutDashboard className="mr-3 h-4 w-4 text-gray-600" />
-                    <span className="font-medium">My Dashboard</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/dashboard/profile")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-profile">
-                    <UserIcon className="mr-3 h-4 w-4 text-gray-600" />
-                    <span className="font-medium">Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-settings">
-                    <Settings className="mr-3 h-4 w-4 text-gray-600" />
-                    <span className="font-medium">Settings</span>
-                  </DropdownMenuItem>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <Button
+            onClick={() => {
+              logoutMutation.mutate(undefined, {
+                onSuccess: () => {
+                  setLocation("/");
+                }
+              });
+            }}
+            className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+            data-testid="button-logout"
+            disabled={logoutMutation.isPending}
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
         </header>
 
         {/* Content */}
