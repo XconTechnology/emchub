@@ -95,7 +95,7 @@ export default function UserDashboardRouter() {
                   {user.username}
                 </h3>
                 {user.vendorStatus === 'verified' && (
-                  <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+                  <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
                 )}
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function UserDashboardRouter() {
                     <div className="flex items-center gap-1">
                       <p className="text-sm font-medium leading-none">{user?.username}</p>
                       {user?.vendorStatus === 'verified' && (
-                        <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" />
+                        <BadgeCheck className="w-4 h-4 fill-blue-500 text-white flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
