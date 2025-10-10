@@ -42,25 +42,30 @@ export default function UserDashboardHome() {
   const products = userListings?.filter(item => item.type === 'product') || [];
   const services = userListings?.filter(item => item.type === 'service') || [];
 
+  // Count only approved (published) items for stats
+  const approvedListings = listings.filter(item => item.status === 'published');
+  const approvedProducts = products.filter(item => item.status === 'published');
+  const approvedServices = services.filter(item => item.status === 'published');
+
   const stats = [
     {
       title: "Total Listings",
-      value: listings.length.toString(),
-      description: "Business listings",
+      value: approvedListings.length.toString(),
+      description: "Approved business listings",
       icon: Store,
       color: "text-blue-500",
     },
     {
       title: "Products",
-      value: products.length.toString(),
-      description: "Products listed",
+      value: approvedProducts.length.toString(),
+      description: "Approved products",
       icon: Package,
       color: "text-green-500",
     },
     {
       title: "Services",
-      value: services.length.toString(),
-      description: "Services offered",
+      value: approvedServices.length.toString(),
+      description: "Approved services",
       icon: Briefcase,
       color: "text-purple-500",
     },
