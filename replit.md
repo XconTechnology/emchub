@@ -57,6 +57,34 @@ Preferred communication style: Simple, everyday language.
 - **Stat Descriptions**: Updated descriptions to clarify "Approved business listings", "Approved products", "Approved services"
 - **User Control**: Users can delete rejected items or reapply for approval as needed
 
+### Vendor Dashboard Restructure & Pricing System (October 2025)
+- **Dashboard Home Simplification**: Removed the tabbed interface (Listings/Products/Services tabs) from dashboard home page in favor of dedicated pages
+- **New Vendor-Only Sections**: Added six new dashboard sections visible only to verified vendors:
+  - **My Products**: CRUD management for product listings with status tracking (pending, approved, rejected)
+  - **My Services**: CRUD management for service offerings with duration and pricing details
+  - **My Events**: CRUD management for event listings with attendee tracking and capacity management
+  - **My Inventory**: Real-time stock tracking for all products with low-stock alerts
+  - **Coupons**: Discount code creation and management system (UI complete, backend pending)
+  - **Pricing Settings**: Default payment method configuration with four options
+- **Advanced Pricing System**: Implemented flexible pricing options for products, services, and events:
+  - **Cash Only**: Traditional cash-only payments
+  - **TimeDollar Only**: Community currency exclusive payments
+  - **Both (Customer Choice)**: Customer selects between cash or TimeDollars at checkout
+  - **Combo Split**: Fixed percentage split between cash and TimeDollars (e.g., 50% cash + 50% TD)
+- **Database Schema Updates**: 
+  - Added `paymentType` field (cash_only, timedollar_only, both_choice, combo)
+  - Added `cashPercentage` and `timedollarPercentage` fields for combo pricing calculations
+- **Vendor Verification Gating**: All new vendor sections require verified vendor status to access
+- **Product Detail Page**: Created Amazon-style standalone product pages with:
+  - Dedicated URL routing (/product/:id)
+  - Image gallery with thumbnail navigation
+  - Quantity selector and stock management
+  - "Add to Cart" and "Buy Now" buttons
+  - Seller information panel with contact details
+  - Customer reviews section (placeholder)
+  - Breadcrumb navigation
+  - Share and wishlist functionality
+
 ## System Architecture
 
 ### Frontend Architecture

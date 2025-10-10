@@ -14,7 +14,12 @@ import {
   User as UserIcon,
   Settings,
   LayoutDashboard,
-  BadgeCheck
+  BadgeCheck,
+  Package,
+  Calendar,
+  Warehouse,
+  Ticket,
+  Receipt
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,6 +37,12 @@ import UserServices from "./user-services";
 import UserWhatsApp from "./user-whatsapp";
 import Profile from "../profile";
 import UserSettings from "./user-settings";
+import UserProducts from "./user-products";
+import UserMyServices from "./user-my-services";
+import UserEvents from "./user-events";
+import UserInventory from "./user-inventory";
+import UserCoupons from "./user-coupons";
+import UserPricing from "./user-pricing";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -43,7 +54,7 @@ export default function UserDashboardRouter() {
     return null;
   }
 
-  const navigation = [
+  const baseNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
@@ -52,6 +63,18 @@ export default function UserDashboardRouter() {
     { name: "WhatsApp Group", path: "/dashboard/whatsapp", icon: MessageCircle, testId: "nav-whatsapp" },
     { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];
+
+  // Vendor-only navigation sections
+  const vendorNavigation = user?.vendorStatus === 'verified' ? [
+    { name: "My Products", path: "/dashboard/products", icon: Package, testId: "nav-products" },
+    { name: "My Services", path: "/dashboard/my-services", icon: Briefcase, testId: "nav-my-services" },
+    { name: "My Events", path: "/dashboard/events", icon: Calendar, testId: "nav-events" },
+    { name: "My Inventory", path: "/dashboard/inventory", icon: Warehouse, testId: "nav-inventory" },
+    { name: "Coupons", path: "/dashboard/coupons", icon: Ticket, testId: "nav-coupons" },
+    { name: "Pricing Settings", path: "/dashboard/pricing", icon: Receipt, testId: "nav-pricing" },
+  ] : [];
+
+  const navigation = [...baseNavigation, ...vendorNavigation];
 
   const isActive = (path: string) => location === path;
 
@@ -125,6 +148,12 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/timedollars" && "TimeDollars"}
             {location === "/dashboard/services" && "Request Service"}
             {location === "/dashboard/whatsapp" && "WhatsApp Group"}
+            {location === "/dashboard/products" && "My Products"}
+            {location === "/dashboard/my-services" && "My Services"}
+            {location === "/dashboard/events" && "My Events"}
+            {location === "/dashboard/inventory" && "My Inventory"}
+            {location === "/dashboard/coupons" && "Coupons"}
+            {location === "/dashboard/pricing" && "Pricing Settings"}
           </h1>
           
           <div className="flex items-center gap-3">
@@ -166,6 +195,12 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
             <Route path="/dashboard/services" component={UserServices} />
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
+            <Route path="/dashboard/products" component={UserProducts} />
+            <Route path="/dashboard/my-services" component={UserMyServices} />
+            <Route path="/dashboard/events" component={UserEvents} />
+            <Route path="/dashboard/inventory" component={UserInventory} />
+            <Route path="/dashboard/coupons" component={UserCoupons} />
+            <Route path="/dashboard/pricing" component={UserPricing} />
           </Switch>
         </div>
       </main>

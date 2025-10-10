@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin } from "lucide-react";
@@ -222,88 +221,43 @@ export default function UserDashboardHome() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="listings" className="w-full">
-        <TabsList className="grid w-full md:w-auto grid-cols-3">
-          <TabsTrigger value="listings" data-testid="tab-listings">
-            Listings ({listings.length})
-          </TabsTrigger>
-          <TabsTrigger value="products" data-testid="tab-products">
-            Products ({products.length})
-          </TabsTrigger>
-          <TabsTrigger value="services" data-testid="tab-services">
-            Services ({services.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="listings" className="mt-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Stats Overview</CardTitle>
+          <CardDescription>Your marketplace performance at a glance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Business Listings</p>
+                  <p className="text-2xl font-bold">{approvedListings.length}</p>
+                </div>
+                <Store className="w-10 h-10 text-blue-500" />
+              </div>
             </div>
-          ) : listings.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {listings.map(renderItemCard)}
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
+                  <p className="text-2xl font-bold">{approvedProducts.length}</p>
+                </div>
+                <Package className="w-10 h-10 text-green-500" />
+              </div>
             </div>
-          ) : (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">No listings yet</p>
-                <Button onClick={() => setIsAddListingModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Listing
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="products" className="mt-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Services</p>
+                  <p className="text-2xl font-bold">{approvedServices.length}</p>
+                </div>
+                <Briefcase className="w-10 h-10 text-purple-500" />
+              </div>
             </div>
-          ) : products.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {products.map(renderItemCard)}
-            </div>
-          ) : (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">No products yet</p>
-                <Button onClick={() => setIsAddProductModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Product
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="services" className="mt-6">
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-            </div>
-          ) : services.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {services.map(renderItemCard)}
-            </div>
-          ) : (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">No services yet</p>
-                <Button onClick={() => setIsAddServiceModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Service
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
+        </CardContent>
+      </Card>
 
       <AddListingModal 
         isOpen={isAddListingModalOpen}
