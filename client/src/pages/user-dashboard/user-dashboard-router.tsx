@@ -73,53 +73,54 @@ export default function UserDashboardRouter() {
         style={{ backgroundColor: '#8FC24C' }}
       >
         {/* User info */}
-        <div className="p-6 border-b border-white/20">
-          <div className="flex items-center gap-3">
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-4">
             {user.profileImageUrl ? (
               <img 
                 src={user.profileImageUrl} 
                 alt="Profile" 
-                className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                className="w-14 h-14 rounded-full object-cover border-3 border-white/30 shadow-lg"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30">
-                <span className="text-white font-semibold text-lg">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center border-3 border-white/30 shadow-lg backdrop-blur-sm">
+                <span className="text-white font-bold text-xl">
                   {user.firstName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
                   {user.lastName?.[0]?.toUpperCase() || ''}
                 </span>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <h3 className="font-semibold text-white truncate" data-testid="text-username">
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-bold text-white text-base truncate" data-testid="text-username">
                   {user.username}
                 </h3>
                 {user.vendorStatus === 'verified' && (
                   <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
                 )}
               </div>
+              <p className="text-white/70 text-sm mt-0.5">{user.email}</p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <ul className="space-y-1">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <ul className="space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
                 <li key={item.path}>
                   <Link 
                     href={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive(item.path)
-                        ? "bg-white/20 text-white font-semibold"
-                        : "text-white hover:bg-white/10 hover:text-white"
+                        ? "bg-white text-[#8FC24C] font-semibold shadow-md"
+                        : "text-white/90 hover:bg-white/15 hover:text-white hover:shadow-sm"
                     }`}
                     data-testid={item.testId}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5 flex-shrink-0" />
                     <span className="font-medium">{item.name}</span>
                   </Link>
                 </li>
@@ -163,37 +164,39 @@ export default function UserDashboardRouter() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" data-testid="button-profile-menu">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 transition-all" data-testid="button-profile-menu">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
                     <UserIcon className="w-5 h-5 text-white" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-medium leading-none">{user?.username}</p>
+              <DropdownMenuContent align="end" className="w-64 shadow-xl border-0">
+                <DropdownMenuLabel className="py-3">
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-semibold leading-none">{user?.username}</p>
                       {user?.vendorStatus === 'verified' && (
                         <BadgeCheck className="w-4 h-4 fill-blue-500 text-white flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs leading-none text-muted-foreground font-normal">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>My Dashboard</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/dashboard/profile")} data-testid="menu-profile">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} data-testid="menu-settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <div className="py-1">
+                  <DropdownMenuItem onClick={() => setLocation("/dashboard")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-dashboard">
+                    <LayoutDashboard className="mr-3 h-4 w-4 text-gray-600" />
+                    <span className="font-medium">My Dashboard</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/dashboard/profile")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-profile">
+                    <UserIcon className="mr-3 h-4 w-4 text-gray-600" />
+                    <span className="font-medium">Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-settings">
+                    <Settings className="mr-3 h-4 w-4 text-gray-600" />
+                    <span className="font-medium">Settings</span>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
