@@ -128,21 +128,32 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/whatsapp" && "WhatsApp Group"}
           </h1>
           
-          <Button
-            onClick={() => {
-              logoutMutation.mutate(undefined, {
-                onSuccess: () => {
-                  setLocation("/");
-                }
-              });
-            }}
-            className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
-            data-testid="button-logout"
-            disabled={logoutMutation.isPending}
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setLocation("/dashboard/browse")}
+              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+              data-testid="button-browse-navbar"
+            >
+              <Search className="w-4 h-4" />
+              Browse
+            </Button>
+            
+            <Button
+              onClick={() => {
+                logoutMutation.mutate(undefined, {
+                  onSuccess: () => {
+                    setLocation("/");
+                  }
+                });
+              }}
+              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+              data-testid="button-logout"
+              disabled={logoutMutation.isPending}
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </header>
 
         {/* Content */}
