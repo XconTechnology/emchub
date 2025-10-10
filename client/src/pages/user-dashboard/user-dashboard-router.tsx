@@ -19,7 +19,8 @@ import {
   Calendar,
   Warehouse,
   Ticket,
-  Receipt
+  Receipt,
+  Store
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ import UserEvents from "./user-events";
 import UserInventory from "./user-inventory";
 import UserCoupons from "./user-coupons";
 import UserPricing from "./user-pricing";
+import UserMyListings from "./user-my-listings";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -66,6 +68,7 @@ export default function UserDashboardRouter() {
 
   // Vendor-only navigation sections
   const vendorNavigation = user?.vendorStatus === 'verified' ? [
+    { name: "My Listings", path: "/dashboard/my-listings", icon: Store, testId: "nav-my-listings" },
     { name: "My Products", path: "/dashboard/products", icon: Package, testId: "nav-products" },
     { name: "My Services", path: "/dashboard/my-services", icon: Briefcase, testId: "nav-my-services" },
     { name: "My Events", path: "/dashboard/events", icon: Calendar, testId: "nav-events" },
@@ -148,6 +151,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/timedollars" && "TimeDollars"}
             {location === "/dashboard/services" && "Request Service"}
             {location === "/dashboard/whatsapp" && "WhatsApp Group"}
+            {location === "/dashboard/my-listings" && "My Listings"}
             {location === "/dashboard/products" && "My Products"}
             {location === "/dashboard/my-services" && "My Services"}
             {location === "/dashboard/events" && "My Events"}
@@ -195,6 +199,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
             <Route path="/dashboard/services" component={UserServices} />
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
+            <Route path="/dashboard/my-listings" component={UserMyListings} />
             <Route path="/dashboard/products" component={UserProducts} />
             <Route path="/dashboard/my-services" component={UserMyServices} />
             <Route path="/dashboard/events" component={UserEvents} />
