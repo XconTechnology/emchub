@@ -44,10 +44,12 @@ Preferred communication style: Simple, everyday language.
   - Consistent styling across homepage and dashboard menus
 - **Settings Navigation Fix**: Profile icon settings link corrected to navigate to /dashboard/settings instead of /settings
 - **Navigation Restructure**: 
-  - Reorganized sidebar navigation order: My Dashboard → Profile → Browse → Reviews → TimeDollars → Services → WhatsApp → Settings
+  - Reorganized sidebar navigation order: My Dashboard → Profile → Reviews → TimeDollars → Services → WhatsApp → Settings
+  - Removed Browse tab from sidebar (accessible via navbar button instead)
   - Removed profile icon dropdown menu from dashboard navbar for cleaner interface
   - Added Browse button to navbar for quick access to listings
   - Navbar now contains: Page Title, Browse button, and Logout button
+  - User dashboard displays only the user's own vendor listings, products, and services (not all site listings)
 
 ## System Architecture
 
