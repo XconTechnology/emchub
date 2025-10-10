@@ -50,6 +50,12 @@ Preferred communication style: Simple, everyday language.
   - Added Browse button to navbar for quick access to listings
   - Navbar now contains: Page Title, Browse button, and Logout button
   - User dashboard displays only the user's own vendor listings, products, and services (not all site listings)
+  
+### Dashboard Stats Fix (October 2025)
+- **Approved Listings Count**: Fixed "Total Listings", "Products", and "Services" stats to show only approved/published items
+- **All Items Visible**: Users can still see ALL their listings (approved, pending, rejected) in the tabs below the stats
+- **Stat Descriptions**: Updated descriptions to clarify "Approved business listings", "Approved products", "Approved services"
+- **User Control**: Users can delete rejected items or reapply for approval as needed
 
 ## System Architecture
 
