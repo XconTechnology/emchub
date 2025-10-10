@@ -13,7 +13,8 @@ import {
   LogOut,
   User as UserIcon,
   Settings,
-  LayoutDashboard
+  LayoutDashboard,
+  BadgeCheck
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -88,9 +89,14 @@ export default function UserDashboardRouter() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-white truncate" data-testid="text-username">
-                {user.username}
-              </h3>
+              <div className="flex items-center gap-1">
+                <h3 className="font-semibold text-white truncate" data-testid="text-username">
+                  {user.username}
+                </h3>
+                {user.vendorStatus === 'verified' && (
+                  <BadgeCheck className="w-5 h-5 text-blue-400 flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -125,8 +131,8 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <header className="px-4 lg:px-8 py-4 flex justify-between items-center border-b border-white/20" style={{ backgroundColor: '#8FC24C' }}>
+          <h1 className="text-xl font-semibold text-white">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/profile" && "Profile"}
             {location === "/dashboard/browse" && "Browse"}
@@ -146,7 +152,7 @@ export default function UserDashboardRouter() {
                 });
               }}
               variant="outline"
-              className="gap-2"
+              className="gap-2 border-white/30 text-white hover:bg-white/10 hover:text-white"
               data-testid="button-logout"
               disabled={logoutMutation.isPending}
             >
@@ -156,8 +162,8 @@ export default function UserDashboardRouter() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-profile-menu">
-                  <div className="w-10 h-10 rounded-full bg-brand-green flex items-center justify-center">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10" data-testid="button-profile-menu">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                     <UserIcon className="w-5 h-5 text-white" />
                   </div>
                 </Button>
@@ -165,7 +171,12 @@ export default function UserDashboardRouter() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.username}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-sm font-medium leading-none">{user?.username}</p>
+                      {user?.vendorStatus === 'verified' && (
+                        <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      )}
+                    </div>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
