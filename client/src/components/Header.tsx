@@ -124,7 +124,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
+                      <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} data-testid="menu-settings">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </DropdownMenuItem>
