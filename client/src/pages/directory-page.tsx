@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -151,18 +152,34 @@ export default function DirectoryPage() {
           </div>
           
           <div className="flex gap-2 mt-4">
-            <Button size="sm" data-testid={`button-view-${listing.id}`}>
-              View Details
-            </Button>
+            {listing.type === 'product' ? (
+              <Link href={`/product/${listing.id}`}>
+                <Button size="sm" data-testid={`button-view-${listing.id}`}>
+                  View Details
+                </Button>
+              </Link>
+            ) : listing.type === 'business' ? (
+              <Link href={`/business/${listing.id}`}>
+                <Button size="sm" data-testid={`button-view-${listing.id}`}>
+                  View Details
+                </Button>
+              </Link>
+            ) : (
+              <Button size="sm" data-testid={`button-view-${listing.id}`}>
+                View Details
+              </Button>
+            )}
             {listing.type === 'service' && (
               <Button variant="outline" size="sm" data-testid={`button-book-${listing.id}`}>
                 Book Now
               </Button>
             )}
             {listing.type === 'product' && (
-              <Button variant="outline" size="sm" data-testid={`button-buy-${listing.id}`}>
-                Buy Now
-              </Button>
+              <Link href={`/product/${listing.id}`}>
+                <Button variant="outline" size="sm" data-testid={`button-buy-${listing.id}`}>
+                  Buy Now
+                </Button>
+              </Link>
             )}
             {listing.type === 'event' && (
               <Button variant="outline" size="sm" data-testid={`button-register-${listing.id}`}>
