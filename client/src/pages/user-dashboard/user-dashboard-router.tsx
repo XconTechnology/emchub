@@ -31,6 +31,7 @@ import UserTimeDollars from "./user-timedollars";
 import UserServices from "./user-services";
 import UserWhatsApp from "./user-whatsapp";
 import Profile from "../profile";
+import UserSettings from "./user-settings";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -94,7 +95,7 @@ export default function UserDashboardRouter() {
                   {user.username}
                 </h3>
                 {user.vendorStatus === 'verified' && (
-                  <BadgeCheck className="w-5 h-5 text-blue-400 flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+                  <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
                 )}
               </div>
             </div>
@@ -135,6 +136,7 @@ export default function UserDashboardRouter() {
           <h1 className="text-xl font-semibold text-white">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/profile" && "Profile"}
+            {location === "/dashboard/settings" && "Settings"}
             {location === "/dashboard/browse" && "Browse"}
             {location === "/dashboard/reviews" && "My Reviews"}
             {location === "/dashboard/timedollars" && "TimeDollars"}
@@ -151,8 +153,7 @@ export default function UserDashboardRouter() {
                   }
                 });
               }}
-              variant="outline"
-              className="gap-2 border-white/30 text-white hover:bg-white/10 hover:text-white"
+              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
               data-testid="button-logout"
               disabled={logoutMutation.isPending}
             >
@@ -174,7 +175,7 @@ export default function UserDashboardRouter() {
                     <div className="flex items-center gap-1">
                       <p className="text-sm font-medium leading-none">{user?.username}</p>
                       {user?.vendorStatus === 'verified' && (
-                        <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" />
                       )}
                     </div>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
@@ -189,7 +190,7 @@ export default function UserDashboardRouter() {
                   <UserIcon className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
+                <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} data-testid="menu-settings">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
@@ -203,6 +204,7 @@ export default function UserDashboardRouter() {
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
             <Route path="/dashboard/profile" component={Profile} />
+            <Route path="/dashboard/settings" component={UserSettings} />
             <Route path="/dashboard/browse" component={UserBrowse} />
             <Route path="/dashboard/reviews" component={UserReviews} />
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />

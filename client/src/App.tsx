@@ -49,6 +49,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={ProfileRedirect} />
       <Route path="/dashboard" component={UserDashboardRouter} />
       <Route path="/dashboard/profile" component={UserDashboardRouter} />
+      <Route path="/dashboard/settings" component={UserDashboardRouter} />
       <Route path="/dashboard/browse" component={UserDashboardRouter} />
       <Route path="/dashboard/reviews" component={UserDashboardRouter} />
       <Route path="/dashboard/timedollars" component={UserDashboardRouter} />
