@@ -47,13 +47,92 @@ export default function UserMyListings() {
 
   const listings = userListings?.filter(item => item.type === 'business') || [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8FC24C]"></div>
-      </div>
-    );
-  }
+  const renderListingCard = (listing: Listing) => (
+    <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>
+      {listing.images && listing.images.length > 0 && (
+        <img 
+          src={listing.images[0]} 
+          alt={listing.title} 
+          className="w-full h-48 object-cover rounded-t-lg" 
+          data-testid={`img-listing-${listing.id}`}
+        />
+      )}
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="text-lg" data-testid={`text-title-${listing.id}`}>
+              {listing.title}
+            </CardTitle>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <Badge 
+                variant={listing.status === 'published' ? 'default' : listing.status === 'pending' ? 'secondary' : 'destructive'}
+                data-testid={`badge-status-${listing.id}`}
+              >
+                {listing.status}
+              </Badge>
+              {listing.customCategory && listing.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className="bg-blue-50 text-blue-700 border-blue-200"
+                  data-testid={`badge-category-${listing.id}-${index}`}
+                >
+                  {cat.trim()}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setLocation(`/dashboard/edit-listing/${listing.id}`)}
+              data-testid={`button-edit-${listing.id}`}
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setDeletingListing(listing)}
+              data-testid={`button-delete-${listing.id}`}
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {listing.description && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2" data-testid={`text-description-${listing.id}`}>
+            {listing.description}
+          </p>
+        )}
+        
+        {listing.address && (
+          <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span className="line-clamp-1" data-testid={`text-address-${listing.id}`}>{listing.address}</span>
+          </div>
+        )}
+        
+        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+          {listing.phone && (
+            <div className="flex items-center gap-1">
+              <Phone className="w-4 h-4" />
+              <span data-testid={`text-phone-${listing.id}`}>{listing.phone}</span>
+            </div>
+          )}
+          {listing.email && (
+            <div className="flex items-center gap-1">
+              <Mail className="w-4 h-4" />
+              <span data-testid={`text-email-${listing.id}`} className="truncate">{listing.email}</span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -61,7 +140,6 @@ export default function UserMyListings() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Store className="w-6 h-6" />
             My Business Listings
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -79,114 +157,62 @@ export default function UserMyListings() {
         </Button>
       </div>
 
-      {/* Listings Grid */}
-      {listings.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Store className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold mb-2">No listings yet</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Create your first business listing to get started
-          </p>
-          <Button
-            onClick={() => setLocation("/dashboard/create-listing")}
-            style={{ backgroundColor: '#8FC24C' }}
-            data-testid="button-create-first-listing"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Listing
-          </Button>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Total Listings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{listings.length}</div>
+          </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.map((listing) => (
-            <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>
-              {listing.images && listing.images.length > 0 && (
-                <img 
-                  src={listing.images[0]} 
-                  alt={listing.title} 
-                  className="w-full h-48 object-cover rounded-t-lg" 
-                  data-testid={`img-listing-${listing.id}`}
-                />
-              )}
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg" data-testid={`text-title-${listing.id}`}>
-                      {listing.title}
-                    </CardTitle>
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      <Badge 
-                        variant={listing.status === 'published' ? 'default' : listing.status === 'pending' ? 'secondary' : 'destructive'}
-                        data-testid={`badge-status-${listing.id}`}
-                      >
-                        {listing.status}
-                      </Badge>
-                      {listing.customCategory && listing.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="outline" 
-                          className="bg-blue-50 text-blue-700 border-blue-200"
-                          data-testid={`badge-category-${listing.id}-${index}`}
-                        >
-                          {cat.trim()}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2" data-testid={`text-description-${listing.id}`}>
-                  {listing.description}
-                </p>
-                
-                {listing.address && (
-                  <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span className="line-clamp-1" data-testid={`text-address-${listing.id}`}>{listing.address}</span>
-                  </div>
-                )}
-                
-                {listing.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Phone className="w-4 h-4 flex-shrink-0" />
-                    <span data-testid={`text-phone-${listing.id}`}>{listing.phone}</span>
-                  </div>
-                )}
-                
-                {listing.email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span data-testid={`text-email-${listing.id}`}>{listing.email}</span>
-                  </div>
-                )}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Published</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {listings.filter(l => l.status === 'published').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Pending Approval</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {listings.filter(l => l.status === 'pending').length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setLocation(`/edit-listing/${listing.id}`)}
-                    data-testid={`button-edit-${listing.id}`}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => setDeletingListing(listing)}
-                    data-testid={`button-delete-${listing.id}`}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Listings Grid */}
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-600">Loading listings...</p>
         </div>
+      ) : listings.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {listings.map(renderListingCard)}
+        </div>
+      ) : (
+        <Card className="text-center py-12">
+          <CardContent>
+            <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">No listings yet</p>
+            <Button
+              onClick={() => setLocation("/dashboard/create-listing")}
+              style={{ backgroundColor: '#8FC24C' }}
+              data-testid="button-create-first-listing"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Listing
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Delete Confirmation Dialog */}
