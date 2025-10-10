@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin'
   vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
+  timeDollarBalance: integer("timedollar_balance").default(0), // TimeDollar balance
   resetPasswordToken: varchar("reset_password_token"),
   resetPasswordExpires: timestamp("reset_password_expires"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -175,20 +176,72 @@ export const bookings = pgTable("bookings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Coupon codes for events
+// Enhanced coupon codes system
 export const coupons = pgTable("coupons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who created the coupon
+  vendorName: varchar("vendor_name").notNull(), // Auto-filled from vendor's business name
   code: varchar("code").notNull().unique(),
-  discountType: varchar("discount_type").notNull(), // 'percentage', 'fixed'
+  discountType: varchar("discount_type").notNull(), // 'percentage' | 'fixed'
   discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
   minAmount: decimal("min_amount", { precision: 10, scale: 2 }),
-  maxUses: integer("max_uses"),
+  usageLimit: integer("usage_limit"), // Max number of total uses
   usedCount: integer("used_count").default(0),
   validFrom: timestamp("valid_from").defaultNow(),
   validUntil: timestamp("valid_until"),
+  applicableListings: varchar("applicable_listings").array(), // IDs of listings this coupon applies to (empty = all vendor's listings)
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Staff Help Requests - users can request help from staff for filling listings
+export const staffHelpRequests = pgTable("staff_help_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  userName: varchar("user_name").notNull(),
+  listingType: varchar("listing_type").notNull(), // 'business' | 'product' | 'service' | 'event'
+  message: text("message"), // Optional message from user explaining what they need help with
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  assignedTo: varchar("assigned_to").references(() => users.id), // Staff member assigned
+  responseNotes: text("response_notes"), // Staff's notes or response
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStaffHelpRequestSchema = createInsertSchema(staffHelpRequests).omit({
+  id: true,
+  userId: true,
+  userName: true,
+  status: true,
+  assignedTo: true,
+  responseNotes: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type StaffHelpRequest = typeof staffHelpRequests.$inferSelect;
+export type InsertStaffHelpRequest = z.infer<typeof insertStaffHelpRequestSchema>;
+
+// Activity Logs - track all user actions for admin visibility
+export const activityLogs = pgTable("activity_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  userName: varchar("user_name").notNull(),
+  actionType: varchar("action_type").notNull(), // 'create' | 'update' | 'delete'
+  entityType: varchar("entity_type").notNull(), // 'listing' | 'product' | 'service' | 'event' | 'coupon' | 'vendor_request'
+  entityId: varchar("entity_id"), // ID of the entity affected
+  entityTitle: varchar("entity_title"), // Title/name of the entity for display
+  description: text("description"), // Human-readable description of the action
+  metadata: jsonb("metadata"), // Additional data (old values, new values, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ActivityLog = typeof activityLogs.$inferSelect;
 
 // Keep the old business_listings table for backward compatibility but mark as deprecated
 export const businessListings = pgTable("business_listings", {
@@ -261,8 +314,15 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 
 export const insertCouponSchema = createInsertSchema(coupons).omit({
   id: true,
+  vendorId: true,
+  vendorName: true,
   usedCount: true,
+  status: true,
+  rejectionReason: true,
+  reviewedBy: true,
+  reviewedAt: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 // Legacy schema (deprecated)

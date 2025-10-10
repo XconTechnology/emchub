@@ -24,6 +24,11 @@ export default function UserDashboardHome() {
     enabled: !!user,
   });
 
+  const { data: timeDollarData } = useQuery<{ balance: number }>({
+    queryKey: ['/api/timedollars/balance'],
+    enabled: !!user,
+  });
+
   const deleteItemMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest('DELETE', `/api/listings/${id}`);
@@ -70,7 +75,7 @@ export default function UserDashboardHome() {
     },
     {
       title: "TimeDollars Balance",
-      value: "0",
+      value: timeDollarData?.balance?.toString() || "0",
       description: "Available to spend",
       icon: DollarSign,
       color: "text-yellow-500",

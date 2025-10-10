@@ -1614,6 +1614,316 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ========================================
+  // COUPON ROUTES
+  // ========================================
+  
+  // Create new coupon (verified vendors only)
+  app.post("/api/coupons", isAuthenticated, async (req, res) => {
+    if (req.user.vendorStatus !== 'verified') {
+      return res.status(403).json({ error: "Only verified vendors can create coupons" });
+    }
+    
+    try {
+      const { code, discountType, discountValue, minAmount, usageLimit, validFrom, validUntil, applicableListings } = req.body;
+      
+      const coupon = await storage.createCoupon({
+        vendorId: req.user.id,
+        vendorName: req.user.username,
+        code,
+        discountType,
+        discountValue,
+        minAmount,
+        usageLimit,
+        validFrom: validFrom ? new Date(validFrom) : undefined,
+        validUntil: validUntil ? new Date(validUntil) : undefined,
+        applicableListings: applicableListings || [],
+      });
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'create',
+        entityType: 'coupon',
+        entityId: coupon.id,
+        entityTitle: coupon.code,
+        description: `Created coupon: ${coupon.code}`,
+        metadata: { coupon },
+      });
+      
+      res.status(201).json(coupon);
+    } catch (error) {
+      console.error("Error creating coupon:", error);
+      res.status(500).json({ error: "Failed to create coupon" });
+    }
+  });
+  
+  // Get vendor's own coupons
+  app.get("/api/coupons/vendor", isAuthenticated, async (req, res) => {
+    try {
+      const coupons = await storage.getVendorCoupons(req.user.id);
+      res.json(coupons);
+    } catch (error) {
+      console.error("Error getting vendor coupons:", error);
+      res.status(500).json({ error: "Failed to get coupons" });
+    }
+  });
+  
+  // Get all coupons (admin only)
+  app.get("/api/admin/coupons", isAdminAuthenticated, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const coupons = await storage.getAllCoupons(status);
+      res.json(coupons);
+    } catch (error) {
+      console.error("Error getting all coupons:", error);
+      res.status(500).json({ error: "Failed to get coupons" });
+    }
+  });
+  
+  // Approve coupon (admin only)
+  app.put("/api/admin/coupons/:id/approve", isAdminAuthenticated, async (req, res) => {
+    try {
+      const coupon = await storage.approveCoupon(req.params.id, req.user.id);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'update',
+        entityType: 'coupon',
+        entityId: coupon.id,
+        entityTitle: coupon.code,
+        description: `Approved coupon: ${coupon.code}`,
+        metadata: { coupon },
+      });
+      
+      res.json(coupon);
+    } catch (error) {
+      console.error("Error approving coupon:", error);
+      res.status(500).json({ error: "Failed to approve coupon" });
+    }
+  });
+  
+  // Reject coupon (admin only)
+  app.put("/api/admin/coupons/:id/reject", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { reason } = req.body;
+      const coupon = await storage.rejectCoupon(req.params.id, req.user.id, reason);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'update',
+        entityType: 'coupon',
+        entityId: coupon.id,
+        entityTitle: coupon.code,
+        description: `Rejected coupon: ${coupon.code}`,
+        metadata: { coupon, reason },
+      });
+      
+      res.json(coupon);
+    } catch (error) {
+      console.error("Error rejecting coupon:", error);
+      res.status(500).json({ error: "Failed to reject coupon" });
+    }
+  });
+  
+  // Delete coupon
+  app.delete("/api/coupons/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteCoupon(req.params.id);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'delete',
+        entityType: 'coupon',
+        entityId: req.params.id,
+        description: `Deleted coupon`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting coupon:", error);
+      res.status(500).json({ error: "Failed to delete coupon" });
+    }
+  });
+  
+  // ========================================
+  // STAFF HELP REQUEST ROUTES
+  // ========================================
+  
+  // Create staff help request
+  app.post("/api/staff-help", isAuthenticated, async (req, res) => {
+    try {
+      const { listingType, message } = req.body;
+      
+      const request = await storage.createStaffHelpRequest({
+        userId: req.user.id,
+        userName: req.user.username,
+        listingType,
+        message,
+      });
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'create',
+        entityType: 'staff_help_request',
+        entityId: request.id,
+        description: `Requested staff help for ${listingType}`,
+        metadata: { request },
+      });
+      
+      res.status(201).json(request);
+    } catch (error) {
+      console.error("Error creating staff help request:", error);
+      res.status(500).json({ error: "Failed to create request" });
+    }
+  });
+  
+  // Get user's own staff help requests
+  app.get("/api/staff-help/user", isAuthenticated, async (req, res) => {
+    try {
+      const requests = await storage.getUserStaffHelpRequests(req.user.id);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error getting user staff help requests:", error);
+      res.status(500).json({ error: "Failed to get requests" });
+    }
+  });
+  
+  // Get all staff help requests (admin/staff only)
+  app.get("/api/admin/staff-help", isAdminAuthenticated, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const requests = await storage.getAllStaffHelpRequests(status);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error getting all staff help requests:", error);
+      res.status(500).json({ error: "Failed to get requests" });
+    }
+  });
+  
+  // Assign staff help request (admin/staff only)
+  app.put("/api/admin/staff-help/:id/assign", isAdminAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.assignStaffHelpRequest(req.params.id, req.user.id);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'update',
+        entityType: 'staff_help_request',
+        entityId: request.id,
+        description: `Assigned staff help request to ${req.user.username}`,
+        metadata: { request },
+      });
+      
+      res.json(request);
+    } catch (error) {
+      console.error("Error assigning staff help request:", error);
+      res.status(500).json({ error: "Failed to assign request" });
+    }
+  });
+  
+  // Complete staff help request (admin/staff only)
+  app.put("/api/admin/staff-help/:id/complete", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { notes } = req.body;
+      const request = await storage.completeStaffHelpRequest(req.params.id, notes);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'update',
+        entityType: 'staff_help_request',
+        entityId: request.id,
+        description: `Completed staff help request`,
+        metadata: { request },
+      });
+      
+      res.json(request);
+    } catch (error) {
+      console.error("Error completing staff help request:", error);
+      res.status(500).json({ error: "Failed to complete request" });
+    }
+  });
+  
+  // ========================================
+  // ACTIVITY LOG ROUTES
+  // ========================================
+  
+  // Get all activity logs (admin only)
+  app.get("/api/admin/activity-logs", isAdminAuthenticated, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const logs = await storage.getAllActivityLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error getting activity logs:", error);
+      res.status(500).json({ error: "Failed to get activity logs" });
+    }
+  });
+  
+  // Get user's activity logs
+  app.get("/api/activity-logs/user", isAuthenticated, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const logs = await storage.getUserActivityLogs(req.user.id, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error getting user activity logs:", error);
+      res.status(500).json({ error: "Failed to get activity logs" });
+    }
+  });
+  
+  // ========================================
+  // TIMEDOLLAR ROUTES
+  // ========================================
+  
+  // Get TimeDollar balance
+  app.get("/api/timedollars/balance", isAuthenticated, async (req, res) => {
+    try {
+      const balance = await storage.getTimeDollarBalance(req.user.id);
+      res.json({ balance });
+    } catch (error) {
+      console.error("Error getting TimeDollar balance:", error);
+      res.status(500).json({ error: "Failed to get balance" });
+    }
+  });
+  
+  // Update TimeDollar balance (admin only for manual adjustments)
+  app.put("/api/admin/timedollars/:userId", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { amount } = req.body;
+      const user = await storage.updateTimeDollarBalance(req.params.userId, amount);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: req.user.id,
+        userName: req.user.username,
+        actionType: 'update',
+        entityType: 'timedollar',
+        entityId: req.params.userId,
+        description: `Adjusted TimeDollar balance by ${amount}`,
+        metadata: { userId: req.params.userId, amount, newBalance: user.timeDollarBalance },
+      });
+      
+      res.json({ balance: user.timeDollarBalance });
+    } catch (error) {
+      console.error("Error updating TimeDollar balance:", error);
+      res.status(500).json({ error: "Failed to update balance" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

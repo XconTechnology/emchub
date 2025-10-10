@@ -8,6 +8,9 @@ import {
   LogOut,
   Clock,
   ShieldCheck,
+  Ticket,
+  HelpCircle,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,6 +64,21 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Vendor Requests",
       url: "/admin/vendor-requests",
       icon: ShieldCheck,
+    },
+    {
+      title: "Coupons",
+      url: "/admin/coupons",
+      icon: Ticket,
+    },
+    {
+      title: "Staff Help",
+      url: "/admin/staff-help",
+      icon: HelpCircle,
+    },
+    {
+      title: "Activity Logs",
+      url: "/admin/activity-logs",
+      icon: Activity,
     },
     {
       title: "All Listings",
@@ -141,6 +159,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold">
                 {location === "/admin" && "Dashboard Overview"}
+                {location === "/admin/pending-approvals" && "Pending Approvals"}
+                {location === "/admin/vendor-requests" && "Vendor Requests"}
+                {location === "/admin/coupons" && "Coupon Management"}
+                {location === "/admin/staff-help" && "Staff Help Requests"}
+                {location === "/admin/activity-logs" && "Activity Logs"}
                 {location === "/admin/listings" && "All Listings"}
                 {location === "/admin/listings/new" && "Add New Listing"}
                 {location === "/admin/users" && "Users"}

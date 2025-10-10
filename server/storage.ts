@@ -6,6 +6,8 @@ import {
   bookings,
   coupons,
   vendorRequests,
+  staffHelpRequests,
+  activityLogs,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -20,6 +22,9 @@ import {
   type InsertCoupon,
   type VendorRequest,
   type InsertVendorRequest,
+  type StaffHelpRequest,
+  type InsertStaffHelpRequest,
+  type ActivityLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ilike, inArray, sql } from "drizzle-orm";
@@ -69,6 +74,13 @@ export interface IStorage {
   getCoupon(code: string): Promise<Coupon | undefined>;
   validateCoupon(code: string, amount: number): Promise<{ valid: boolean; discount?: number; coupon?: Coupon }>;
   useCoupon(code: string): Promise<void>;
+  createCoupon(coupon: InsertCoupon & { vendorId: string; vendorName: string }): Promise<Coupon>;
+  getVendorCoupons(vendorId: string): Promise<Coupon[]>;
+  getAllCoupons(status?: string): Promise<Coupon[]>;
+  approveCoupon(id: string, adminId: string): Promise<Coupon>;
+  rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon>;
+  updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon>;
+  deleteCoupon(id: string): Promise<void>;
   
   // Admin moderation operations
   getModerationQueue(status?: string): Promise<Listing[]>;
@@ -99,6 +111,32 @@ export interface IStorage {
   approveVendorRequest(id: string, adminId: string): Promise<VendorRequest>;
   rejectVendorRequest(id: string, adminId: string, reason: string): Promise<VendorRequest>;
   updateUserVendorStatus(userId: string, status: string): Promise<User>;
+  
+  // Staff help request operations
+  createStaffHelpRequest(request: InsertStaffHelpRequest & { userId: string; userName: string }): Promise<StaffHelpRequest>;
+  getAllStaffHelpRequests(status?: string): Promise<StaffHelpRequest[]>;
+  getUserStaffHelpRequests(userId: string): Promise<StaffHelpRequest[]>;
+  updateStaffHelpRequest(id: string, data: Partial<StaffHelpRequest>): Promise<StaffHelpRequest>;
+  assignStaffHelpRequest(id: string, staffId: string): Promise<StaffHelpRequest>;
+  completeStaffHelpRequest(id: string, notes: string): Promise<StaffHelpRequest>;
+  
+  // Activity log operations
+  createActivityLog(log: {
+    userId: string;
+    userName: string;
+    actionType: string;
+    entityType: string;
+    entityId?: string;
+    entityTitle?: string;
+    description: string;
+    metadata?: any;
+  }): Promise<ActivityLog>;
+  getAllActivityLogs(limit?: number): Promise<ActivityLog[]>;
+  getUserActivityLogs(userId: string, limit?: number): Promise<ActivityLog[]>;
+  
+  // TimeDollar operations
+  updateTimeDollarBalance(userId: string, amount: number): Promise<User>;
+  getTimeDollarBalance(userId: string): Promise<number>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -376,7 +414,7 @@ export class DatabaseStorage implements IStorage {
       return { valid: false };
     }
     
-    if (coupon.maxUses && (coupon.usedCount || 0) >= coupon.maxUses) {
+    if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
       return { valid: false };
     }
     
@@ -659,6 +697,174 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+  
+  // Coupon operations implementation
+  async createCoupon(couponData: InsertCoupon & { vendorId: string; vendorName: string }): Promise<Coupon> {
+    const [coupon] = await db
+      .insert(coupons)
+      .values(couponData as any)
+      .returning();
+    return coupon;
+  }
+  
+  async getVendorCoupons(vendorId: string): Promise<Coupon[]> {
+    return db.select().from(coupons).where(eq(coupons.vendorId, vendorId)).orderBy(coupons.createdAt);
+  }
+  
+  async getAllCoupons(status?: string): Promise<Coupon[]> {
+    if (status) {
+      return db.select().from(coupons).where(eq(coupons.status, status)).orderBy(coupons.createdAt);
+    }
+    return db.select().from(coupons).orderBy(coupons.createdAt);
+  }
+  
+  async approveCoupon(id: string, adminId: string): Promise<Coupon> {
+    const [coupon] = await db
+      .update(coupons)
+      .set({
+        status: 'approved',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(coupons.id, id))
+      .returning();
+    return coupon;
+  }
+  
+  async rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon> {
+    const [coupon] = await db
+      .update(coupons)
+      .set({
+        status: 'rejected',
+        rejectionReason: reason,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(coupons.id, id))
+      .returning();
+    return coupon;
+  }
+  
+  async updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon> {
+    const [coupon] = await db
+      .update(coupons)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(coupons.id, id))
+      .returning();
+    return coupon;
+  }
+  
+  async deleteCoupon(id: string): Promise<void> {
+    await db.delete(coupons).where(eq(coupons.id, id));
+  }
+  
+  // Staff help request operations implementation
+  async createStaffHelpRequest(requestData: InsertStaffHelpRequest & { userId: string; userName: string }): Promise<StaffHelpRequest> {
+    const [request] = await db
+      .insert(staffHelpRequests)
+      .values(requestData as any)
+      .returning();
+    return request;
+  }
+  
+  async getAllStaffHelpRequests(status?: string): Promise<StaffHelpRequest[]> {
+    if (status) {
+      return db.select().from(staffHelpRequests).where(eq(staffHelpRequests.status, status)).orderBy(staffHelpRequests.createdAt);
+    }
+    return db.select().from(staffHelpRequests).orderBy(staffHelpRequests.createdAt);
+  }
+  
+  async getUserStaffHelpRequests(userId: string): Promise<StaffHelpRequest[]> {
+    return db.select().from(staffHelpRequests).where(eq(staffHelpRequests.userId, userId)).orderBy(staffHelpRequests.createdAt);
+  }
+  
+  async updateStaffHelpRequest(id: string, data: Partial<StaffHelpRequest>): Promise<StaffHelpRequest> {
+    const [request] = await db
+      .update(staffHelpRequests)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(staffHelpRequests.id, id))
+      .returning();
+    return request;
+  }
+  
+  async assignStaffHelpRequest(id: string, staffId: string): Promise<StaffHelpRequest> {
+    const [request] = await db
+      .update(staffHelpRequests)
+      .set({
+        assignedTo: staffId,
+        status: 'in_progress',
+        updatedAt: new Date(),
+      })
+      .where(eq(staffHelpRequests.id, id))
+      .returning();
+    return request;
+  }
+  
+  async completeStaffHelpRequest(id: string, notes: string): Promise<StaffHelpRequest> {
+    const [request] = await db
+      .update(staffHelpRequests)
+      .set({
+        status: 'completed',
+        responseNotes: notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(staffHelpRequests.id, id))
+      .returning();
+    return request;
+  }
+  
+  // Activity log operations implementation
+  async createActivityLog(logData: {
+    userId: string;
+    userName: string;
+    actionType: string;
+    entityType: string;
+    entityId?: string;
+    entityTitle?: string;
+    description: string;
+    metadata?: any;
+  }): Promise<ActivityLog> {
+    const [log] = await db
+      .insert(activityLogs)
+      .values(logData as any)
+      .returning();
+    return log;
+  }
+  
+  async getAllActivityLogs(limit: number = 100): Promise<ActivityLog[]> {
+    return db.select()
+      .from(activityLogs)
+      .orderBy(sql`${activityLogs.createdAt} DESC`)
+      .limit(limit);
+  }
+  
+  async getUserActivityLogs(userId: string, limit: number = 100): Promise<ActivityLog[]> {
+    return db.select()
+      .from(activityLogs)
+      .where(eq(activityLogs.userId, userId))
+      .orderBy(sql`${activityLogs.createdAt} DESC`)
+      .limit(limit);
+  }
+  
+  // TimeDollar operations implementation
+  async updateTimeDollarBalance(userId: string, amount: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        timeDollarBalance: sql`${users.timeDollarBalance} + ${amount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+  
+  async getTimeDollarBalance(userId: string): Promise<number> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user?.timeDollarBalance || 0;
   }
 }
 
