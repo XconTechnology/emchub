@@ -1,30 +1,34 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useMutation } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
-import { useState } from "react";
-import { Upload, X, DollarSign, Coins, Receipt } from "lucide-react";
-import RequestStaffHelpButton from "./RequestStaffHelpButton";
+import { Store, MapPin, Phone, Mail, Globe, Clock, DollarSign, Tag, Calendar, Users, Package, Image, X, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import type { Category } from "@shared/schema";
 
-const listingSchema = insertListingSchema.extend({
-  title: z.string().min(1, "Business name is required"),
-  description: z.string().optional(),
-  customCategory: z.string().optional(),
-  status: z.enum(["draft", "published", "pending", "rejected"]),
-});
-
-type ListingFormData = z.infer<typeof listingSchema>;
+type AddListingData = z.infer<typeof insertListingSchema>;
 
 interface AddListingModalProps {
   isOpen: boolean;
@@ -33,393 +37,453 @@ interface AddListingModalProps {
 }
 
 export default function AddListingModal({ isOpen, onClose, editListing }: AddListingModalProps) {
-  const { user } = useAuth();
   const { toast } = useToast();
+  const [imageUrls, setImageUrls] = useState<string[]>(editListing?.images || []);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const isEditing = !!editListing;
-  const [imageUrl, setImageUrl] = useState<string>(editListing?.images?.[0] || "");
-  const [paymentType, setPaymentType] = useState(editListing?.paymentType || "cash_only");
-  const [cashPercentage, setCashPercentage] = useState(editListing?.cashPercentage || 50);
 
-  const form = useForm<ListingFormData>({
-    resolver: zodResolver(listingSchema),
+  // Fetch categories
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  const form = useForm<AddListingData>({
+    resolver: zodResolver(insertListingSchema),
     defaultValues: editListing ? {
-      type: "business",
+      type: "listing",
       title: editListing.title || "",
       description: editListing.description || "",
-      customCategory: editListing.customCategory || "",
-      phone: editListing.phone || "",
-      email: editListing.email || "",
-      website: editListing.website || "",
+      categoryId: editListing.categoryId || "",
       address: editListing.address || "",
       city: editListing.city || "",
       postalCode: editListing.postalCode || "",
       isOnlineOnly: editListing.isOnlineOnly || false,
-      price: editListing.price?.toString() || "",
-      status: editListing.status || "pending",
+      phone: editListing.phone || "",
+      email: editListing.email || "",
+      website: editListing.website || "",
+      images: editListing.images || [],
+      tags: editListing.tags || [],
+      price: editListing.price,
+      inventory: editListing.inventory,
+      duration: editListing.duration,
+      eventDate: editListing.eventDate,
+      eventEndDate: editListing.eventEndDate,
+      capacity: editListing.capacity,
+      eventPrice: editListing.eventPrice,
     } : {
-      type: "business",
+      type: "listing",
       title: "",
       description: "",
-      customCategory: "",
-      phone: "",
-      email: "",
-      website: "",
+      categoryId: "",
       address: "",
       city: "",
       postalCode: "",
       isOnlineOnly: false,
-      price: "",
-      status: "pending",
+      phone: "",
+      email: "",
+      website: "",
+      images: [],
+      tags: [],
+      price: undefined,
+      inventory: undefined,
+      duration: undefined,
+      eventDate: undefined,
+      eventEndDate: undefined,
+      capacity: undefined,
+      eventPrice: undefined,
     },
   });
 
-  const uploadImageMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const uploadRes = await apiRequest("/api/objects/upload", "POST");
-      const { uploadURL } = await uploadRes.json();
-      
-      await fetch(uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-
-      const imageRes = await apiRequest("/api/listing-images", "PUT", {
-        imageURL: uploadURL.split("?")[0],
-      });
-      const { publicURL } = await imageRes.json();
-      return publicURL;
-    },
-    onSuccess: (url) => {
-      setImageUrl(url);
-      toast({ title: "Image uploaded successfully" });
-    },
-    onError: () => {
-      toast({ title: "Failed to upload image", variant: "destructive" });
-    },
-  });
-
-  const createListingMutation = useMutation({
-    mutationFn: async (data: ListingFormData) => {
-      const listingData = {
+  const addListingMutation = useMutation({
+    mutationFn: async (data: AddListingData) => {
+      // Transform form data for the API - hardcode type to "listing"
+      const transformedData = {
         ...data,
-        type: "business",
-        userId: user?.id,
-        images: imageUrl ? [imageUrl] : [],
-        paymentType,
-        cashPercentage: paymentType === 'combo' ? cashPercentage : null,
-        timedollarPercentage: paymentType === 'combo' ? (100 - cashPercentage) : null,
+        type: "listing",
         status: isEditing ? editListing.status : "pending",
       };
-      const res = await apiRequest(
-        isEditing ? `/api/listings/${editListing.id}` : "/api/listings",
-        isEditing ? "PUT" : "POST",
-        listingData
-      );
-      return res.json();
+
+      console.log('Sending to API:', transformedData);
+
+      const response = await fetch(isEditing ? `/api/listings/${editListing.id}` : "/api/listings", {
+        method: isEditing ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transformedData),
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('API Error:', error);
+        throw new Error(error.message || "Failed to add listing");
+      }
+      
+      const result = await response.json();
+      console.log('API Success:', result);
+      return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
-      toast({ 
+      queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings/user"] });
+      toast({
         title: isEditing ? "Listing updated successfully!" : "Listing added successfully!",
         description: isEditing ? "Your changes have been saved and will be reviewed." : "Your listing has been submitted for review.",
       });
-      form.reset();
-      setImageUrl("");
       onClose();
+      form.reset();
+      setImageUrls([]);
     },
-    onError: (error: Error) => {
-      toast({ 
-        title: isEditing ? "Failed to update listing" : "Failed to add listing", 
-        description: error.message, 
-        variant: "destructive" 
+    onError: (error: any) => {
+      toast({
+        title: "Failed to add listing",
+        description: error.message || "Please try again.",
+        variant: "destructive",
       });
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadImageMutation.mutate(file);
+  const onSubmit = (data: any) => {
+    console.log('Form submitted with data:', data);
+    // Include image URLs in the submission
+    const submissionData = {
+      ...data,
+      images: imageUrls,
+      type: "listing",
+    };
+    addListingMutation.mutate(submissionData);
+  };
+
+  const addImageUrl = () => {
+    if (currentImageUrl.trim() && !imageUrls.includes(currentImageUrl.trim())) {
+      const newUrls = [...imageUrls, currentImageUrl.trim()];
+      setImageUrls(newUrls);
+      form.setValue("images", newUrls);
+      setCurrentImageUrl("");
     }
   };
 
-  const handleCashPercentageChange = (value: number) => {
-    if (value >= 0 && value <= 100) {
-      setCashPercentage(value);
-    }
-  };
-
-  const onSubmit = (data: ListingFormData) => {
-    createListingMutation.mutate(data);
+  const removeImageUrl = (indexToRemove: number) => {
+    const newUrls = imageUrls.filter((_, index) => index !== indexToRemove);
+    setImageUrls(newUrls);
+    form.setValue("images", newUrls);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>{isEditing ? "Edit Listing" : "Add New Listing"}</DialogTitle>
-              <DialogDescription>
-                {isEditing 
-                  ? "Update your business listing details below." 
-                  : "Add your business to the EMC HUB directory"
-                }
-              </DialogDescription>
-            </div>
-            <RequestStaffHelpButton listingType="business" variant="ghost" size="sm" />
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <Store className="h-5 w-5" />
+            {isEditing ? "Edit Listing" : "Add New Listing"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? "Update your listing details below."
+              : "Add your business to our directory to connect with the Hong Kong ethnic minority community."
+            }
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Business Name *</Label>
-            <Input
-              id="title"
-              {...form.register("title")}
-              placeholder="e.g., Halal Restaurant & Grocery"
-              data-testid="input-listing-title"
-            />
-            {form.formState.errors.title && (
-              <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="customCategory">Category</Label>
-            <Input
-              id="customCategory"
-              {...form.register("customCategory")}
-              placeholder="e.g., Restaurant, Halal Food, Pakistani Cuisine"
-              data-testid="input-customCategory"
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter categories separated by commas
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...form.register("description")}
-              placeholder="Describe your business..."
-              rows={3}
-              data-testid="textarea-description"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Basic Information</h3>
+            
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                {...form.register("phone")}
-                placeholder="Phone number"
-                data-testid="input-phone"
-              />
+              <Label htmlFor="title">Title *</Label>
+              <div className="relative">
+                <Store className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="title"
+                  placeholder="Enter your business name"
+                  className="pl-10"
+                  data-testid="input-title"
+                  {...form.register("title")}
+                />
+              </div>
+              {form.formState.errors.title && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.title.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                {...form.register("email")}
-                placeholder="Email address"
-                data-testid="input-email"
-              />
+              <Label htmlFor="categoryId">Category *</Label>
+              <Select value={form.watch("categoryId") || ""} onValueChange={(value) => form.setValue("categoryId", value)}>
+                <SelectTrigger data-testid="select-category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.categoryId && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.categoryId.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                {...form.register("website")}
-                placeholder="https://example.com"
-                data-testid="input-website"
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe your business, what makes it special, and what you offer..."
+                className="min-h-[100px]"
+                data-testid="textarea-description"
+                {...form.register("description")}
               />
+              {form.formState.errors.description && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.description.message}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Location</Label>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isOnlineOnly"
-                checked={form.watch("isOnlineOnly") || false}
-                onCheckedChange={(checked) => form.setValue("isOnlineOnly", !!checked)}
-                data-testid="checkbox-online-only"
-              />
-              <Label htmlFor="isOnlineOnly" className="text-sm font-normal">
-                This is an online-only business
-              </Label>
+          {/* Location Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Location</h3>
+            
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isOnlineOnly"
+                  checked={form.watch("isOnlineOnly") || false}
+                  onCheckedChange={(checked) => form.setValue("isOnlineOnly", !!checked)}
+                  data-testid="checkbox-online-only"
+                />
+                <Label htmlFor="isOnlineOnly">This is an online/remote service</Label>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="address">Street Address</Label>
-                <Input
-                  id="address"
-                  {...form.register("address")}
-                  placeholder="123 Main St"
-                  data-testid="input-address"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  {...form.register("city")}
-                  placeholder="Hong Kong"
-                  data-testid="input-city"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input
-                  id="postalCode"
-                  {...form.register("postalCode")}
-                  placeholder="Postal code"
-                  data-testid="input-postal-code"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Price Range (Optional)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  {...form.register("price")}
-                  placeholder="Average price"
-                  data-testid="input-price"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">Payment Options</Label>
-            <RadioGroup value={paymentType} onValueChange={setPaymentType}>
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="cash_only" id="cash_only" />
-                <Label htmlFor="cash_only" className="flex-1 cursor-pointer flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <span>Cash Only</span>
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="timedollar_only" id="timedollar_only" />
-                <Label htmlFor="timedollar_only" className="flex-1 cursor-pointer flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-yellow-600" />
-                  <span>TimeDollar Only</span>
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="both_choice" id="both_choice" />
-                <Label htmlFor="both_choice" className="flex-1 cursor-pointer flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <DollarSign className="w-4 h-4 text-green-600" />
-                    <Coins className="w-4 h-4 text-yellow-600" />
-                  </div>
-                  <span>Both (Customer Choice)</span>
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value="combo" id="combo" />
-                <Label htmlFor="combo" className="flex-1 cursor-pointer flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-blue-600" />
-                  <span>Cash + TimeDollar Combo</span>
-                </Label>
-              </div>
-            </RadioGroup>
-
-            {paymentType === 'combo' && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                <Label className="text-sm font-semibold">Payment Split Configuration</Label>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="cash-percentage" className="text-sm">Cash: {cashPercentage}%</Label>
+            {!form.watch("isOnlineOnly") && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="cash-percentage"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={cashPercentage}
-                      onChange={(e) => handleCashPercentageChange(parseInt(e.target.value) || 0)}
+                      id="address"
+                      placeholder="Street address"
+                      className="pl-10"
+                      data-testid="input-address"
+                      {...form.register("address")}
                     />
                   </div>
+                  {form.formState.errors.address && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.address.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="td-percentage" className="text-sm">TimeDollar: {100 - cashPercentage}%</Label>
+                    <Label htmlFor="city">City</Label>
                     <Input
-                      id="td-percentage"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={100 - cashPercentage}
-                      onChange={(e) => handleCashPercentageChange(100 - (parseInt(e.target.value) || 0))}
+                      id="city"
+                      placeholder="Hong Kong"
+                      data-testid="input-city"
+                      {...form.register("city")}
+                    />
+                    {form.formState.errors.city && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.city.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Input
+                      id="postalCode"
+                      placeholder="Optional"
+                      data-testid="input-postal-code"
+                      {...form.register("postalCode")}
                     />
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Business Image</Label>
-            {imageUrl ? (
+          {/* Contact Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Contact Information</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
               <div className="relative">
-                <img src={imageUrl} alt="Business" className="w-full h-48 object-cover rounded-lg" />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => setImageUrl("")}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <Label htmlFor="image-upload" className="cursor-pointer text-sm text-gray-600 dark:text-gray-400">
-                  Click to upload image
-                </Label>
+                <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={uploadImageMutation.isPending}
-                  data-testid="input-image"
+                  id="phone"
+                  placeholder="+852 XXXX XXXX"
+                  className="pl-10"
+                  data-testid="input-phone"
+                  {...form.register("phone")}
                 />
               </div>
-            )}
+              {form.formState.errors.phone && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.phone.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="contact@example.com"
+                    className="pl-10"
+                    data-testid="input-email"
+                    {...form.register("email")}
+                  />
+                </div>
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="website"
+                    placeholder="https://example.com"
+                    className="pl-10"
+                    data-testid="input-website"
+                    {...form.register("website")}
+                  />
+                </div>
+                {form.formState.errors.website && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.website.message}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
+          {/* Images Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Images</h3>
+            <p className="text-sm text-gray-600">Add images to showcase your business. Enter image URLs below.</p>
+            
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Image className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
+                    className="pl-10"
+                    value={currentImageUrl}
+                    onChange={(e) => setCurrentImageUrl(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
+                    data-testid="input-image-url"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={addImageUrl}
+                  disabled={!currentImageUrl.trim()}
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-add-image"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {imageUrls.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Added Images ({imageUrls.length})</Label>
+                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                        <img
+                          src={url}
+                          alt={`Business image ${index + 1}`}
+                          className="w-12 h-12 object-cover rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' fill='%23ddd'%3E%3Crect width='48' height='48' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' fill='%23999'%3E?%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
+                        <span className="flex-1 text-sm truncate" title={url}>
+                          {url}
+                        </span>
+                        <Button
+                          type="button"
+                          onClick={() => removeImageUrl(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700"
+                          data-testid={`button-remove-image-${index}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500">
+                Tip: Use image hosting services like Imgur, Google Drive (public links), or your own website
+              </p>
+            </div>
+          </div>
+
+          {/* Additional Details */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Additional Details</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <div className="relative">
+                <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="tags"
+                  placeholder="halal, family-friendly, delivery (comma separated)"
+                  className="pl-10"
+                  data-testid="input-tags"
+                  {...form.register("tags")}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              data-testid="button-cancel"
+            >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={createListingMutation.isPending}
+              className="flex-1"
+              disabled={addListingMutation.isPending}
               data-testid="button-submit"
             >
-              {createListingMutation.isPending 
-                ? (isEditing ? "Updating..." : "Submitting...") 
-                : (isEditing ? "Update Listing" : "Submit for Review")
-              }
+              {addListingMutation.isPending ? "Adding..." : "Add Listing"}
             </Button>
           </div>
         </form>
