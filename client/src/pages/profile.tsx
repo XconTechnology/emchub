@@ -398,14 +398,15 @@ export default function Profile() {
   return (
     <div className="max-w-7xl mx-auto">
         {/* Editable Profile Section */}
-        <Card className="wp-card mb-6">
-          <CardHeader>
+        <Card className="wp-card mb-6 shadow-lg border-0">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">My Profile</CardTitle>
+              <CardTitle className="text-2xl font-bold">My Profile</CardTitle>
               {!isEditingProfile && (
                 <Button 
                   variant="outline" 
                   onClick={() => setIsEditingProfile(true)}
+                  className="hover:bg-gray-100 transition-colors"
                   data-testid="button-edit-profile"
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -415,29 +416,31 @@ export default function Profile() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-6 mb-6">
+              <div className="flex flex-col items-center gap-3">
                 {user?.profileImageUrl ? (
                   <img
                     src={user.profileImageUrl}
                     alt="Profile"
-                    className="w-20 h-20 rounded-full object-cover"
+                    className="w-24 h-24 rounded-full object-cover shadow-lg border-4 border-gray-100"
                     data-testid="img-profile-picture"
                   />
                 ) : (
-                  <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">
+                  <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center shadow-lg border-4 border-gray-100">
+                    <span className="text-3xl font-bold text-white">
                       {profileData.firstName?.[0]}{profileData.lastName?.[0] || user?.username?.[0]}
                     </span>
                   </div>
                 )}
                 <ProfilePictureUpload currentImageUrl={user?.profileImageUrl} />
               </div>
-              {user?.isAdmin && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  Administrator
-                </Badge>
-              )}
+              <div className="flex gap-2">
+                {user?.isAdmin && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1 text-sm font-medium">
+                    Administrator
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -537,38 +540,47 @@ export default function Profile() {
         </Card>
 
         {/* Vendor Status Section */}
-        <Card className="wp-card mb-6">
-          <CardHeader>
-            <CardTitle>Vendor Status</CardTitle>
+        <Card className="wp-card mb-6 shadow-lg border-0 overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl font-bold">Vendor Status</CardTitle>
           </CardHeader>
           <CardContent>
             {user?.vendorStatus === 'verified' ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center gap-1" data-testid="badge-verified-vendor">
-                  <CheckCircle className="w-4 h-4" />
-                  Verified Vendor ✅
-                </Badge>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-7 h-7 text-green-600" />
+                  </div>
+                  <div>
+                    <Badge variant="secondary" className="bg-green-600 text-white px-4 py-1.5 text-sm font-semibold mb-1" data-testid="badge-verified-vendor">
+                      Verified Vendor ✅
+                    </Badge>
+                    <p className="text-sm text-green-700 mt-2">You can now list products and services on the platform</p>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
                 {user?.vendorStatus === 'pending' && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="vendor-status-pending">
-                    <Clock className="w-4 h-4 text-yellow-600" />
+                  <div className="flex items-center gap-3 px-5 py-4 bg-yellow-50 border-2 border-yellow-200 rounded-2xl shadow-sm" data-testid="vendor-status-pending">
+                    <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                     <span className="text-yellow-800 font-medium">Your vendor verification request has been submitted for review.</span>
                   </div>
                 )}
                 {user?.vendorStatus === 'rejected' && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg" data-testid="vendor-status-rejected">
-                    <XCircle className="w-4 h-4 text-red-600" />
+                  <div className="flex items-center gap-3 px-5 py-4 bg-red-50 border-2 border-red-200 rounded-2xl shadow-sm" data-testid="vendor-status-rejected">
+                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                     <span className="text-red-800 font-medium">Your vendor verification request was rejected.</span>
                   </div>
                 )}
                 {user?.vendorStatus === 'none' && (
-                  <p className="text-gray-600 dark:text-gray-400">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services.</p>
+                  <div className="px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl">
+                    <p className="text-gray-700 font-medium">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services.</p>
+                  </div>
                 )}
                 <Button 
                   onClick={() => setIsBecomeVendorModalOpen(true)}
-                  className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
+                  className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)] shadow-md hover:shadow-lg transition-all"
                   data-testid="button-become-vendor"
                 >
                   <ShieldCheck className="w-4 h-4 mr-2" />
@@ -580,15 +592,15 @@ export default function Profile() {
         </Card>
 
         {/* Security - Change Password */}
-        <Card className="wp-card mb-6">
-          <CardHeader>
+        <Card className="wp-card mb-6 shadow-lg border-0">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-xl font-bold">
                   <Lock className="w-5 h-5" />
                   Security
                 </CardTitle>
-                <CardDescription>Manage your password and security settings</CardDescription>
+                <CardDescription className="mt-1.5">Manage your password and security settings</CardDescription>
               </div>
               {!isChangingPassword && (
                 <Button 

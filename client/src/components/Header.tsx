@@ -100,35 +100,37 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="rounded-full"
+                        className="rounded-full hover:bg-gray-100/20 transition-all"
                         data-testid="button-profile-menu"
                       >
-                        <div className="w-10 h-10 rounded-full bg-[hsl(86,49%,53%)] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-[hsl(86,49%,53%)] flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
                           <User className="w-5 h-5 text-white" />
                         </div>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                      <DropdownMenuLabel>
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">{user.username}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    <DropdownMenuContent className="w-64 shadow-xl border-0" align="end" forceMount>
+                      <DropdownMenuLabel className="py-3">
+                        <div className="flex flex-col space-y-2">
+                          <p className="text-base font-semibold leading-none">{user.username}</p>
+                          <p className="text-xs leading-none text-muted-foreground font-normal">{user.email}</p>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>My Dashboard</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="menu-profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} data-testid="menu-settings">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className="my-1" />
+                      <div className="py-1">
+                        <DropdownMenuItem onClick={() => setLocation("/dashboard")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-dashboard">
+                          <LayoutDashboard className="mr-3 h-4 w-4 text-gray-600" />
+                          <span className="font-medium">My Dashboard</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLocation("/profile")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-profile">
+                          <User className="mr-3 h-4 w-4 text-gray-600" />
+                          <span className="font-medium">Profile</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLocation("/dashboard/settings")} className="py-2.5 cursor-pointer hover:bg-gray-100 transition-colors" data-testid="menu-settings">
+                          <Settings className="mr-3 h-4 w-4 text-gray-600" />
+                          <span className="font-medium">Settings</span>
+                        </DropdownMenuItem>
+                      </div>
+                      <DropdownMenuSeparator className="my-1" />
                       <DropdownMenuItem 
                         onClick={() => {
                           logoutMutation.mutate(undefined, {
@@ -137,10 +139,11 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                             }
                           });
                         }}
+                        className="py-2.5 cursor-pointer hover:bg-red-50 transition-colors text-red-600"
                         data-testid="menu-logout"
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Logout</span>
+                        <LogOut className="mr-3 h-4 w-4" />
+                        <span className="font-medium">Logout</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
