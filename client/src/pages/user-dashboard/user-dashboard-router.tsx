@@ -29,6 +29,7 @@ import UserReviews from "./user-reviews";
 import UserTimeDollars from "./user-timedollars";
 import UserServices from "./user-services";
 import UserWhatsApp from "./user-whatsapp";
+import Profile from "../profile";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -41,7 +42,7 @@ export default function UserDashboardRouter() {
   }
 
   const navigation = [
-    { name: "Profile", path: "/profile", icon: UserIcon, testId: "nav-profile" },
+    { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "Browse", path: "/dashboard/browse", icon: Search, testId: "nav-browse" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
@@ -119,82 +120,78 @@ export default function UserDashboardRouter() {
             })}
           </ul>
         </nav>
-
-        {/* Logout button */}
-        <div className="p-4 border-t border-white/20">
-          <Button
-            onClick={() => {
-              logoutMutation.mutate(undefined, {
-                onSuccess: () => {
-                  setLocation("/");
-                }
-              });
-            }}
-            variant="outline"
-            className="w-full justify-start gap-3 border-white/30 text-white hover:bg-white/10 hover:text-white"
-            data-testid="button-logout"
-            disabled={logoutMutation.isPending}
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </Button>
-        </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex justify-end items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-profile-menu">
-                <div className="w-10 h-10 rounded-full bg-brand-green flex items-center justify-center">
-                  <UserIcon className="w-5 h-5 text-white" />
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.username}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>My Dashboard</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation("/profile")} data-testid="menu-profile">
-                <UserIcon className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => {
-                  logoutMutation.mutate(undefined, {
-                    onSuccess: () => {
-                      setLocation("/");
-                    }
-                  });
-                }}
-                data-testid="menu-logout"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {location === "/dashboard" && "Dashboard"}
+            {location === "/dashboard/profile" && "Profile"}
+            {location === "/dashboard/browse" && "Browse"}
+            {location === "/dashboard/reviews" && "My Reviews"}
+            {location === "/dashboard/timedollars" && "TimeDollars"}
+            {location === "/dashboard/services" && "Request Service"}
+            {location === "/dashboard/whatsapp" && "WhatsApp Group"}
+          </h1>
+          
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                logoutMutation.mutate(undefined, {
+                  onSuccess: () => {
+                    setLocation("/");
+                  }
+                });
+              }}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-logout"
+              disabled={logoutMutation.isPending}
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-profile-menu">
+                  <div className="w-10 h-10 rounded-full bg-brand-green flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-white" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.username}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span>My Dashboard</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/dashboard/profile")} data-testid="menu-profile">
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/settings")} data-testid="menu-settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
         {/* Content */}
         <div className="flex-1 container mx-auto p-4 lg:p-8">
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
+            <Route path="/dashboard/profile" component={Profile} />
             <Route path="/dashboard/browse" component={UserBrowse} />
             <Route path="/dashboard/reviews" component={UserReviews} />
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
