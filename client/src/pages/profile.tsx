@@ -367,41 +367,36 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <Card className="w-full max-w-md wp-card">
-            <CardHeader className="text-center">
-              <CardTitle>Access Denied</CardTitle>
-              <CardDescription>
-                Please sign in to view your profile and manage your listings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <Button onClick={() => window.location.href = '/'}>
-                Go to Home
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center py-12">
+        <Card className="w-full max-w-md wp-card">
+          <CardHeader className="text-center">
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              Please sign in to view your profile and manage your listings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button onClick={() => window.location.href = '/'}>
+              Go to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         {/* Editable Profile Section */}
         <Card className="wp-card mb-6">
           <CardHeader>
@@ -888,56 +883,55 @@ export default function Profile() {
           </TabsContent>
         </Tabs>
         ) : null}
+
+        <AddListingModal 
+          isOpen={isAddListingModalOpen}
+          onClose={() => {
+            setIsAddListingModalOpen(false);
+            setItemToEdit(null);
+          }}
+        />
+
+        <AddProductModal 
+          isOpen={isAddProductModalOpen}
+          onClose={() => {
+            setIsAddProductModalOpen(false);
+            setItemToEdit(null);
+          }}
+        />
+
+        <AddServiceModal 
+          isOpen={isAddServiceModalOpen}
+          onClose={() => {
+            setIsAddServiceModalOpen(false);
+            setItemToEdit(null);
+          }}
+        />
+
+        <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your listing.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <BecomeVendorModal 
+          isOpen={isBecomeVendorModalOpen}
+          onClose={() => setIsBecomeVendorModalOpen(false)}
+        />
       </div>
-
-      <AddListingModal 
-        isOpen={isAddListingModalOpen}
-        onClose={() => {
-          setIsAddListingModalOpen(false);
-          setItemToEdit(null);
-        }}
-      />
-
-      <AddProductModal 
-        isOpen={isAddProductModalOpen}
-        onClose={() => {
-          setIsAddProductModalOpen(false);
-          setItemToEdit(null);
-        }}
-      />
-
-      <AddServiceModal 
-        isOpen={isAddServiceModalOpen}
-        onClose={() => {
-          setIsAddServiceModalOpen(false);
-          setItemToEdit(null);
-        }}
-      />
-
-      <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your listing.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete.id)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <BecomeVendorModal 
-        isOpen={isBecomeVendorModalOpen}
-        onClose={() => setIsBecomeVendorModalOpen(false)}
-      />
-    </DashboardLayout>
   );
 }
