@@ -46,7 +46,6 @@ export default function UserDashboardRouter() {
   const navigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
-    { name: "Browse", path: "/dashboard/browse", icon: Search, testId: "nav-browse" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
     { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services" },
