@@ -57,6 +57,8 @@ function Router() {
       <Route path="/dashboard/timedollars" component={UserDashboardRouter} />
       <Route path="/dashboard/services" component={UserDashboardRouter} />
       <Route path="/dashboard/whatsapp" component={UserDashboardRouter} />
+      <Route path="/dashboard/my-listings" component={UserDashboardRouter} />
+      <Route path="/dashboard/create-listing" component={UserDashboardRouter} />
       <Route path="/dashboard/products" component={UserDashboardRouter} />
       <Route path="/dashboard/my-services" component={UserDashboardRouter} />
       <Route path="/dashboard/events" component={UserDashboardRouter} />
