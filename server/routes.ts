@@ -1936,6 +1936,105 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ========================================
+  // SHOPPING CART ROUTES
+  // ========================================
+  
+  // Get user's cart items
+  app.get("/api/cart", isAuthenticated, async (req, res) => {
+    try {
+      const cartItems = await storage.getUserCartItems(req.user.id);
+      res.json(cartItems);
+    } catch (error) {
+      console.error("Error getting cart items:", error);
+      res.status(500).json({ error: "Failed to get cart items" });
+    }
+  });
+  
+  // Add item to cart
+  app.post("/api/cart", isAuthenticated, async (req, res) => {
+    try {
+      const { productId, quantity } = req.body;
+      const cartItem = await storage.addToCart(req.user.id, productId, quantity);
+      res.json(cartItem);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "Failed to add to cart" });
+    }
+  });
+  
+  // Update cart item quantity
+  app.put("/api/cart/:itemId", isAuthenticated, async (req, res) => {
+    try {
+      const { quantity } = req.body;
+      const cartItem = await storage.updateCartItemQuantity(req.params.itemId, quantity);
+      res.json(cartItem);
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "Failed to update cart item" });
+    }
+  });
+  
+  // Remove item from cart
+  app.delete("/api/cart/:itemId", isAuthenticated, async (req, res) => {
+    try {
+      await storage.removeCartItem(req.params.itemId);
+      res.json({ message: "Item removed from cart" });
+    } catch (error) {
+      console.error("Error removing cart item:", error);
+      res.status(500).json({ error: "Failed to remove cart item" });
+    }
+  });
+  
+  // Clear cart
+  app.delete("/api/cart", isAuthenticated, async (req, res) => {
+    try {
+      await storage.clearCart(req.user.id);
+      res.json({ message: "Cart cleared" });
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "Failed to clear cart" });
+    }
+  });
+  
+  // ========================================
+  // ORDER ROUTES
+  // ========================================
+  
+  // Create order from cart
+  app.post("/api/orders", isAuthenticated, async (req, res) => {
+    try {
+      const orderData = req.body;
+      const order = await storage.createOrder(req.user.id, orderData);
+      res.json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+  
+  // Get user's orders
+  app.get("/api/orders", isAuthenticated, async (req, res) => {
+    try {
+      const orders = await storage.getUserOrders(req.user.id);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error getting orders:", error);
+      res.status(500).json({ error: "Failed to get orders" });
+    }
+  });
+  
+  // Get order details
+  app.get("/api/orders/:orderId", isAuthenticated, async (req, res) => {
+    try {
+      const order = await storage.getOrderDetails(req.params.orderId);
+      res.json(order);
+    } catch (error) {
+      console.error("Error getting order details:", error);
+      res.status(500).json({ error: "Failed to get order details" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

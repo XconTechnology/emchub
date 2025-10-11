@@ -138,6 +138,18 @@ export interface IStorage {
   updateTimeDollarBalance(userId: string, amount: number): Promise<User>;
   getTimeDollarBalance(userId: string): Promise<number>;
   
+  // Shopping cart operations
+  getUserCartItems(userId: string): Promise<any[]>;
+  addToCart(userId: string, productId: string, quantity: number): Promise<any>;
+  updateCartItemQuantity(itemId: string, quantity: number): Promise<any>;
+  removeCartItem(itemId: string): Promise<void>;
+  clearCart(userId: string): Promise<void>;
+  
+  // Order operations
+  createOrder(userId: string, orderData: any): Promise<any>;
+  getUserOrders(userId: string): Promise<any[]>;
+  getOrderDetails(orderId: string): Promise<any>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -865,6 +877,159 @@ export class DatabaseStorage implements IStorage {
   async getTimeDollarBalance(userId: string): Promise<number> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user?.timeDollarBalance || 0;
+  }
+  
+  // Shopping cart operations implementation
+  async getUserCartItems(userId: string): Promise<any[]> {
+    const { cartItems, listings } = await import("@shared/schema");
+    const items = await db
+      .select({
+        id: cartItems.id,
+        userId: cartItems.userId,
+        productId: cartItems.productId,
+        quantity: cartItems.quantity,
+        product: listings,
+      })
+      .from(cartItems)
+      .leftJoin(listings, eq(cartItems.productId, listings.id))
+      .where(eq(cartItems.userId, userId));
+    return items;
+  }
+  
+  async addToCart(userId: string, productId: string, quantity: number): Promise<any> {
+    const { cartItems } = await import("@shared/schema");
+    
+    // Check if item already exists in cart
+    const existing = await db
+      .select()
+      .from(cartItems)
+      .where(and(eq(cartItems.userId, userId), eq(cartItems.productId, productId)));
+    
+    if (existing.length > 0) {
+      // Update quantity
+      const [item] = await db
+        .update(cartItems)
+        .set({
+          quantity: sql`${cartItems.quantity} + ${quantity}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(cartItems.id, existing[0].id))
+        .returning();
+      return item;
+    } else {
+      // Add new item
+      const [item] = await db
+        .insert(cartItems)
+        .values({ userId, productId, quantity })
+        .returning();
+      return item;
+    }
+  }
+  
+  async updateCartItemQuantity(itemId: string, quantity: number): Promise<any> {
+    const { cartItems } = await import("@shared/schema");
+    const [item] = await db
+      .update(cartItems)
+      .set({ quantity, updatedAt: new Date() })
+      .where(eq(cartItems.id, itemId))
+      .returning();
+    return item;
+  }
+  
+  async removeCartItem(itemId: string): Promise<void> {
+    const { cartItems } = await import("@shared/schema");
+    await db.delete(cartItems).where(eq(cartItems.id, itemId));
+  }
+  
+  async clearCart(userId: string): Promise<void> {
+    const { cartItems } = await import("@shared/schema");
+    await db.delete(cartItems).where(eq(cartItems.userId, userId));
+  }
+  
+  // Order operations implementation
+  async createOrder(userId: string, orderData: any): Promise<any> {
+    const { orders, orderItems, cartItems, listings } = await import("@shared/schema");
+    
+    // Get cart items
+    const cart = await this.getUserCartItems(userId);
+    
+    if (cart.length === 0) {
+      throw new Error("Cart is empty");
+    }
+    
+    // Calculate total
+    let totalAmount = 0;
+    const orderItemsData = cart.map((item: any) => {
+      const price = parseFloat(item.product.price || 0);
+      const subtotal = price * item.quantity;
+      totalAmount += subtotal;
+      
+      return {
+        productId: item.productId,
+        productTitle: item.product.title,
+        productPrice: item.product.price,
+        quantity: item.quantity,
+        subtotal: subtotal.toString(),
+      };
+    });
+    
+    // Create order
+    const [order] = await db
+      .insert(orders)
+      .values({
+        userId,
+        totalAmount: totalAmount.toString(),
+        ...orderData,
+      })
+      .returning();
+    
+    // Create order items
+    for (const itemData of orderItemsData) {
+      await db.insert(orderItems).values({
+        orderId: order.id,
+        ...itemData,
+      });
+    }
+    
+    // Clear cart
+    await this.clearCart(userId);
+    
+    return order;
+  }
+  
+  async getUserOrders(userId: string): Promise<any[]> {
+    const { orders } = await import("@shared/schema");
+    return db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(sql`${orders.createdAt} DESC`);
+  }
+  
+  async getOrderDetails(orderId: string): Promise<any> {
+    const { orders, orderItems, listings } = await import("@shared/schema");
+    
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    
+    const items = await db
+      .select({
+        id: orderItems.id,
+        productId: orderItems.productId,
+        productTitle: orderItems.productTitle,
+        productPrice: orderItems.productPrice,
+        quantity: orderItems.quantity,
+        subtotal: orderItems.subtotal,
+        product: listings,
+      })
+      .from(orderItems)
+      .leftJoin(listings, eq(orderItems.productId, listings.id))
+      .where(eq(orderItems.orderId, orderId));
+    
+    return { ...order, items };
   }
 }
 
