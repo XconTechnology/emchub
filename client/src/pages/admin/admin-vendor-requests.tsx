@@ -35,6 +35,8 @@ interface VendorRequestWithUser {
   id: string;
   userId: string;
   businessName: string;
+  businessType: string;
+  contactNumber: string;
   identificationDoc: string | null;
   businessRegistrationDoc: string | null;
   addressProofDoc: string | null;
@@ -197,6 +199,14 @@ export default function AdminVendorRequests() {
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4" />
                         <span data-testid={`vendor-email-${request.id}`}>{request.userEmail}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {request.businessType === 'company' ? <Building2 className="w-4 h-4" /> : <Home className="w-4 h-4" />}
+                        <span className="capitalize">{request.businessType}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        <span>{request.contactNumber}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />

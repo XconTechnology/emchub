@@ -3,22 +3,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Store, BadgeCheck, Package, DollarSign, Users } from "lucide-react";
+import { Store, BadgeCheck, Package, DollarSign, Users, FileText, Building2, Home } from "lucide-react";
 import { useState } from "react";
+import { FileUpload } from "@/components/file-upload";
 
 export default function UserBecomeVendor() {
   const { user } = useAuth();
   const { toast } = useToast();
+  
   const [businessName, setBusinessName] = useState("");
+  const [businessType, setBusinessType] = useState<"individual" | "company">("individual");
   const [businessDescription, setBusinessDescription] = useState("");
   const [contactNumber, setContactNumber] = useState("");
+  const [identificationDoc, setIdentificationDoc] = useState("");
+  const [businessRegistrationDoc, setBusinessRegistrationDoc] = useState("");
+  const [addressProofDoc, setAddressProofDoc] = useState("");
 
   const applyMutation = useMutation({
-    mutationFn: async (data: { businessName: string; businessDescription: string; contactNumber: string }) => {
+    mutationFn: async (data: {
+      businessName: string;
+      businessType: string;
+      description: string;
+      contactNumber: string;
+      identificationDoc: string;
+      businessRegistrationDoc?: string;
+      addressProofDoc: string;
+    }) => {
       return apiRequest('POST', '/api/vendor/apply', data);
     },
     onSuccess: () => {
@@ -27,9 +42,14 @@ export default function UserBecomeVendor() {
         title: "Application Submitted!",
         description: "Your vendor application has been submitted for review. We'll notify you once it's approved.",
       });
+      // Reset form
       setBusinessName("");
+      setBusinessType("individual");
       setBusinessDescription("");
       setContactNumber("");
+      setIdentificationDoc("");
+      setBusinessRegistrationDoc("");
+      setAddressProofDoc("");
     },
     onError: () => {
       toast({
@@ -42,15 +62,34 @@ export default function UserBecomeVendor() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!businessName || !businessDescription || !contactNumber) {
+    
+    if (!businessName || !contactNumber || !identificationDoc || !addressProofDoc) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields and upload all required documents",
         variant: "destructive",
       });
       return;
     }
-    applyMutation.mutate({ businessName, businessDescription, contactNumber });
+
+    if (businessType === "company" && !businessRegistrationDoc) {
+      toast({
+        title: "Missing Document",
+        description: "Business registration document is required for companies",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    applyMutation.mutate({
+      businessName,
+      businessType,
+      description: businessDescription,
+      contactNumber,
+      identificationDoc,
+      businessRegistrationDoc: businessType === "company" ? businessRegistrationDoc : undefined,
+      addressProofDoc,
+    });
   };
 
   // If user is already a verified vendor
@@ -152,11 +191,31 @@ export default function UserBecomeVendor() {
         <CardHeader>
           <CardTitle>Vendor Application</CardTitle>
           <CardDescription>
-            Fill out the form below to apply for vendor verification
+            Fill out the form below and upload required documents for verification
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Business Type */}
+            <div className="space-y-3">
+              <Label>Business Type *</Label>
+              <RadioGroup value={businessType} onValueChange={(value) => setBusinessType(value as "individual" | "company")}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="individual" id="individual" data-testid="radio-individual" />
+                  <Label htmlFor="individual" className="font-normal cursor-pointer">
+                    Individual / Sole Proprietor
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="company" id="company" data-testid="radio-company" />
+                  <Label htmlFor="company" className="font-normal cursor-pointer">
+                    Registered Company
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Business Name */}
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name *</Label>
               <Input
@@ -168,8 +227,22 @@ export default function UserBecomeVendor() {
               />
             </div>
 
+            {/* Contact Number */}
             <div className="space-y-2">
-              <Label htmlFor="businessDescription">Business Description *</Label>
+              <Label htmlFor="contactNumber">Contact Number *</Label>
+              <Input
+                id="contactNumber"
+                type="tel"
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                placeholder="+852 1234 5678"
+                data-testid="input-contact-number"
+              />
+            </div>
+
+            {/* Business Description */}
+            <div className="space-y-2">
+              <Label htmlFor="businessDescription">Business Description (Optional)</Label>
               <Textarea
                 id="businessDescription"
                 value={businessDescription}
@@ -180,16 +253,47 @@ export default function UserBecomeVendor() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="contactNumber">Contact Number *</Label>
-              <Input
-                id="contactNumber"
-                type="tel"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
-                placeholder="Enter your contact number"
-                data-testid="input-contact-number"
+            {/* Document Uploads */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <FileText className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">Required Documents</h3>
+              </div>
+
+              <FileUpload
+                label="Identification Document (ID Card / Passport)"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onUploadComplete={setIdentificationDoc}
+                value={identificationDoc}
+                required
+                testId="upload-identification"
               />
+
+              {businessType === "company" && (
+                <FileUpload
+                  label="Business Registration Document"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onUploadComplete={setBusinessRegistrationDoc}
+                  value={businessRegistrationDoc}
+                  required
+                  testId="upload-business-registration"
+                />
+              )}
+
+              <FileUpload
+                label="Address Proof (Utility Bill / Bank Statement)"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onUploadComplete={setAddressProofDoc}
+                value={addressProofDoc}
+                required
+                testId="upload-address-proof"
+              />
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>Note:</strong> All documents must be uploaded before submission. Your application will be reviewed by our staff within 2-3 business days.
+              </p>
             </div>
 
             <Button

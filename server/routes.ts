@@ -938,6 +938,8 @@ export function registerRoutes(app: Express): Server {
           id: vendorRequests.id,
           userId: vendorRequests.userId,
           businessName: vendorRequests.businessName,
+          businessType: vendorRequests.businessType,
+          contactNumber: vendorRequests.contactNumber,
           identificationDoc: vendorRequests.identificationDoc,
           businessRegistrationDoc: vendorRequests.businessRegistrationDoc,
           addressProofDoc: vendorRequests.addressProofDoc,
