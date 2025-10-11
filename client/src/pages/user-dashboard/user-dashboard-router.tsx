@@ -48,6 +48,7 @@ import UserPricing from "./user-pricing";
 import UserMyListings from "./user-my-listings";
 import UserCreateListing from "./user-create-listing";
 import UserCart from "./user-cart";
+import UserCheckout from "./user-checkout";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -212,6 +213,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/coupons" component={UserCoupons} />
             <Route path="/dashboard/pricing" component={UserPricing} />
             <Route path="/dashboard/cart" component={UserCart} />
+            <Route path="/dashboard/checkout" component={UserCheckout} />
           </Switch>
         </div>
       </main>
