@@ -243,6 +243,65 @@ export const activityLogs = pgTable("activity_logs", {
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
 
+// Shopping Cart - for users to add products before purchasing
+export const cartItems = pgTable("cart_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  productId: varchar("product_id").notNull().references(() => listings.id),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCartItemSchema = createInsertSchema(cartItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CartItem = typeof cartItems.$inferSelect;
+export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+
+// Orders table for completed purchases
+export const orders = pgTable("orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
+  paymentMethod: varchar("payment_method"), // 'cash' | 'timedollar' | 'both'
+  shippingName: varchar("shipping_name").notNull(),
+  shippingPhone: varchar("shipping_phone").notNull(),
+  shippingAddress: text("shipping_address").notNull(),
+  shippingCity: varchar("shipping_city"),
+  shippingPostalCode: varchar("shipping_postal_code"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const orderItems = pgTable("order_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  productId: varchar("product_id").notNull().references(() => listings.id),
+  productTitle: varchar("product_title").notNull(),
+  productPrice: decimal("product_price", { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  userId: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
 // Keep the old business_listings table for backward compatibility but mark as deprecated
 export const businessListings = pgTable("business_listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
