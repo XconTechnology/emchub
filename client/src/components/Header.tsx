@@ -62,6 +62,9 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
               </Link>
+              <Link href="/products" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-products">
+                Products
+              </Link>
               <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </Link>
@@ -192,10 +195,43 @@ export default function Header({ forceSolid = false }: HeaderProps) {
         </nav>
       </header>
 
-      {/* Mobile menu - simplified for now */}
+      {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+            <Link href="/">
+              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-home">
+                Home
+              </Button>
+            </Link>
+            <Link href="/products">
+              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-products">
+                Products
+              </Button>
+            </Link>
+            <Link href="/map">
+              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-map">
+                Map of Listings
+              </Button>
+            </Link>
+            <Link href="/explore">
+              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-explore">
+                Explore
+              </Button>
+            </Link>
+            <Link href="/about-us">
+              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-about">
+                About Us
+              </Button>
+            </Link>
+            {user?.isAdmin && (
+              <Link href="/admin">
+                <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-admin">
+                  Admin
+                </Button>
+              </Link>
+            )}
+            <div className="border-t my-2"></div>
             {user ? (
               <>
                 {user.vendorStatus === 'verified' && (
@@ -207,6 +243,15 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     Add Listing
                   </Button>
                 )}
+                <Link href="/dashboard">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start"
+                    data-testid="mobile-link-dashboard"
+                  >
+                    My Dashboard
+                  </Button>
+                </Link>
                 <Link href="/profile">
                   <Button 
                     variant="ghost" 
