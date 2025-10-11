@@ -152,15 +152,17 @@ export default function UserMyListings() {
             Manage your business listings and their visibility
           </p>
         </div>
-        <Button
-          onClick={() => setLocation("/dashboard/create-listing")}
-          className="gap-2"
-          style={{ backgroundColor: '#8FC24C' }}
-          data-testid="button-create-listing"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Listing
-        </Button>
+        {user?.vendorStatus === 'verified' && (
+          <Button
+            onClick={() => setLocation("/dashboard/create-listing")}
+            className="gap-2"
+            style={{ backgroundColor: '#8FC24C' }}
+            data-testid="button-create-listing"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Listing
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}

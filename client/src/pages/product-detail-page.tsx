@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import Header from "@/components/Header";
@@ -34,6 +34,7 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: product, isLoading } = useQuery<Listing>({
     queryKey: [`/api/listings/${productId}`],
@@ -43,7 +44,7 @@ export default function ProductDetailPage() {
   // Add to cart mutation
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/cart/add', {
+      return apiRequest('POST', '/api/cart', {
         productId: product?.id,
         quantity,
       });
@@ -54,6 +55,27 @@ export default function ProductDetailPage() {
         description: `${quantity} ${quantity === 1 ? 'item' : 'items'} added to your cart`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Buy now mutation - adds to cart and navigates to cart page
+  const buyNowMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/cart', {
+        productId: product?.id,
+        quantity,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      setLocation('/dashboard/cart');
     },
     onError: () => {
       toast({
@@ -378,17 +400,16 @@ export default function ProductDetailPage() {
                         {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
                       </Button>
 
-                      <Link href="/cart">
-                        <Button 
-                          className="w-full"
-                          variant="outline"
-                          size="lg"
-                          onClick={() => addToCartMutation.mutate()}
-                          data-testid="button-buy-now"
-                        >
-                          Buy Now
-                        </Button>
-                      </Link>
+                      <Button 
+                        className="w-full"
+                        variant="outline"
+                        size="lg"
+                        onClick={() => buyNowMutation.mutate()}
+                        disabled={buyNowMutation.isPending}
+                        data-testid="button-buy-now"
+                      >
+                        {buyNowMutation.isPending ? "Processing..." : "Buy Now"}
+                      </Button>
                     </>
                   )}
 

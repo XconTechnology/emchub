@@ -74,16 +74,18 @@ export default function MobileMenu({ isOpen, onClose, onOpenSignIn, onOpenSignUp
                 </div>
               </div>
               
-              <Button 
-                onClick={() => {
-                  onOpenAddListing();
-                  onClose();
-                }}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
-                data-testid="mobile-button-add-listing"
-              >
-                Add Listing
-              </Button>
+              {user.vendorStatus === 'verified' && (
+                <Button 
+                  onClick={() => {
+                    onOpenAddListing();
+                    onClose();
+                  }}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" 
+                  data-testid="mobile-button-add-listing"
+                >
+                  Add Listing
+                </Button>
+              )}
               
               <a 
                 href="/api/logout" 
