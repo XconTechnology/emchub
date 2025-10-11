@@ -16,6 +16,7 @@ import { CheckCircle, CreditCard } from "lucide-react";
 
 const checkoutSchema = z.object({
   shippingName: z.string().min(1, "Name is required"),
+  shippingEmail: z.string().email("Valid email is required"),
   shippingPhone: z.string().min(1, "Phone is required"),
   shippingAddress: z.string().min(1, "Address is required"),
   shippingCity: z.string().optional(),
@@ -54,6 +55,7 @@ export default function UserCheckout() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       shippingName: "",
+      shippingEmail: "",
       shippingPhone: "",
       shippingAddress: "",
       shippingCity: "",
@@ -174,6 +176,25 @@ export default function UserCheckout() {
                           <FormLabel>Full Name *</FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" {...field} data-testid="input-shipping-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="shippingEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="email" 
+                              placeholder="john@example.com" 
+                              {...field} 
+                              data-testid="input-shipping-email" 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
