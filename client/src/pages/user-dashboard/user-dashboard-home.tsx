@@ -4,22 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin, Calendar, Warehouse, Ticket, Receipt } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
-import AddListingModal from "@/components/AddListingModal";
-import AddProductModal from "@/components/AddProductModal";
-import AddServiceModal from "@/components/AddServiceModal";
 
 export default function UserDashboardHome() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
-  const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -159,53 +152,6 @@ export default function UserDashboardHome() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Items</CardTitle>
-          <CardDescription>Choose what you want to add to your marketplace</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Button
-              onClick={() => setIsAddListingModalOpen(true)}
-              className="h-auto py-6 flex flex-col items-center gap-2"
-              variant="outline"
-              data-testid="button-add-listing"
-            >
-              <Store className="w-8 h-8" />
-              <div className="text-center">
-                <div className="font-semibold">Add Listing</div>
-                <div className="text-xs text-gray-500">Business or location</div>
-              </div>
-            </Button>
-            <Button
-              onClick={() => setIsAddProductModalOpen(true)}
-              className="h-auto py-6 flex flex-col items-center gap-2"
-              variant="outline"
-              data-testid="button-add-product"
-            >
-              <Package className="w-8 h-8" />
-              <div className="text-center">
-                <div className="font-semibold">Add Product</div>
-                <div className="text-xs text-gray-500">Item for sale</div>
-              </div>
-            </Button>
-            <Button
-              onClick={() => setIsAddServiceModalOpen(true)}
-              className="h-auto py-6 flex flex-col items-center gap-2"
-              variant="outline"
-              data-testid="button-add-service"
-            >
-              <Briefcase className="w-8 h-8" />
-              <div className="text-center">
-                <div className="font-semibold">Add Service</div>
-                <div className="text-xs text-gray-500">Service you offer</div>
-              </div>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Manage Your Business</CardTitle>
           <CardDescription>Access all your business management tools</CardDescription>
         </CardHeader>
@@ -308,19 +254,6 @@ export default function UserDashboardHome() {
           </div>
         </CardContent>
       </Card>
-
-      <AddListingModal 
-        isOpen={isAddListingModalOpen}
-        onClose={() => setIsAddListingModalOpen(false)}
-      />
-      <AddProductModal 
-        isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-      />
-      <AddServiceModal 
-        isOpen={isAddServiceModalOpen}
-        onClose={() => setIsAddServiceModalOpen(false)}
-      />
     </div>
   );
 }
