@@ -1574,6 +1574,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Object storage upload URL for user listings - accessible to all authenticated users
+  app.post("/api/object-storage/upload-url", isAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ url: uploadURL });
+    } catch (error) {
+      console.error("Error getting object storage upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
     try {

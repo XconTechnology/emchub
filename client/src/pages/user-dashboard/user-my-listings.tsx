@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Store, Edit, Trash2, Plus, MapPin, Phone, Mail } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Listing } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,7 @@ export default function UserMyListings() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [deletingListing, setDeletingListing] = useState<Listing | null>(null);
+  const [activeTab, setActiveTab] = useState("published");
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -46,6 +48,10 @@ export default function UserMyListings() {
   });
 
   const listings = userListings?.filter(item => item.type === 'business') || [];
+  
+  const approvedListings = listings.filter(l => l.status === 'published');
+  const pendingListings = listings.filter(l => l.status === 'pending');
+  const rejectedListings = listings.filter(l => l.status === 'rejected');
 
   const renderListingCard = (listing: Listing) => (
     <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>
@@ -158,14 +164,14 @@ export default function UserMyListings() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">Approved Listings</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {listings.filter(l => l.status === 'published').length}
+              {approvedListings.length}
             </div>
           </CardContent>
         </Card>
@@ -175,37 +181,101 @@ export default function UserMyListings() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {listings.filter(l => l.status === 'pending').length}
+              {pendingListings.length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-gray-600">Rejected</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {rejectedListings.length}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Listings Grid */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-600">Loading listings...</p>
-        </div>
-      ) : listings.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {listings.map(renderListingCard)}
-        </div>
-      ) : (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">No listings yet</p>
-            <Button
-              onClick={() => setLocation("/dashboard/create-listing")}
-              style={{ backgroundColor: '#8FC24C' }}
-              data-testid="button-create-first-listing"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Listing
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Listings Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="published" data-testid="tab-approved">
+            Approved ({approvedListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending" data-testid="tab-pending">
+            Pending ({pendingListings.length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" data-testid="tab-rejected">
+            Rejected ({rejectedListings.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="published" className="mt-6">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading listings...</p>
+            </div>
+          ) : approvedListings.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {approvedListings.map(renderListingCard)}
+            </div>
+          ) : (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">No approved listings yet</p>
+                <Button
+                  onClick={() => setLocation("/dashboard/create-listing")}
+                  style={{ backgroundColor: '#8FC24C' }}
+                  data-testid="button-create-first-listing"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Listing
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-6">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading listings...</p>
+            </div>
+          ) : pendingListings.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {pendingListings.map(renderListingCard)}
+            </div>
+          ) : (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-600">No pending listings</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="mt-6">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading listings...</p>
+            </div>
+          ) : rejectedListings.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {rejectedListings.map(renderListingCard)}
+            </div>
+          ) : (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-600">No rejected listings</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingListing} onOpenChange={() => setDeletingListing(null)}>
