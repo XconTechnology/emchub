@@ -271,6 +271,9 @@ export const orders = pgTable("orders", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: varchar("status").notNull().default("pending"), // 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
   paymentMethod: varchar("payment_method"), // 'cash' | 'timedollar' | 'both'
+  cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default("0"),
+  tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default("0"),
+  transactionId: varchar("transaction_id"),
   shippingName: varchar("shipping_name").notNull(),
   shippingEmail: varchar("shipping_email").notNull(),
   shippingPhone: varchar("shipping_phone").notNull(),
