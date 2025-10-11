@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin } from "lucide-react";
+import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin, Calendar, Warehouse, Ticket, Receipt } from "lucide-react";
+import { useLocation } from "wouter";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -15,6 +16,7 @@ import AddServiceModal from "@/components/AddServiceModal";
 export default function UserDashboardHome() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
@@ -204,38 +206,105 @@ export default function UserDashboardHome() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Quick Stats Overview</CardTitle>
-          <CardDescription>Your marketplace performance at a glance</CardDescription>
+          <CardTitle>Manage Your Business</CardTitle>
+          <CardDescription>Access all your business management tools</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Business Listings</p>
-                  <p className="text-2xl font-bold">{approvedListings.length}</p>
-                </div>
-                <Store className="w-10 h-10 text-blue-500" />
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <Button
+              onClick={() => setLocation("/dashboard/my-listings")}
+              className="h-auto py-6 flex flex-col items-center gap-2"
+              variant="outline"
+              data-testid="card-my-listings"
+            >
+              <Store className="w-8 h-8 text-blue-500" />
+              <div className="text-center">
+                <div className="font-semibold">My Listings</div>
+                <div className="text-xs text-gray-500">{approvedListings.length} approved</div>
               </div>
-            </div>
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
-                  <p className="text-2xl font-bold">{approvedProducts.length}</p>
-                </div>
-                <Package className="w-10 h-10 text-green-500" />
-              </div>
-            </div>
-            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Services</p>
-                  <p className="text-2xl font-bold">{approvedServices.length}</p>
-                </div>
-                <Briefcase className="w-10 h-10 text-purple-500" />
-              </div>
-            </div>
+            </Button>
+            
+            {user?.vendorStatus === 'verified' && (
+              <>
+                <Button
+                  onClick={() => setLocation("/dashboard/products")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-my-products"
+                >
+                  <Package className="w-8 h-8 text-green-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">My Products</div>
+                    <div className="text-xs text-gray-500">{approvedProducts.length} approved</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => setLocation("/dashboard/my-services")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-my-services"
+                >
+                  <Briefcase className="w-8 h-8 text-purple-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">My Services</div>
+                    <div className="text-xs text-gray-500">{approvedServices.length} approved</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => setLocation("/dashboard/events")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-my-events"
+                >
+                  <Calendar className="w-8 h-8 text-orange-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">My Events</div>
+                    <div className="text-xs text-gray-500">Manage events</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => setLocation("/dashboard/inventory")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-my-inventory"
+                >
+                  <Warehouse className="w-8 h-8 text-indigo-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">My Inventory</div>
+                    <div className="text-xs text-gray-500">Track stock</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => setLocation("/dashboard/coupons")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-coupons"
+                >
+                  <Ticket className="w-8 h-8 text-pink-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">Coupons</div>
+                    <div className="text-xs text-gray-500">Create discounts</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  onClick={() => setLocation("/dashboard/pricing")}
+                  className="h-auto py-6 flex flex-col items-center gap-2"
+                  variant="outline"
+                  data-testid="card-pricing-settings"
+                >
+                  <Receipt className="w-8 h-8 text-teal-500" />
+                  <div className="text-center">
+                    <div className="font-semibold">Pricing Settings</div>
+                    <div className="text-xs text-gray-500">Payment methods</div>
+                  </div>
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

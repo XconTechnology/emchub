@@ -59,7 +59,6 @@ export default function UserDashboardRouter() {
 
   const baseNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
-    { name: "My Listings", path: "/dashboard/my-listings", icon: Store, testId: "nav-my-listings" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
@@ -68,17 +67,7 @@ export default function UserDashboardRouter() {
     { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];
 
-  // Vendor-only navigation sections
-  const vendorNavigation = user?.vendorStatus === 'verified' ? [
-    { name: "My Products", path: "/dashboard/products", icon: Package, testId: "nav-products" },
-    { name: "My Services", path: "/dashboard/my-services", icon: Briefcase, testId: "nav-my-services" },
-    { name: "My Events", path: "/dashboard/events", icon: Calendar, testId: "nav-events" },
-    { name: "My Inventory", path: "/dashboard/inventory", icon: Warehouse, testId: "nav-inventory" },
-    { name: "Coupons", path: "/dashboard/coupons", icon: Ticket, testId: "nav-coupons" },
-    { name: "Pricing Settings", path: "/dashboard/pricing", icon: Receipt, testId: "nav-pricing" },
-  ] : [];
-
-  const navigation = [...baseNavigation, ...vendorNavigation];
+  const navigation = [...baseNavigation];
 
   const isActive = (path: string) => location === path;
 
