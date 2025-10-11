@@ -59,9 +59,11 @@ export const vendorRequests = pgTable("vendor_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   businessName: varchar("business_name").notNull(),
-  identificationDoc: varchar("identification_doc"), // URL to uploaded ID document
-  businessRegistrationDoc: varchar("business_registration_doc"), // URL to business registration (optional)
-  addressProofDoc: varchar("address_proof_doc"), // URL to address proof document
+  businessType: varchar("business_type").notNull(), // 'individual' | 'company'
+  identificationDoc: varchar("identification_doc").notNull(), // URL to uploaded ID document (REQUIRED)
+  businessRegistrationDoc: varchar("business_registration_doc"), // URL to business registration (required for companies)
+  addressProofDoc: varchar("address_proof_doc").notNull(), // URL to address proof document (REQUIRED)
+  contactNumber: varchar("contact_number").notNull(), // Contact phone number
   description: text("description"), // Reason for becoming a vendor
   status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
   rejectionReason: text("rejection_reason"), // Optional reason for rejection
