@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import AddListingModal from "./AddListingModal";
 import { BecomeVendorModal } from "./BecomeVendorModal";
 import emcLogo from "@assets/image_1756989816731.png";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 
 interface HeaderProps {
   forceSolid?: boolean;
@@ -24,8 +27,15 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const { user, isLoading, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Fetch cart items for logged-in users
+  const { data: cartItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/cart'],
+    enabled: !!user,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,6 +108,28 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                       Add Listing
                     </Button>
                   )}
+                  
+                  {/* Cart Icon */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setLocation('/dashboard/cart')}
+                    className="relative rounded-full hover:bg-gray-100/20 transition-all"
+                    data-testid="button-cart"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[hsl(86,49%,53%)] flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
+                      <ShoppingCart className="w-5 h-5 text-white" />
+                    </div>
+                    {cartItems.length > 0 && (
+                      <Badge 
+                        className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs"
+                        data-testid="cart-badge"
+                      >
+                        {cartItems.length}
+                      </Badge>
+                    )}
+                  </Button>
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -243,6 +275,23 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     Add Listing
                   </Button>
                 )}
+                <Link href="/dashboard/cart">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start relative"
+                    data-testid="mobile-link-cart"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    My Cart
+                    {cartItems.length > 0 && (
+                      <Badge 
+                        className="ml-auto h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs"
+                      >
+                        {cartItems.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
                 <Link href="/dashboard">
                   <Button 
                     variant="ghost" 
