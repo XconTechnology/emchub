@@ -49,6 +49,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Auto-sync database schema on startup
+  try {
+    const { execSync } = await import('child_process');
+    console.log('🔄 Checking database schema...');
+    execSync('npm run db:push --force', { stdio: 'inherit' });
+    console.log('✅ Database schema synced successfully');
+  } catch (error) {
+    console.error('⚠️  Database schema sync failed:', error);
+    console.log('Continuing anyway - manual db:push may be needed');
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
