@@ -139,8 +139,8 @@ export default function UserCheckout() {
                 Thank you for your order. We'll contact you shortly to confirm the details.
               </p>
               <div className="flex gap-4 justify-center">
-                <Button onClick={() => setLocation('/dashboard/orders')} data-testid="button-view-orders">
-                  View Orders
+                <Button onClick={() => setLocation('/dashboard/purchases')} data-testid="button-view-orders">
+                  View My Purchases
                 </Button>
                 <Button variant="outline" onClick={() => setLocation('/products')} data-testid="button-continue-shopping">
                   Continue Shopping

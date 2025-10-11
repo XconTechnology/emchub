@@ -270,6 +270,7 @@ export const orders = pgTable("orders", {
   status: varchar("status").notNull().default("pending"), // 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
   paymentMethod: varchar("payment_method"), // 'cash' | 'timedollar' | 'both'
   shippingName: varchar("shipping_name").notNull(),
+  shippingEmail: varchar("shipping_email").notNull(),
   shippingPhone: varchar("shipping_phone").notNull(),
   shippingAddress: text("shipping_address").notNull(),
   shippingCity: varchar("shipping_city"),
