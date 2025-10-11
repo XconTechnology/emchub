@@ -10,6 +10,9 @@ interface Order {
   userId: string;
   totalAmount: number;
   paymentMethod: string;
+  cashAmount?: number;
+  tdAmount?: number;
+  transactionId?: string;
   status: string;
   shippingName: string;
   shippingAddress: string;
@@ -108,9 +111,26 @@ export default function UserPurchases() {
                     <DollarSign className="w-4 h-4 text-green-600" />
                     <span className="font-semibold text-lg">${parseFloat(order.totalAmount.toString()).toFixed(2)}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-gray-600 dark:text-gray-400">Payment: {order.paymentMethod}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-gray-600 dark:text-gray-400 capitalize">Payment: {order.paymentMethod}</span>
+                    </div>
+                    {order.paymentMethod === 'both' && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                        ${parseFloat(order.cashAmount?.toString() || '0').toFixed(2)} Cash + {parseFloat(order.tdAmount?.toString() || '0').toFixed(0)} TD
+                      </div>
+                    )}
+                    {order.paymentMethod === 'timedollar' && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                        {parseFloat(order.tdAmount?.toString() || '0').toFixed(0)} TimeDollars
+                      </div>
+                    )}
+                    {order.transactionId && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                        Txn: {order.transactionId}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

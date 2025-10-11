@@ -948,7 +948,7 @@ export class DatabaseStorage implements IStorage {
   
   // Order operations implementation
   async createOrder(userId: string, orderData: any): Promise<any> {
-    const { orders, orderItems, cartItems, listings } = await import("@shared/schema");
+    const { orders, orderItems, cartItems, listings, activityLogs } = await import("@shared/schema");
     
     // Get cart items
     const cart = await this.getUserCartItems(userId);
@@ -973,13 +973,61 @@ export class DatabaseStorage implements IStorage {
       };
     });
     
-    // Create order
+    // Extract payment data
+    const { paymentMethod, cashAmount, tdAmount, ...shippingData } = orderData;
+    const cashAmountValue = parseFloat(cashAmount || 0);
+    const tdAmountValue = parseFloat(tdAmount || 0);
+    
+    // Validate payment method and amounts
+    if (paymentMethod === 'timedollar' || paymentMethod === 'both') {
+      const currentBalance = await this.getTimeDollarBalance(userId);
+      if (currentBalance < tdAmountValue) {
+        throw new Error(`Insufficient TimeDollar balance. You need ${tdAmountValue} TD but only have ${currentBalance} TD.`);
+      }
+    }
+    
+    // Deduct TimeDollars if applicable
+    if (paymentMethod === 'timedollar' || paymentMethod === 'both') {
+      if (tdAmountValue > 0) {
+        await this.updateTimeDollarBalance(userId, -tdAmountValue);
+        
+        // Get user info for activity log
+        const user = await this.getUser(userId);
+        
+        // Create activity log for TimeDollar deduction
+        await db.insert(activityLogs).values({
+          userId,
+          userName: user?.username || 'Unknown',
+          actionType: 'payment',
+          entityType: 'timedollar_transaction',
+          entityId: null,
+          entityTitle: `Order Payment`,
+          description: `Paid ${tdAmountValue} TD for order`,
+          metadata: {
+            amount: -tdAmountValue,
+            paymentMethod,
+            totalAmount,
+            cashAmount: cashAmountValue,
+            tdAmount: tdAmountValue,
+          }
+        });
+      }
+    }
+    
+    // Generate transaction ID for tracking
+    const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
+    // Create order with payment details
     const [order] = await db
       .insert(orders)
       .values({
         userId,
         totalAmount: totalAmount.toString(),
-        ...orderData,
+        paymentMethod,
+        cashAmount: cashAmountValue.toString(),
+        tdAmount: tdAmountValue.toString(),
+        transactionId,
+        ...shippingData,
       })
       .returning();
     
