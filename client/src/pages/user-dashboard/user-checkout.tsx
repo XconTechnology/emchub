@@ -72,6 +72,7 @@ export default function UserCheckout() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/user'] });
       setOrderCompleted(true);
       toast({
         title: "Order placed successfully!",
