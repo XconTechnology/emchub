@@ -108,7 +108,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                         </div>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64 shadow-xl border-0" align="end" forceMount>
+                    <DropdownMenuContent className="w-64 shadow-xl border-0 z-[1300]" align="end" forceMount>
                       <DropdownMenuLabel className="py-3">
                         <div className="flex flex-col space-y-2">
                           <p className="text-base font-semibold leading-none">{user.username}</p>
