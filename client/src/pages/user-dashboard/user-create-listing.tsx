@@ -74,7 +74,7 @@ export default function UserCreateListing() {
           value === '' ? undefined : value
         ])
       );
-      return apiRequest('/api/listings', 'POST', cleanedData);
+      return apiRequest('POST', '/api/listings', cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
@@ -109,12 +109,13 @@ export default function UserCreateListing() {
   };
 
   const getUploadParameters = async () => {
-    const response = await apiRequest('/api/object-storage/upload-url', 'POST', {
+    const response = await apiRequest('POST', '/api/object-storage/upload-url', {
       fileName: `listing-${Date.now()}.jpg`,
     });
+    const data = await response.json();
     return {
       method: "PUT" as const,
-      url: response.url,
+      url: data.url,
     };
   };
 
