@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,7 +175,7 @@ export default function ProductsPage() {
                           )}
                         </div>
                         
-                        {product.vendorVerified && (
+                        {product.isVerified && (
                           <BadgeCheck 
                             className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" 
                             data-testid={`badge-verified-${product.id}`}
@@ -201,6 +202,8 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 }

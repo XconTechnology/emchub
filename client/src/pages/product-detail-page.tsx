@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -23,41 +25,76 @@ import {
   Shield
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:id");
   const productId = params?.id;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const { toast } = useToast();
 
   const { data: product, isLoading } = useQuery<Listing>({
     queryKey: [`/api/listings/${productId}`],
     enabled: !!productId,
   });
 
+  // Add to cart mutation
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('POST', '/api/cart/add', {
+        productId: product?.id,
+        quantity,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Added to cart!",
+        description: `${quantity} ${quantity === 1 ? 'item' : 'items'} added to your cart`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-600">Loading product...</p>
+      <>
+        <Header forceSolid />
+        <div className="min-h-screen flex items-center justify-center pt-16">
+          <div className="text-center">
+            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4 animate-pulse" />
+            <p className="text-gray-600">Loading product...</p>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-          <p className="text-gray-600 mb-4">The product you're looking for doesn't exist.</p>
-          <Link href="/directory">
-            <Button>Browse Products</Button>
-          </Link>
+      <>
+        <Header forceSolid />
+        <div className="min-h-screen flex items-center justify-center pt-16">
+          <div className="text-center">
+            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+            <p className="text-gray-600 mb-4">The product you're looking for doesn't exist.</p>
+            <Link href="/products">
+              <Button>Browse Products</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
@@ -86,19 +123,21 @@ export default function ProductDetailPage() {
   const price = product.price ? parseFloat(product.price.toString()) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center text-sm text-gray-600">
-            <Link href="/" className="hover:text-[#8FC24C]">Home</Link>
-            <ChevronRight className="w-4 h-4 mx-2" />
-            <Link href="/directory" className="hover:text-[#8FC24C]">Products</Link>
-            <ChevronRight className="w-4 h-4 mx-2" />
-            <span className="text-gray-900 truncate max-w-[200px]">{product.title}</span>
+    <>
+      <Header forceSolid />
+      <div className="min-h-screen bg-gray-50 pt-16">
+        {/* Breadcrumb */}
+        <div className="bg-white border-b">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center text-sm text-gray-600">
+              <Link href="/" className="hover:text-[#8FC24C]">Home</Link>
+              <ChevronRight className="w-4 h-4 mx-2" />
+              <Link href="/products" className="hover:text-[#8FC24C]">Products</Link>
+              <ChevronRight className="w-4 h-4 mx-2" />
+              <span className="text-gray-900 truncate max-w-[200px]">{product.title}</span>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-12 gap-8">
@@ -331,20 +370,25 @@ export default function ProductDetailPage() {
                       <Button 
                         className="w-full bg-[#8FC24C] hover:bg-[#7AB23C] text-white"
                         size="lg"
+                        onClick={() => addToCartMutation.mutate()}
+                        disabled={addToCartMutation.isPending}
                         data-testid="button-add-to-cart"
                       >
                         <ShoppingCart className="w-5 h-5 mr-2" />
-                        Add to Cart
+                        {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
                       </Button>
 
-                      <Button 
-                        className="w-full"
-                        variant="outline"
-                        size="lg"
-                        data-testid="button-buy-now"
-                      >
-                        Buy Now
-                      </Button>
+                      <Link href="/cart">
+                        <Button 
+                          className="w-full"
+                          variant="outline"
+                          size="lg"
+                          onClick={() => addToCartMutation.mutate()}
+                          data-testid="button-buy-now"
+                        >
+                          Buy Now
+                        </Button>
+                      </Link>
                     </>
                   )}
 
@@ -437,6 +481,9 @@ export default function ProductDetailPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+      
+      <Footer />
+    </>
   );
 }
