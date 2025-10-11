@@ -20,7 +20,8 @@ import {
   Warehouse,
   Ticket,
   Receipt,
-  Store
+  Store,
+  ShoppingCart
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,6 +47,7 @@ import UserCoupons from "./user-coupons";
 import UserPricing from "./user-pricing";
 import UserMyListings from "./user-my-listings";
 import UserCreateListing from "./user-create-listing";
+import UserCart from "./user-cart";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -149,6 +151,8 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/inventory" && "My Inventory"}
             {location === "/dashboard/coupons" && "Coupons"}
             {location === "/dashboard/pricing" && "Pricing Settings"}
+            {location === "/dashboard/cart" && "My Cart"}
+            {location === "/dashboard/checkout" && "Checkout"}
           </h1>
           
           <div className="flex items-center gap-3">
@@ -159,6 +163,15 @@ export default function UserDashboardRouter() {
             >
               <Search className="w-4 h-4" />
               Browse
+            </Button>
+            
+            <Button
+              onClick={() => setLocation("/dashboard/cart")}
+              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+              data-testid="button-cart-navbar"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Cart
             </Button>
             
             <Button
@@ -198,6 +211,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/inventory" component={UserInventory} />
             <Route path="/dashboard/coupons" component={UserCoupons} />
             <Route path="/dashboard/pricing" component={UserPricing} />
+            <Route path="/dashboard/cart" component={UserCart} />
           </Switch>
         </div>
       </main>
