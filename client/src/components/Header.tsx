@@ -231,37 +231,55 @@ export default function Header({ forceSolid = false }: HeaderProps) {
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
-            <Link href="/">
-              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-home">
-                Home
-              </Button>
-            </Link>
-            <Link href="/products">
-              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-products">
-                Products
-              </Button>
-            </Link>
-            <Link href="/map">
-              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-map">
-                Map of Listings
-              </Button>
-            </Link>
-            <Link href="/explore">
-              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-explore">
-                Explore
-              </Button>
-            </Link>
-            <Link href="/about-us">
-              <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-about">
-                About Us
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-home"
+            >
+              Home
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/products'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-products"
+            >
+              Products
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/map'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-map"
+            >
+              Map of Listings
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/explore'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-explore"
+            >
+              Explore
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/about-us'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-about"
+            >
+              About Us
+            </Button>
             {user?.isAdmin && (
-              <Link href="/admin">
-                <Button variant="ghost" className="w-full justify-start" data-testid="mobile-nav-admin">
-                  Admin
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start" 
+                onClick={() => { setLocation('/admin'); setIsMobileMenuOpen(false); }}
+                data-testid="mobile-nav-admin"
+              >
+                Admin
+              </Button>
             )}
             <div className="border-t my-2"></div>
             {user ? (
@@ -275,41 +293,38 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     Add Listing
                   </Button>
                 )}
-                <Link href="/dashboard/cart">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start relative"
-                    data-testid="mobile-link-cart"
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    My Cart
-                    {cartItems.length > 0 && (
-                      <Badge 
-                        className="ml-auto h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs"
-                      >
-                        {cartItems.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
-                <Link href="/dashboard">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    data-testid="mobile-link-dashboard"
-                  >
-                    My Dashboard
-                  </Button>
-                </Link>
-                <Link href="/profile">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start"
-                    data-testid="mobile-link-profile"
-                  >
-                    Profile
-                  </Button>
-                </Link>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start relative"
+                  onClick={() => setLocation('/dashboard/cart')}
+                  data-testid="mobile-link-cart"
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  My Cart
+                  {cartItems.length > 0 && (
+                    <Badge 
+                      className="ml-auto h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs"
+                    >
+                      {cartItems.length}
+                    </Badge>
+                  )}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => setLocation('/dashboard')}
+                  data-testid="mobile-link-dashboard"
+                >
+                  My Dashboard
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start"
+                  onClick={() => setLocation('/profile')}
+                  data-testid="mobile-link-profile"
+                >
+                  Profile
+                </Button>
                 {user.vendorStatus !== 'verified' && (
                   <Button 
                     variant="ghost" 
@@ -334,16 +349,22 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               </>
             ) : (
               <>
-                <Link href="/auth">
-                  <Button variant="ghost" className="w-full justify-start" data-testid="mobile-button-signin">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/auth">
-                  <Button variant="ghost" className="w-full justify-start" data-testid="mobile-button-signup">
-                    Sign Up
-                  </Button>
-                </Link>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start" 
+                  onClick={() => { setLocation('/auth'); setIsMobileMenuOpen(false); }}
+                  data-testid="mobile-button-signin"
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start" 
+                  onClick={() => { setLocation('/auth'); setIsMobileMenuOpen(false); }}
+                  data-testid="mobile-button-signup"
+                >
+                  Sign Up
+                </Button>
               </>
             )}
           </div>
