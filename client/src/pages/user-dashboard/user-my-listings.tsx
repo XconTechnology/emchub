@@ -35,7 +35,7 @@ export default function UserMyListings() {
 
   const deleteListingMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/listings/${id}`, 'DELETE');
+      await apiRequest('DELETE', `/api/listings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });

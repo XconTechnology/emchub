@@ -63,17 +63,20 @@ Preferred communication style: Simple, everyday language.
   - Category selection (traditional and custom categories)
   - Business information form (name, description, contact details)
   - Location information with online-only option
-  - Image upload via object storage or URL
+  - Image upload via object storage or URL with real-time preview
   - Request Staff Help button for low-literacy users
   - Auto-submission with "pending" status for admin approval
   - Object storage upload endpoint (`/api/object-storage/upload-url`) for authenticated users
+  - Fixed apiRequest parameter order (method first, then URL)
 - **My Listings Page**: Dedicated page at `/dashboard/my-listings` showing user's business listings with:
   - Tab-based filtering: Approved, Pending Approval, and Rejected tabs
   - Stats cards showing counts for approved, pending, and rejected listings
   - Grid view of listings filtered by status with status badges
-  - Edit and delete functionality for each listing
+  - Edit and delete functionality for ALL listing statuses (approved, pending, rejected)
+  - Images displayed in listing cards when available
   - Empty state with create listing call-to-action
   - Default view shows only approved listings; users can click tabs to view pending or rejected items
+- **Dashboard Home Improvements**: Removed Quick Stats Overview section for cleaner interface
 
 ### Vendor Dashboard Restructure & Pricing System (October 2025)
 - **Dashboard Home Simplification**: Removed the tabbed interface (Listings/Products/Services tabs) from dashboard home page in favor of dedicated pages

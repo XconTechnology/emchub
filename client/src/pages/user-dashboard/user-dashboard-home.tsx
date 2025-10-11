@@ -155,30 +155,6 @@ export default function UserDashboardHome() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {stat.title}
-                </CardTitle>
-                <Icon className={`w-5 h-5 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold" data-testid={`stat-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                  {stat.value}
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Add New Items</CardTitle>
