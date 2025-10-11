@@ -146,17 +146,21 @@ export default function UserDashboardHome() {
           Welcome, {user?.username}!
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Manage your listings, products, and services
+          {user?.vendorStatus === 'verified' 
+            ? "Manage your listings, products, and services" 
+            : "Shop for products and services from the ethnic minority community"}
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Your Business</CardTitle>
-          <CardDescription>Access all your business management tools</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+      {/* Show vendor management section only for verified vendors */}
+      {user?.vendorStatus === 'verified' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Your Business</CardTitle>
+            <CardDescription>Access all your business management tools</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
             <Button
               onClick={() => setLocation("/dashboard/my-listings")}
               className="h-auto py-6 flex flex-col items-center gap-2"
@@ -251,9 +255,76 @@ export default function UserDashboardHome() {
                 </Button>
               </>
             )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Normal user dashboard content */
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/dashboard/purchases")}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <ShoppingBag className="w-8 h-8 text-blue-500" />
+                <div>
+                  <CardTitle className="text-lg">My Purchases</CardTitle>
+                  <CardDescription>View your orders</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/dashboard/activity")}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <DollarSign className="w-8 h-8 text-yellow-500" />
+                <div>
+                  <CardTitle className="text-lg">My Activity</CardTitle>
+                  <CardDescription>Track TimeDollars</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/dashboard/profile")}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <ShoppingBag className="w-8 h-8 text-green-500" />
+                <div>
+                  <CardTitle className="text-lg">Profile & Settings</CardTitle>
+                  <CardDescription>Manage your account</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/dashboard/become-vendor")}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Store className="w-8 h-8 text-purple-500" />
+                <div>
+                  <CardTitle className="text-lg">Become a Vendor</CardTitle>
+                  <CardDescription>Start selling today</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white col-span-full md:col-span-2 lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-6 h-6" />
+                TimeDollar Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-bold" data-testid="text-timedollar-balance-home">
+                {timeDollarData?.balance || 0} TD
+              </p>
+              <p className="text-yellow-100 mt-2">Available to spend</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

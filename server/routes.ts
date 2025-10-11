@@ -890,6 +890,41 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Vendor application route (alias for vendor-requests)
+  app.post('/api/vendor/apply', isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Check if user already has a pending or approved request
+      const existingRequest = await storage.getUserVendorRequest(req.user.id);
+      if (existingRequest && existingRequest.status === 'pending') {
+        return res.status(400).json({ message: "You already have a pending vendor request" });
+      }
+      if (existingRequest && existingRequest.status === 'approved') {
+        return res.status(400).json({ message: "You are already a verified vendor" });
+      }
+
+      const requestData = insertVendorRequestSchema.parse(req.body);
+      const vendorRequest = await storage.createVendorRequest({
+        ...requestData,
+        userId: req.user.id,
+      });
+
+      // Update user vendor status to pending
+      await storage.updateUserVendorStatus(req.user.id, 'pending');
+
+      res.json(vendorRequest);
+    } catch (error: any) {
+      console.error("Error creating vendor request:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to submit vendor request" });
+    }
+  });
+
   // Admin vendor request routes
   app.get('/api/admin/vendor-requests', isAdminAuthenticated, async (req: any, res) => {
     try {
@@ -1912,6 +1947,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Get TimeDollar transactions
+  app.get("/api/timedollars/transactions", isAuthenticated, async (req, res) => {
+    try {
+      // For now, return empty array - will implement proper transactions table later
+      res.json([]);
+    } catch (error) {
+      console.error("Error getting TimeDollar transactions:", error);
+      res.status(500).json({ error: "Failed to get transactions" });
+    }
+  });
+  
   // Update TimeDollar balance (admin only for manual adjustments)
   app.put("/api/admin/timedollars/:userId", isAdminAuthenticated, async (req, res) => {
     try {
@@ -2015,6 +2061,17 @@ export function registerRoutes(app: Express): Server {
   
   // Get user's orders
   app.get("/api/orders", isAuthenticated, async (req, res) => {
+    try {
+      const orders = await storage.getUserOrders(req.user.id);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error getting orders:", error);
+      res.status(500).json({ error: "Failed to get orders" });
+    }
+  });
+  
+  // Get user's orders (alias route)
+  app.get("/api/orders/user", isAuthenticated, async (req, res) => {
     try {
       const orders = await storage.getUserOrders(req.user.id);
       res.json(orders);

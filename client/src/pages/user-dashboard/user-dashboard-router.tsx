@@ -21,7 +21,10 @@ import {
   Ticket,
   Receipt,
   Store,
-  ShoppingCart
+  ShoppingCart,
+  ShoppingBag,
+  Activity,
+  BadgeDollarSign
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -49,6 +52,9 @@ import UserMyListings from "./user-my-listings";
 import UserCreateListing from "./user-create-listing";
 import UserCart from "./user-cart";
 import UserCheckout from "./user-checkout";
+import UserPurchases from "./user-purchases";
+import UserActivity from "./user-activity";
+import UserBecomeVendor from "./user-become-vendor";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -60,8 +66,20 @@ export default function UserDashboardRouter() {
     return null;
   }
 
-  const baseNavigation = [
+  // Navigation items for normal users (non-vendors)
+  const normalUserNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
+    { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
+    { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+    { name: "Become a Vendor", path: "/dashboard/become-vendor", icon: BadgeDollarSign, testId: "nav-become-vendor" },
+  ];
+
+  // Navigation items for verified vendors
+  const vendorNavigation = [
+    { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
+    { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
@@ -70,7 +88,7 @@ export default function UserDashboardRouter() {
     { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];
 
-  const navigation = [...baseNavigation];
+  const navigation = user?.vendorStatus === 'verified' ? vendorNavigation : normalUserNavigation;
 
   const isActive = (path: string) => location === path;
 
@@ -137,8 +155,11 @@ export default function UserDashboardRouter() {
         <header className="sticky top-0 z-30 px-4 lg:px-8 py-4 flex justify-between items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
           <h1 className="text-xl font-semibold text-white">
             {location === "/dashboard" && "Dashboard"}
+            {location === "/dashboard/purchases" && "My Purchases"}
+            {location === "/dashboard/activity" && "My Activity"}
             {location === "/dashboard/profile" && "Profile"}
             {location === "/dashboard/settings" && "Settings"}
+            {location === "/dashboard/become-vendor" && "Become a Vendor"}
             {location === "/dashboard/browse" && "Browse"}
             {location === "/dashboard/reviews" && "My Reviews"}
             {location === "/dashboard/timedollars" && "TimeDollars"}
@@ -197,6 +218,9 @@ export default function UserDashboardRouter() {
         <div className="flex-1 container mx-auto p-4 lg:p-8">
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
+            <Route path="/dashboard/purchases" component={UserPurchases} />
+            <Route path="/dashboard/activity" component={UserActivity} />
+            <Route path="/dashboard/become-vendor" component={UserBecomeVendor} />
             <Route path="/dashboard/profile" component={Profile} />
             <Route path="/dashboard/settings" component={UserSettings} />
             <Route path="/dashboard/browse" component={UserBrowse} />
