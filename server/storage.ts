@@ -1035,10 +1035,12 @@ export class DatabaseStorage implements IStorage {
       };
     });
     
-    // Extract payment data
-    const { paymentMethod, cashAmount, tdAmount, ...shippingData } = orderData;
+    // Extract payment and coupon data
+    const { paymentMethod, cashAmount, tdAmount, couponId, cashDiscount, tdDiscount, ...shippingData } = orderData;
     const cashAmountValue = parseFloat(cashAmount || 0);
     const tdAmountValue = parseFloat(tdAmount || 0);
+    const cashDiscountValue = parseFloat(cashDiscount || 0);
+    const tdDiscountValue = parseFloat(tdDiscount || 0);
     
     // Validate payment method and amounts
     if (paymentMethod === 'timedollar' || paymentMethod === 'both') {
@@ -1080,17 +1082,26 @@ export class DatabaseStorage implements IStorage {
     const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
     // Create order with payment details
+    const orderValues: any = {
+      userId,
+      totalAmount: totalAmount.toString(),
+      paymentMethod,
+      cashAmount: cashAmountValue.toString(),
+      tdAmount: tdAmountValue.toString(),
+      transactionId,
+      ...shippingData,
+    };
+
+    // Add coupon data if applied
+    if (couponId) {
+      orderValues.couponId = couponId;
+      orderValues.cashDiscount = cashDiscountValue.toString();
+      orderValues.tdDiscount = tdDiscountValue.toString();
+    }
+
     const [order] = await db
       .insert(orders)
-      .values({
-        userId,
-        totalAmount: totalAmount.toString(),
-        paymentMethod,
-        cashAmount: cashAmountValue.toString(),
-        tdAmount: tdAmountValue.toString(),
-        transactionId,
-        ...shippingData,
-      })
+      .values(orderValues)
       .returning();
     
     // Create order items
@@ -1101,6 +1112,11 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
+    // Record coupon usage if a coupon was applied
+    if (couponId) {
+      await this.useCoupon(couponId, userId, order.id, cashDiscountValue, tdDiscountValue);
+    }
+
     // Clear cart
     await this.clearCart(userId);
     
