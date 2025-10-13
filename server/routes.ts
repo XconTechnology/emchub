@@ -340,18 +340,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Coupon validation route
-  app.post('/api/coupons/validate', async (req, res) => {
-    try {
-      const { code, amount } = req.body;
-      const validation = await storage.validateCoupon(code, amount);
-      res.json(validation);
-    } catch (error) {
-      console.error("Error validating coupon:", error);
-      res.status(500).json({ message: "Failed to validate coupon" });
-    }
-  });
-
   // Legacy business listing routes (deprecated but maintained for compatibility)
   app.post('/api/business-listings', isAuthenticated, async (req: any, res) => {
     try {

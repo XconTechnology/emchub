@@ -432,16 +432,20 @@ export class DatabaseStorage implements IStorage {
   }> {
     const coupon = await this.getCoupon(code);
     
+    console.log('Validating coupon:', { code, vendorId, coupon: coupon ? { id: coupon.id, vendorId: coupon.vendorId, isActive: coupon.isActive, status: coupon.status } : null });
+    
     if (!coupon) {
       return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon not found' };
     }
 
     if (!coupon.isActive || coupon.status !== 'active') {
+      console.log('Coupon inactive check failed:', { isActive: coupon.isActive, status: coupon.status });
       return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is inactive' };
     }
 
     // Check if coupon belongs to the same vendor
     if (coupon.vendorId !== vendorId) {
+      console.log('Vendor mismatch:', { couponVendorId: coupon.vendorId, providedVendorId: vendorId });
       return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not valid for this vendor' };
     }
     
