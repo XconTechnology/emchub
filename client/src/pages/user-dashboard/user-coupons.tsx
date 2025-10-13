@@ -71,7 +71,7 @@ export default function UserCoupons() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => apiRequest("/api/coupons", "POST", data),
+    mutationFn: async (data: any) => apiRequest("POST", "/api/coupons", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/vendor"] });
       toast({ title: "Coupon created successfully" });
@@ -85,7 +85,7 @@ export default function UserCoupons() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => 
-      apiRequest(`/api/coupons/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/coupons/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/vendor"] });
       toast({ title: "Coupon updated successfully" });
@@ -97,7 +97,7 @@ export default function UserCoupons() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => apiRequest(`/api/coupons/${id}`, "DELETE"),
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/coupons/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/vendor"] });
       toast({ title: "Coupon deleted successfully" });

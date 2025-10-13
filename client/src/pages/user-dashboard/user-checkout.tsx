@@ -92,7 +92,7 @@ export default function UserCheckout() {
     mutationFn: async (code: string) => {
       // Get vendor ID from cart items (product.userId is the vendor)
       const vendorId = cartItems?.[0]?.product?.userId || "";
-      return apiRequest("/api/coupons/validate", "POST", {
+      return apiRequest("POST", "/api/coupons/validate", {
         code,
         vendorId,
         cashAmount: cashAmountBeforeDiscount,
@@ -130,7 +130,7 @@ export default function UserCheckout() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: CheckoutFormData & { couponId?: string; cashDiscount?: number; tdDiscount?: number }) => {
-      return apiRequest("/api/orders", "POST", data);
+      return apiRequest("POST", "/api/orders", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
