@@ -60,7 +60,12 @@ export default function UserCoupons() {
     queryKey: ["/api/coupons/vendor"],
   });
 
-  const { data: analytics } = useQuery({
+  const { data: analytics } = useQuery<{
+    totalUsed: number;
+    totalCashDiscount: number;
+    totalTdDiscount: number;
+    users: any[];
+  }>({
     queryKey: ["/api/coupons", viewingAnalytics?.id, "analytics"],
     enabled: !!viewingAnalytics,
   });

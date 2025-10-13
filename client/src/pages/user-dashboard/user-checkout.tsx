@@ -13,9 +13,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { CheckCircle, CreditCard, Coins, AlertCircle, Wallet, DollarSign } from "lucide-react";
+import { CheckCircle, CreditCard, Coins, AlertCircle, Wallet, DollarSign, Ticket } from "lucide-react";
 
 const checkoutSchema = z.object({
   shippingName: z.string().min(1, "Name is required"),
@@ -41,6 +42,7 @@ interface CartItem {
   quantity: number;
   product: {
     id: string;
+    userId: string; // This is the vendor/creator ID
     title: string;
     price: string;
     imageUrl?: string;
@@ -56,6 +58,9 @@ export default function UserCheckout() {
   const { toast } = useToast();
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [comboSplitPercentage, setComboSplitPercentage] = useState(50);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscounts, setCouponDiscounts] = useState({ cash: 0, td: 0 });
 
   const { data: cartItems, isLoading } = useQuery<CartItem[]>({
     queryKey: ['/api/cart'],
@@ -83,9 +88,49 @@ export default function UserCheckout() {
 
   const paymentMethod = form.watch("paymentMethod");
 
+  const validateCouponMutation = useMutation({
+    mutationFn: async (code: string) => {
+      // Get vendor ID from cart items (product.userId is the vendor)
+      const vendorId = cartItems?.[0]?.product?.userId || "";
+      return apiRequest("/api/coupons/validate", "POST", {
+        code,
+        vendorId,
+        cashAmount: cashAmountBeforeDiscount,
+        tdAmount: tdAmountBeforeDiscount,
+      });
+    },
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        setAppliedCoupon(data.coupon);
+        setCouponDiscounts({ cash: data.cashDiscount || 0, td: data.tdDiscount || 0 });
+        toast({
+          title: "Coupon applied!",
+          description: `Coupon ${data.coupon.code} has been applied successfully.`,
+        });
+      } else {
+        setAppliedCoupon(null);
+        setCouponDiscounts({ cash: 0, td: 0 });
+        toast({
+          title: "Invalid coupon",
+          description: data.error || "This coupon is not valid.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      setAppliedCoupon(null);
+      setCouponDiscounts({ cash: 0, td: 0 });
+      toast({
+        title: "Failed to validate coupon",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const createOrderMutation = useMutation({
-    mutationFn: async (data: CheckoutFormData) => {
-      return apiRequest('POST', '/api/orders', data);
+    mutationFn: async (data: CheckoutFormData & { couponId?: string; cashDiscount?: number; tdDiscount?: number }) => {
+      return apiRequest("/api/orders", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
@@ -115,10 +160,41 @@ export default function UserCheckout() {
   };
 
   const total = calculateTotal();
-  const cashAmount = paymentMethod === "cash" ? total : paymentMethod === "both" ? (total * comboSplitPercentage) / 100 : 0;
-  const tdAmount = paymentMethod === "timedollar" ? total : paymentMethod === "both" ? (total * (100 - comboSplitPercentage)) / 100 : 0;
+  
+  // Calculate amounts before discounts
+  const cashAmountBeforeDiscount = paymentMethod === "cash" ? total : paymentMethod === "both" ? (total * comboSplitPercentage) / 100 : 0;
+  const tdAmountBeforeDiscount = paymentMethod === "timedollar" ? total : paymentMethod === "both" ? (total * (100 - comboSplitPercentage)) / 100 : 0;
+  
+  // Apply discounts
+  const cashAmount = Math.max(0, cashAmountBeforeDiscount - couponDiscounts.cash);
+  const tdAmount = Math.max(0, tdAmountBeforeDiscount - couponDiscounts.td);
+  
+  const finalTotal = cashAmount + tdAmount;
+  const totalDiscount = couponDiscounts.cash + couponDiscounts.td;
   
   const hasEnoughTD = tdBalance ? tdBalance.balance >= tdAmount : false;
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "Enter coupon code",
+        description: "Please enter a coupon code to apply.",
+        variant: "destructive",
+      });
+      return;
+    }
+    validateCouponMutation.mutate(couponCode.toUpperCase());
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscounts({ cash: 0, td: 0 });
+    setCouponCode("");
+    toast({
+      title: "Coupon removed",
+      description: "The coupon has been removed from your order.",
+    });
+  };
 
   useEffect(() => {
     form.setValue("cashAmount", cashAmount);
@@ -145,7 +221,15 @@ export default function UserCheckout() {
       return;
     }
 
-    createOrderMutation.mutate(data);
+    // Include coupon data if applied
+    const orderData: any = { ...data };
+    if (appliedCoupon) {
+      orderData.couponId = appliedCoupon.id;
+      orderData.cashDiscount = couponDiscounts.cash;
+      orderData.tdDiscount = couponDiscounts.td;
+    }
+
+    createOrderMutation.mutate(orderData);
   };
 
   if (isLoading) {
@@ -466,11 +550,83 @@ export default function UserCheckout() {
                   ))}
                 </div>
 
+                {/* Coupon Section */}
                 <div className="border-t pt-3 space-y-2">
-                  <div className="flex justify-between font-bold text-lg">
+                  <div className="text-sm font-medium mb-2">Have a coupon?</div>
+                  {!appliedCoupon ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter coupon code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        data-testid="input-coupon-code"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleApplyCoupon}
+                        disabled={validateCouponMutation.isPending || !couponCode.trim()}
+                        data-testid="button-apply-coupon"
+                      >
+                        {validateCouponMutation.isPending ? "..." : "Apply"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Ticket className="w-4 h-4 text-green-600" />
+                          <div>
+                            <p className="text-sm font-medium text-green-700 dark:text-green-400" data-testid="text-applied-coupon">
+                              {appliedCoupon.code}
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-500">
+                              {appliedCoupon.title}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveCoupon}
+                          data-testid="button-remove-coupon"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                  
+                  {totalDiscount > 0 && (
+                    <>
+                      {couponDiscounts.cash > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Coupon Discount (Cash)</span>
+                          <span data-testid="text-cash-discount">-${couponDiscounts.cash.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {couponDiscounts.td > 0 && (
+                        <div className="flex justify-between text-sm text-blue-600">
+                          <span>Coupon Discount (TD)</span>
+                          <span data-testid="text-td-discount">-{couponDiscounts.td.toFixed(0)} TD</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
                     <span className="text-[#8FC24C]" data-testid="text-checkout-total">
-                      ${total.toFixed(2)}
+                      ${finalTotal.toFixed(2)}
                     </span>
                   </div>
                   
