@@ -182,23 +182,46 @@ export const bookings = pgTable("bookings", {
 export const coupons = pgTable("coupons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who created the coupon
-  vendorName: varchar("vendor_name").notNull(), // Auto-filled from vendor's business name
   code: varchar("code").notNull().unique(),
-  discountType: varchar("discount_type").notNull(), // 'percentage' | 'fixed'
-  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
-  minAmount: decimal("min_amount", { precision: 10, scale: 2 }),
+  title: varchar("title").notNull(), // Coupon title/name
+  description: text("description"), // Coupon description
+  
+  // Discount configuration
+  discountType: varchar("discount_type").notNull(), // 'cash' | 'timedollar' | 'both'
+  
+  // Cash discount (when discountType is 'cash' or 'both')
+  cashDiscountType: varchar("cash_discount_type"), // 'percentage' | 'fixed'
+  cashDiscountValue: decimal("cash_discount_value", { precision: 10, scale: 2 }),
+  
+  // TimeDollar discount (when discountType is 'timedollar' or 'both')
+  tdDiscountType: varchar("td_discount_type"), // 'percentage' | 'fixed'
+  tdDiscountValue: decimal("td_discount_value", { precision: 10, scale: 2 }),
+  
+  // Usage limits and tracking
   usageLimit: integer("usage_limit"), // Max number of total uses
   usedCount: integer("used_count").default(0),
+  
+  // Validity period
   validFrom: timestamp("valid_from").defaultNow(),
   validUntil: timestamp("valid_until"),
-  applicableListings: varchar("applicable_listings").array(), // IDs of listings this coupon applies to (empty = all vendor's listings)
-  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
-  rejectionReason: text("rejection_reason"),
-  reviewedBy: varchar("reviewed_by").references(() => users.id),
-  reviewedAt: timestamp("reviewed_at"),
+  
+  // Status and moderation
+  status: varchar("status").notNull().default("active"), // 'active' | 'inactive' | 'expired'
   isActive: boolean("is_active").default(true),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Coupon Usage Tracking - track which users used which coupons
+export const couponUsage = pgTable("coupon_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  couponId: varchar("coupon_id").notNull().references(() => coupons.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  orderId: varchar("order_id").references(() => orders.id),
+  cashDiscount: decimal("cash_discount", { precision: 10, scale: 2 }).default("0"),
+  tdDiscount: decimal("td_discount", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Staff Help Requests - users can request help from staff for filling listings
@@ -274,6 +297,13 @@ export const orders = pgTable("orders", {
   cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default("0"),
   tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default("0"),
   transactionId: varchar("transaction_id"),
+  
+  // Coupon information
+  couponId: varchar("coupon_id").references(() => coupons.id),
+  couponCode: varchar("coupon_code"),
+  couponCashDiscount: decimal("coupon_cash_discount", { precision: 10, scale: 2 }).default("0"),
+  couponTdDiscount: decimal("coupon_td_discount", { precision: 10, scale: 2 }).default("0"),
+  
   shippingName: varchar("shipping_name").notNull(),
   shippingEmail: varchar("shipping_email").notNull(),
   shippingPhone: varchar("shipping_phone").notNull(),
@@ -380,12 +410,7 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 export const insertCouponSchema = createInsertSchema(coupons).omit({
   id: true,
   vendorId: true,
-  vendorName: true,
   usedCount: true,
-  status: true,
-  rejectionReason: true,
-  reviewedBy: true,
-  reviewedAt: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -412,6 +437,8 @@ export type InsertBooking = z.infer<typeof insertBookingSchema>;
 
 export type Coupon = typeof coupons.$inferSelect;
 export type InsertCoupon = z.infer<typeof insertCouponSchema>;
+
+export type CouponUsage = typeof couponUsage.$inferSelect;
 
 // Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
