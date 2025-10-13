@@ -1674,19 +1674,33 @@ export function registerRoutes(app: Express): Server {
     }
     
     try {
-      const { code, discountType, discountValue, minAmount, usageLimit, validFrom, validUntil, applicableListings } = req.body;
+      const { 
+        code, 
+        title, 
+        description, 
+        discountType, 
+        cashDiscountType, 
+        cashDiscountValue, 
+        tdDiscountType, 
+        tdDiscountValue, 
+        usageLimit, 
+        validFrom, 
+        validUntil 
+      } = req.body;
       
       const coupon = await storage.createCoupon({
         vendorId: req.user.id,
-        vendorName: req.user.username,
         code,
+        title,
+        description,
         discountType,
-        discountValue,
-        minAmount,
+        cashDiscountType,
+        cashDiscountValue,
+        tdDiscountType,
+        tdDiscountValue,
         usageLimit,
         validFrom: validFrom ? new Date(validFrom) : undefined,
         validUntil: validUntil ? new Date(validUntil) : undefined,
-        applicableListings: applicableListings || [],
       });
       
       // Log activity
@@ -1696,8 +1710,8 @@ export function registerRoutes(app: Express): Server {
         actionType: 'create',
         entityType: 'coupon',
         entityId: coupon.id,
-        entityTitle: coupon.code,
-        description: `Created coupon: ${coupon.code}`,
+        entityTitle: coupon.title || coupon.code,
+        description: `Created coupon: ${coupon.code} - ${coupon.title}`,
         metadata: { coupon },
       });
       
@@ -1731,35 +1745,55 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Approve coupon (admin only)
-  app.put("/api/admin/coupons/:id/approve", isAdminAuthenticated, async (req, res) => {
+  // Validate coupon
+  app.post("/api/coupons/validate", async (req, res) => {
     try {
-      const coupon = await storage.approveCoupon(req.params.id, req.user.id);
-      
-      // Log activity
-      await storage.createActivityLog({
-        userId: req.user.id,
-        userName: req.user.username,
-        actionType: 'update',
-        entityType: 'coupon',
-        entityId: coupon.id,
-        entityTitle: coupon.code,
-        description: `Approved coupon: ${coupon.code}`,
-        metadata: { coupon },
-      });
-      
-      res.json(coupon);
+      const { code, vendorId, cashAmount, tdAmount } = req.body;
+      const validation = await storage.validateCoupon(code, vendorId, cashAmount || 0, tdAmount || 0);
+      res.json(validation);
     } catch (error) {
-      console.error("Error approving coupon:", error);
-      res.status(500).json({ error: "Failed to approve coupon" });
+      console.error("Error validating coupon:", error);
+      res.status(500).json({ error: "Failed to validate coupon" });
     }
   });
   
-  // Reject coupon (admin only)
-  app.put("/api/admin/coupons/:id/reject", isAdminAuthenticated, async (req, res) => {
+  // Get coupon analytics (vendor only - for their own coupons)
+  app.get("/api/coupons/:id/analytics", isAuthenticated, async (req, res) => {
     try {
-      const { reason } = req.body;
-      const coupon = await storage.rejectCoupon(req.params.id, req.user.id, reason);
+      const coupon = await storage.getCouponById(req.params.id);
+      
+      if (!coupon) {
+        return res.status(404).json({ error: "Coupon not found" });
+      }
+      
+      // Check if user owns this coupon
+      if (coupon.vendorId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const analytics = await storage.getCouponAnalytics(req.params.id);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error getting coupon analytics:", error);
+      res.status(500).json({ error: "Failed to get analytics" });
+    }
+  });
+  
+  // Update coupon
+  app.put("/api/coupons/:id", isAuthenticated, async (req, res) => {
+    try {
+      const coupon = await storage.getCouponById(req.params.id);
+      
+      if (!coupon) {
+        return res.status(404).json({ error: "Coupon not found" });
+      }
+      
+      // Check if user owns this coupon
+      if (coupon.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedCoupon = await storage.updateCoupon(req.params.id, req.body);
       
       // Log activity
       await storage.createActivityLog({
@@ -1767,16 +1801,16 @@ export function registerRoutes(app: Express): Server {
         userName: req.user.username,
         actionType: 'update',
         entityType: 'coupon',
-        entityId: coupon.id,
-        entityTitle: coupon.code,
-        description: `Rejected coupon: ${coupon.code}`,
-        metadata: { coupon, reason },
+        entityId: updatedCoupon.id,
+        entityTitle: updatedCoupon.title || updatedCoupon.code,
+        description: `Updated coupon: ${updatedCoupon.code}`,
+        metadata: { coupon: updatedCoupon },
       });
       
-      res.json(coupon);
+      res.json(updatedCoupon);
     } catch (error) {
-      console.error("Error rejecting coupon:", error);
-      res.status(500).json({ error: "Failed to reject coupon" });
+      console.error("Error updating coupon:", error);
+      res.status(500).json({ error: "Failed to update coupon" });
     }
   });
   
