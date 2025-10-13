@@ -143,6 +143,13 @@ export function setupAuth(app: Express) {
         firstName,
         lastName,
         profileImageUrl: null,
+        role: "consumer",
+        vendorStatus: "none",
+        timeDollarBalance: 0,
+        phone: null,
+        bio: null,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
       });
 
       // Regenerate session for security
