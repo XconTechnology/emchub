@@ -92,12 +92,13 @@ export default function UserCheckout() {
     mutationFn: async (code: string) => {
       // Get vendor ID from cart items (product.userId is the vendor)
       const vendorId = cartItems?.[0]?.product?.userId || "";
-      return apiRequest("POST", "/api/coupons/validate", {
+      const response = await apiRequest("POST", "/api/coupons/validate", {
         code,
         vendorId,
         cashAmount: cashAmountBeforeDiscount,
         tdAmount: tdAmountBeforeDiscount,
       });
+      return response.json();
     },
     onSuccess: (data: any) => {
       if (data.valid) {
