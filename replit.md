@@ -37,6 +37,15 @@ Vite manages static assets with path aliases. The application incorporates custo
 - **Public Products Marketplace**: A dedicated `/products` page for browsing and purchasing approved products, featuring search, stock indicators, and product detail pages.
 - **Advanced Pricing System**: Flexible payment options for products, services, and events including Cash Only, TimeDollar Only, Both (Customer Choice), and Combo Split.
 - **Vendor-Specific Dashboard Sections**: Dedicated sections for verified vendors to manage products, services, events, inventory, coupons, and pricing settings.
+- **Coupon System**: Full-featured discount coupon system with:
+  - Vendor-created coupons with separate cash and TimeDollar discount support
+  - Flexible discount types (percentage or fixed amount) for both payment methods
+  - Usage limits and validity date ranges
+  - Real-time coupon validation at checkout
+  - Automatic discount application to cash and/or TimeDollar amounts
+  - Coupon usage tracking and analytics for vendors
+  - Admin dashboard for monitoring all platform coupons and usage statistics
+  - Integration with order system to save coupon data and record usage history
 
 ## External Dependencies
 
