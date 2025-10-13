@@ -5,6 +5,7 @@ import {
   listings,
   bookings,
   coupons,
+  couponUsage,
   vendorRequests,
   staffHelpRequests,
   activityLogs,
@@ -20,6 +21,7 @@ import {
   type InsertBooking,
   type Coupon,
   type InsertCoupon,
+  type CouponUsage,
   type VendorRequest,
   type InsertVendorRequest,
   type StaffHelpRequest,
@@ -72,13 +74,20 @@ export interface IStorage {
   
   // Coupon operations
   getCoupon(code: string): Promise<Coupon | undefined>;
-  validateCoupon(code: string, amount: number): Promise<{ valid: boolean; discount?: number; coupon?: Coupon }>;
-  useCoupon(code: string): Promise<void>;
-  createCoupon(coupon: InsertCoupon & { vendorId: string; vendorName: string }): Promise<Coupon>;
+  getCouponById(id: string): Promise<Coupon | undefined>;
+  validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number): Promise<{ 
+    valid: boolean; 
+    cashDiscount: number; 
+    tdDiscount: number;
+    coupon?: Coupon;
+    error?: string;
+  }>;
+  useCoupon(couponId: string, userId: string, orderId: string, cashDiscount: number, tdDiscount: number): Promise<void>;
+  createCoupon(coupon: InsertCoupon & { vendorId: string }): Promise<Coupon>;
   getVendorCoupons(vendorId: string): Promise<Coupon[]>;
   getAllCoupons(status?: string): Promise<Coupon[]>;
-  approveCoupon(id: string, adminId: string): Promise<Coupon>;
-  rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon>;
+  getCouponUsage(couponId: string): Promise<any[]>;
+  getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalCashDiscount: number; totalTdDiscount: number; users: any[] }>;
   updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon>;
   deleteCoupon(id: string): Promise<void>;
   
@@ -414,41 +423,123 @@ export class DatabaseStorage implements IStorage {
     return coupon;
   }
 
-  async validateCoupon(code: string, amount: number): Promise<{ valid: boolean; discount?: number; coupon?: Coupon }> {
+  async validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number): Promise<{ 
+    valid: boolean; 
+    cashDiscount: number; 
+    tdDiscount: number;
+    coupon?: Coupon;
+    error?: string;
+  }> {
     const coupon = await this.getCoupon(code);
     
-    if (!coupon || !coupon.isActive) {
-      return { valid: false };
+    if (!coupon) {
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon not found' };
+    }
+
+    if (!coupon.isActive || coupon.status !== 'active') {
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is inactive' };
+    }
+
+    // Check if coupon belongs to the same vendor
+    if (coupon.vendorId !== vendorId) {
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not valid for this vendor' };
     }
     
     const now = new Date();
+    if (coupon.validFrom && now < coupon.validFrom) {
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not yet valid' };
+    }
+
     if (coupon.validUntil && now > coupon.validUntil) {
-      return { valid: false };
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon has expired' };
     }
     
     if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
-      return { valid: false };
+      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon usage limit reached' };
     }
     
-    if (coupon.minAmount && amount < Number(coupon.minAmount)) {
-      return { valid: false };
+    let cashDiscount = 0;
+    let tdDiscount = 0;
+
+    // Calculate discounts based on coupon type
+    if (coupon.discountType === 'cash' || coupon.discountType === 'both') {
+      if (coupon.cashDiscountType === 'percentage') {
+        cashDiscount = (cashAmount * Number(coupon.cashDiscountValue || 0)) / 100;
+      } else if (coupon.cashDiscountType === 'fixed') {
+        cashDiscount = Number(coupon.cashDiscountValue || 0);
+      }
     }
-    
-    let discount = 0;
-    if (coupon.discountType === 'percentage') {
-      discount = (amount * Number(coupon.discountValue)) / 100;
-    } else {
-      discount = Number(coupon.discountValue);
+
+    if (coupon.discountType === 'timedollar' || coupon.discountType === 'both') {
+      if (coupon.tdDiscountType === 'percentage') {
+        tdDiscount = (tdAmount * Number(coupon.tdDiscountValue || 0)) / 100;
+      } else if (coupon.tdDiscountType === 'fixed') {
+        tdDiscount = Number(coupon.tdDiscountValue || 0);
+      }
     }
+
+    // Ensure discounts don't exceed the amounts
+    cashDiscount = Math.min(cashDiscount, cashAmount);
+    tdDiscount = Math.min(tdDiscount, tdAmount);
     
-    return { valid: true, discount, coupon };
+    return { valid: true, cashDiscount, tdDiscount, coupon };
   }
 
-  async useCoupon(code: string): Promise<void> {
+  async getCouponById(id: string): Promise<Coupon | undefined> {
+    const [coupon] = await db.select().from(coupons).where(eq(coupons.id, id));
+    return coupon;
+  }
+
+  async useCoupon(couponId: string, userId: string, orderId: string, cashDiscount: number, tdDiscount: number): Promise<void> {
+    // Increment used count
     await db
       .update(coupons)
       .set({ usedCount: sql`used_count + 1` })
-      .where(eq(coupons.code, code));
+      .where(eq(coupons.id, couponId));
+
+    // Record usage
+    await db.insert(couponUsage).values({
+      couponId,
+      userId,
+      orderId,
+      cashDiscount: cashDiscount.toString(),
+      tdDiscount: tdDiscount.toString(),
+    });
+  }
+
+  async getCouponUsage(couponId: string): Promise<any[]> {
+    const usage = await db
+      .select({
+        id: couponUsage.id,
+        userId: couponUsage.userId,
+        userName: users.username,
+        userEmail: users.email,
+        orderId: couponUsage.orderId,
+        cashDiscount: couponUsage.cashDiscount,
+        tdDiscount: couponUsage.tdDiscount,
+        createdAt: couponUsage.createdAt,
+      })
+      .from(couponUsage)
+      .leftJoin(users, eq(couponUsage.userId, users.id))
+      .where(eq(couponUsage.couponId, couponId))
+      .orderBy(couponUsage.createdAt);
+    
+    return usage;
+  }
+
+  async getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalCashDiscount: number; totalTdDiscount: number; users: any[] }> {
+    const usage = await this.getCouponUsage(couponId);
+    
+    const totalUsed = usage.length;
+    const totalCashDiscount = usage.reduce((sum, u) => sum + Number(u.cashDiscount || 0), 0);
+    const totalTdDiscount = usage.reduce((sum, u) => sum + Number(u.tdDiscount || 0), 0);
+    
+    return {
+      totalUsed,
+      totalCashDiscount,
+      totalTdDiscount,
+      users: usage,
+    };
   }
 
   // Legacy business listing operations (deprecated but maintained for compatibility)
@@ -712,7 +803,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Coupon operations implementation
-  async createCoupon(couponData: InsertCoupon & { vendorId: string; vendorName: string }): Promise<Coupon> {
+  async createCoupon(couponData: InsertCoupon & { vendorId: string }): Promise<Coupon> {
     const [coupon] = await db
       .insert(coupons)
       .values(couponData as any)
@@ -729,35 +820,6 @@ export class DatabaseStorage implements IStorage {
       return db.select().from(coupons).where(eq(coupons.status, status)).orderBy(coupons.createdAt);
     }
     return db.select().from(coupons).orderBy(coupons.createdAt);
-  }
-  
-  async approveCoupon(id: string, adminId: string): Promise<Coupon> {
-    const [coupon] = await db
-      .update(coupons)
-      .set({
-        status: 'approved',
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(coupons.id, id))
-      .returning();
-    return coupon;
-  }
-  
-  async rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon> {
-    const [coupon] = await db
-      .update(coupons)
-      .set({
-        status: 'rejected',
-        rejectionReason: reason,
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(coupons.id, id))
-      .returning();
-    return coupon;
   }
   
   async updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon> {
