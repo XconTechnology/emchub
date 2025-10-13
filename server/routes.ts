@@ -1737,7 +1737,9 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/coupons/validate", async (req, res) => {
     try {
       const { code, vendorId, cashAmount, tdAmount } = req.body;
+      console.log('🎫 Coupon validation request:', { code, vendorId, cashAmount, tdAmount });
       const validation = await storage.validateCoupon(code, vendorId, cashAmount || 0, tdAmount || 0);
+      console.log('🎫 Coupon validation result:', validation);
       res.json(validation);
     } catch (error) {
       console.error("Error validating coupon:", error);
