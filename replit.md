@@ -46,18 +46,6 @@ Vite manages static assets with path aliases. The application incorporates custo
   - Coupon usage tracking and analytics for vendors
   - Admin dashboard for monitoring all platform coupons and usage statistics
   - Integration with order system to save coupon data and record usage history
-- **Messaging and Support System**: Comprehensive communication system with:
-  - **B2C Messaging**: Direct messaging between vendors and customers linked to products/services/listings for context
-  - **C2Admin Support Tickets**: User support ticket system with auto-increment ticket numbers and admin assignment
-  - **Security Architecture**: All messaging routes enforce strict participant validation and ownership checks:
-    - Conversation creation validates user is either vendorId or customerId
-    - Message viewing/sending requires conversation participant verification
-    - Message read status updates validate user is the message receiver
-    - Support ticket access restricted to ticket owner or admin/staff
-    - Support ticket replies restricted to ticket owner or admin/staff
-  - **Message Features**: Inbox/Sent/Archived tabs, read/unread status, message threading, attachment support (placeholder)
-  - **Support Ticket Features**: Priority levels, status tracking, admin assignment, staff/user message differentiation
-  - **Future Enhancements**: Real-time notifications, file attachments, email confirmations (marked as TODO)
 
 ## External Dependencies
 

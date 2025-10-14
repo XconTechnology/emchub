@@ -24,9 +24,7 @@ import {
   ShoppingCart,
   ShoppingBag,
   Activity,
-  BadgeDollarSign,
-  Mail,
-  Headphones
+  BadgeDollarSign
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,8 +55,6 @@ import UserCheckout from "./user-checkout";
 import UserPurchases from "./user-purchases";
 import UserActivity from "./user-activity";
 import UserBecomeVendor from "./user-become-vendor";
-import UserMessages from "./user-messages";
-import UserSupport from "./user-support";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -74,8 +70,6 @@ export default function UserDashboardRouter() {
   const normalUserNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
-    { name: "Messages", path: "/dashboard/messages", icon: Mail, testId: "nav-messages" },
-    { name: "Support", path: "/dashboard/support", icon: Headphones, testId: "nav-support" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "Become a Vendor", path: "/dashboard/become-vendor", icon: BadgeDollarSign, testId: "nav-become-vendor" },
@@ -85,8 +79,6 @@ export default function UserDashboardRouter() {
   const vendorNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
-    { name: "Messages", path: "/dashboard/messages", icon: Mail, testId: "nav-messages" },
-    { name: "Support", path: "/dashboard/support", icon: Headphones, testId: "nav-support" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
@@ -227,8 +219,6 @@ export default function UserDashboardRouter() {
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
             <Route path="/dashboard/purchases" component={UserPurchases} />
-            <Route path="/dashboard/messages" component={UserMessages} />
-            <Route path="/dashboard/support" component={UserSupport} />
             <Route path="/dashboard/activity" component={UserActivity} />
             <Route path="/dashboard/become-vendor" component={UserBecomeVendor} />
             <Route path="/dashboard/profile" component={Profile} />
