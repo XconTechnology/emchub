@@ -1026,66 +1026,44 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Vendor request not found" });
       }
 
-      // Get the document path based on type
-      let documentPath: string | null = null;
+      // Get the document URL based on type
+      let documentUrl: string | null = null;
       switch (type) {
         case 'id':
-          documentPath = request.identificationDoc;
+          documentUrl = request.identificationDoc;
           break;
         case 'business':
-          documentPath = request.businessRegistrationDoc;
+          documentUrl = request.businessRegistrationDoc;
           break;
         case 'address':
-          documentPath = request.addressProofDoc;
+          documentUrl = request.addressProofDoc;
           break;
         default:
           return res.status(400).json({ message: "Invalid document type" });
       }
 
-      if (!documentPath) {
+      if (!documentUrl) {
         return res.status(404).json({ message: "Document not found" });
       }
 
-      console.log('Document path:', documentPath);
-
-      // Parse the document path - handle both full URLs and bucket/path format
-      let bucketName: string;
-      let objectName: string;
-
-      if (documentPath.startsWith('http://') || documentPath.startsWith('https://')) {
-        // Full URL format: https://storage.googleapis.com/bucket-name/path/to/file
-        console.log('Detected full URL format');
-        const url = new URL(documentPath);
-        console.log('URL pathname:', url.pathname);
-        const pathParts = url.pathname.split('/').filter(p => p); // Remove empty parts
-        console.log('Path parts:', pathParts);
-        bucketName = pathParts[0]; // First part is bucket name
-        objectName = pathParts.slice(1).join('/'); // Rest is object path
-        console.log('Parsed bucketName:', bucketName, 'objectName:', objectName);
-      } else {
-        // Bucket/path format: bucket-name/path/to/file
-        console.log('Detected bucket/path format');
-        const parts = documentPath.split('/');
-        if (parts.length < 2) {
-          return res.status(500).json({ message: "Invalid document path format" });
-        }
-        bucketName = parts[0];
-        objectName = parts.slice(1).join('/');
-        console.log('Parsed bucketName:', bucketName, 'objectName:', objectName);
+      // Since documents are stored as full URLs from object storage,
+      // we can fetch them directly using HTTP
+      const response = await fetch(documentUrl);
+      
+      if (!response.ok) {
+        return res.status(404).json({ message: "Document file not found" });
       }
 
-      // Get the file from object storage
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      // Get content type and set appropriate headers
+      const contentType = response.headers.get('content-type') || 'application/octet-stream';
+      const fileName = documentUrl.split('/').pop() || 'document';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
 
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).json({ message: "Document file not found in storage" });
-      }
-
-      // Download and stream the file
-      const objectStorage = new ObjectStorageService();
-      await objectStorage.downloadObject(file, res);
+      // Stream the response
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
     } catch (error) {
       console.error("Error downloading vendor document:", error);
       if (!res.headersSent) {
