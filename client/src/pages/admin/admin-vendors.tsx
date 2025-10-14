@@ -104,12 +104,6 @@ export default function AdminVendors() {
                               <Store className="w-3 h-3 mr-1" />
                               {vendor.role}
                             </Badge>
-                            {vendor.businessName && (
-                              <Badge variant="outline" data-testid={`vendor-business-${vendor.id}`}>
-                                <Building className="w-3 h-3 mr-1" />
-                                {vendor.businessName}
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -125,14 +119,6 @@ export default function AdminVendors() {
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Phone className="w-4 h-4" />
                             <span data-testid={`vendor-phone-${vendor.id}`}>{vendor.phone}</span>
-                          </div>
-                        )}
-                        {vendor.address && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="w-4 h-4" />
-                            <span className="line-clamp-1" data-testid={`vendor-address-${vendor.id}`}>
-                              {vendor.address}
-                            </span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-muted-foreground">
