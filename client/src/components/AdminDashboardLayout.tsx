@@ -11,6 +11,7 @@ import {
   Ticket,
   HelpCircle,
   Activity,
+  Store,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +65,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Vendor Requests",
       url: "/admin/vendor-requests",
       icon: ShieldCheck,
+    },
+    {
+      title: "Vendors",
+      url: "/admin/vendors",
+      icon: Store,
     },
     {
       title: "Coupons",
@@ -161,6 +167,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 {location === "/admin" && "Dashboard Overview"}
                 {location === "/admin/pending-approvals" && "Pending Approvals"}
                 {location === "/admin/vendor-requests" && "Vendor Requests"}
+                {location === "/admin/vendors" && "Verified Vendors"}
                 {location === "/admin/coupons" && "Coupon Management"}
                 {location === "/admin/staff-help" && "Staff Help Requests"}
                 {location === "/admin/activity-logs" && "Activity Logs"}
