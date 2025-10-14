@@ -1046,24 +1046,32 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Document not found" });
       }
 
+      console.log('Document path:', documentPath);
+
       // Parse the document path - handle both full URLs and bucket/path format
       let bucketName: string;
       let objectName: string;
 
       if (documentPath.startsWith('http://') || documentPath.startsWith('https://')) {
         // Full URL format: https://storage.googleapis.com/bucket-name/path/to/file
+        console.log('Detected full URL format');
         const url = new URL(documentPath);
+        console.log('URL pathname:', url.pathname);
         const pathParts = url.pathname.split('/').filter(p => p); // Remove empty parts
+        console.log('Path parts:', pathParts);
         bucketName = pathParts[0]; // First part is bucket name
         objectName = pathParts.slice(1).join('/'); // Rest is object path
+        console.log('Parsed bucketName:', bucketName, 'objectName:', objectName);
       } else {
         // Bucket/path format: bucket-name/path/to/file
+        console.log('Detected bucket/path format');
         const parts = documentPath.split('/');
         if (parts.length < 2) {
           return res.status(500).json({ message: "Invalid document path format" });
         }
         bucketName = parts[0];
         objectName = parts.slice(1).join('/');
+        console.log('Parsed bucketName:', bucketName, 'objectName:', objectName);
       }
 
       // Get the file from object storage
