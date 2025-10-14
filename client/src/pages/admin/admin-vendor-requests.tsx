@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { useWebSocket } from "@/hooks/use-websocket";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +60,7 @@ interface VendorRequestWithUser {
 
 export default function AdminVendorRequests() {
   const { toast } = useToast();
+  const { subscribe } = useWebSocket();
   const [requestToReject, setRequestToReject] = useState<VendorRequestWithUser | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [documentToView, setDocumentToView] = useState<{ url: string; title: string; contentType: string; fileName: string } | null>(null);
@@ -74,6 +76,24 @@ export default function AdminVendorRequests() {
       return response.json();
     },
   });
+
+  // Listen for real-time vendor request submissions
+  useEffect(() => {
+    const unsubscribe = subscribe('VENDOR_REQUEST_SUBMITTED', (message) => {
+      console.log('New vendor request submitted:', message.data);
+      
+      // Show toast notification
+      toast({
+        title: "New Vendor Application!",
+        description: `${message.data.userName} applied to become a vendor (${message.data.businessName})`,
+      });
+      
+      // Refresh the vendor requests list
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/vendor-requests'] });
+    });
+
+    return unsubscribe;
+  }, [subscribe, toast]);
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
