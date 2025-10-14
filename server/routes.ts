@@ -507,11 +507,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin route to get all vendors
+  // Admin route to get all verified vendors
   app.get('/api/admin/vendors', isAdminAuthenticated, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
-      const vendors = users.filter(user => user.role === 'vendor');
+      const vendors = users.filter(user => user.role === 'vendor' && user.vendorStatus === 'verified');
       res.json(vendors);
     } catch (error) {
       console.error("Error fetching vendors:", error);
