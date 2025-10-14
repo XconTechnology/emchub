@@ -20,13 +20,16 @@ const isAdminAuthenticated = async (req: any, res: any, next: any) => {
   console.log('Admin auth check:', { 
     hasSession: !!req.session, 
     adminAuth: req.session?.adminAuth,
+    userRole: req.user?.role,
     path: req.path 
   });
   
-  if (!req.session?.adminAuth) {
-    return res.status(401).json({ message: "Admin authentication required" });
+  // Check if logged in via admin session OR if regular user with admin role
+  if (req.session?.adminAuth || req.user?.role === 'admin') {
+    return next();
   }
-  next();
+  
+  return res.status(401).json({ message: "Admin authentication required" });
 };
 
 // Middleware that allows both user and admin authentication
