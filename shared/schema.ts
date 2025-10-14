@@ -443,3 +443,126 @@ export type CouponUsage = typeof couponUsage.$inferSelect;
 // Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
 export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;
+
+// ========================================
+// MESSAGING SYSTEM TABLES
+// ========================================
+
+// Conversations - B2C messaging between vendors and customers
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorId: varchar("vendor_id").notNull().references(() => users.id),
+  customerId: varchar("customer_id").notNull().references(() => users.id),
+  
+  // Link to related entity (product, service, or listing)
+  relatedType: varchar("related_type"), // 'product' | 'service' | 'listing' | 'order' | null
+  relatedId: varchar("related_id"), // ID of the related entity
+  
+  // Conversation metadata
+  subject: varchar("subject"),
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  isArchivedByVendor: boolean("is_archived_by_vendor").default(false),
+  isArchivedByCustomer: boolean("is_archived_by_customer").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Messages - Individual messages in a conversation
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  receiverId: varchar("receiver_id").notNull().references(() => users.id),
+  
+  content: text("content").notNull(),
+  attachmentUrl: varchar("attachment_url"), // Optional file attachment
+  attachmentType: varchar("attachment_type"), // 'image' | 'pdf' | 'document' | null
+  
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Support Tickets - C2Admin customer support
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(), // e.g., "TICKET-12345"
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  subject: varchar("subject").notNull(),
+  description: text("description").notNull(),
+  attachmentUrl: varchar("attachment_url"), // Optional initial attachment
+  
+  status: varchar("status").notNull().default("open"), // 'open' | 'in_progress' | 'resolved' | 'closed'
+  priority: varchar("priority").notNull().default("medium"), // 'low' | 'medium' | 'high' | 'urgent'
+  
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // Admin/staff assigned
+  assignedAt: timestamp("assigned_at"),
+  
+  resolvedAt: timestamp("resolved_at"),
+  closedAt: timestamp("closed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket Messages - Replies within support tickets
+export const ticketMessages = pgTable("ticket_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  
+  content: text("content").notNull(),
+  attachmentUrl: varchar("attachment_url"),
+  
+  isStaffReply: boolean("is_staff_reply").default(false), // true if from admin/staff
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for messaging
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  lastMessageAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  isRead: true,
+  readAt: true,
+  createdAt: true,
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  ticketNumber: true,
+  status: true,
+  assignedToId: true,
+  assignedAt: true,
+  resolvedAt: true,
+  closedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for messaging
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;

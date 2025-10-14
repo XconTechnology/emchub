@@ -2118,6 +2118,280 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ========================================
+  // MESSAGING ROUTES (B2C Vendor-Customer)
+  // ========================================
+  
+  // Get user's conversations
+  app.get("/api/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const conversations = await storage.getUserConversations(req.user.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error getting conversations:", error);
+      res.status(500).json({ error: "Failed to get conversations" });
+    }
+  });
+  
+  // Get or create a conversation
+  app.post("/api/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const { vendorId, customerId, relatedType, relatedId } = req.body;
+      
+      // Security: Ensure current user is one of the participants
+      if (req.user.id !== vendorId && req.user.id !== customerId) {
+        return res.status(403).json({ error: "You can only create conversations you are part of" });
+      }
+      
+      const conversation = await storage.getOrCreateConversation(vendorId, customerId, relatedType, relatedId);
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+  
+  // Get conversation messages
+  app.get("/api/conversations/:conversationId/messages", isAuthenticated, async (req, res) => {
+    try {
+      // Security: Verify user is a participant in this conversation
+      const conversation = await storage.getConversation(req.params.conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (conversation.vendorId !== req.user.id && conversation.customerId !== req.user.id) {
+        return res.status(403).json({ error: "You are not authorized to view this conversation" });
+      }
+      
+      const messages = await storage.getConversationMessages(req.params.conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error getting messages:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+  
+  // Send a message
+  app.post("/api/conversations/:conversationId/messages", isAuthenticated, async (req, res) => {
+    try {
+      // Security: Verify user is a participant in this conversation
+      const conversation = await storage.getConversation(req.params.conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      
+      if (conversation.vendorId !== req.user.id && conversation.customerId !== req.user.id) {
+        return res.status(403).json({ error: "You are not authorized to send messages in this conversation" });
+      }
+      
+      const { receiverId, content, attachmentUrl, attachmentType } = req.body;
+      const message = await storage.createMessage({
+        conversationId: req.params.conversationId,
+        senderId: req.user.id,
+        receiverId,
+        content,
+        attachmentUrl,
+        attachmentType,
+      });
+      res.json(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+  
+  // Mark message as read
+  app.put("/api/messages/:messageId/read", isAuthenticated, async (req, res) => {
+    try {
+      // Security: First get the message to verify the user is the receiver
+      const message = await storage.getMessage(req.params.messageId);
+      
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      
+      if (message.receiverId !== req.user.id) {
+        return res.status(403).json({ error: "You are not authorized to mark this message as read" });
+      }
+      
+      const updatedMessage = await storage.markMessageAsRead(req.params.messageId);
+      res.json(updatedMessage);
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+  
+  // Get unread message count
+  app.get("/api/messages/unread/count", isAuthenticated, async (req, res) => {
+    try {
+      const count = await storage.getUnreadMessageCount(req.user.id);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error getting unread count:", error);
+      res.status(500).json({ error: "Failed to get unread count" });
+    }
+  });
+  
+  // Archive/unarchive conversation
+  app.put("/api/conversations/:conversationId/archive", isAuthenticated, async (req, res) => {
+    try {
+      const { archive } = req.body;
+      const conversation = await storage.archiveConversation(req.params.conversationId, req.user.id, archive);
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error archiving conversation:", error);
+      res.status(500).json({ error: "Failed to archive conversation" });
+    }
+  });
+  
+  // ========================================
+  // SUPPORT TICKET ROUTES (C2Admin)
+  // ========================================
+  
+  // Create support ticket
+  app.post("/api/support/tickets", isAuthenticated, async (req, res) => {
+    try {
+      const { subject, description, attachmentUrl, priority } = req.body;
+      const ticket = await storage.createSupportTicket({
+        userId: req.user.id,
+        subject,
+        description,
+        attachmentUrl,
+        priority: priority || "medium",
+      });
+      
+      // TODO: Send email notification to user
+      // Email: "Your support ticket #${ticket.ticketNumber} has been created. Our team will respond soon."
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      res.status(500).json({ error: "Failed to create support ticket" });
+    }
+  });
+  
+  // Get user's support tickets
+  app.get("/api/support/tickets", isAuthenticated, async (req, res) => {
+    try {
+      const tickets = await storage.getUserSupportTickets(req.user.id);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error getting support tickets:", error);
+      res.status(500).json({ error: "Failed to get support tickets" });
+    }
+  });
+  
+  // Get all support tickets (admin only)
+  app.get("/api/admin/support/tickets", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { status, priority } = req.query;
+      const tickets = await storage.getAllSupportTickets({
+        status: status as string,
+        priority: priority as string,
+      });
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error getting support tickets:", error);
+      res.status(500).json({ error: "Failed to get support tickets" });
+    }
+  });
+  
+  // Get ticket details with messages
+  app.get("/api/support/tickets/:ticketId", isAuthenticated, async (req, res) => {
+    try {
+      const ticket = await storage.getSupportTicket(req.params.ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+      
+      // Security: Users can only view their own tickets unless they're admin/staff
+      const isAdmin = req.user.role === "admin" || req.user.role === "staff";
+      if (ticket.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You are not authorized to view this ticket" });
+      }
+      
+      const messages = await storage.getTicketMessages(req.params.ticketId);
+      res.json({ ...ticket, messages });
+    } catch (error) {
+      console.error("Error getting ticket details:", error);
+      res.status(500).json({ error: "Failed to get ticket details" });
+    }
+  });
+  
+  // Update ticket status (admin only)
+  app.put("/api/admin/support/tickets/:ticketId", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { status, priority } = req.body;
+      const updateData: any = {};
+      
+      if (status) {
+        updateData.status = status;
+        if (status === "resolved") {
+          updateData.resolvedAt = new Date();
+        } else if (status === "closed") {
+          updateData.closedAt = new Date();
+        }
+      }
+      
+      if (priority) {
+        updateData.priority = priority;
+      }
+      
+      const ticket = await storage.updateSupportTicket(req.params.ticketId, updateData);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ error: "Failed to update ticket" });
+    }
+  });
+  
+  // Assign ticket to admin/staff
+  app.post("/api/admin/support/tickets/:ticketId/assign", isAdminAuthenticated, async (req, res) => {
+    try {
+      const ticket = await storage.assignSupportTicket(req.params.ticketId, req.user.id);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+      res.status(500).json({ error: "Failed to assign ticket" });
+    }
+  });
+  
+  // Add message to ticket
+  app.post("/api/support/tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+    try {
+      // Security: Verify user is the ticket owner or admin/staff
+      const ticket = await storage.getSupportTicket(req.params.ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+      
+      const isAdmin = req.user.role === "admin" || req.user.role === "staff";
+      if (ticket.userId !== req.user.id && !isAdmin) {
+        return res.status(403).json({ error: "You are not authorized to reply to this ticket" });
+      }
+      
+      const { content, attachmentUrl } = req.body;
+      const isStaffReply = req.user.role === "admin" || req.user.role === "staff";
+      
+      const message = await storage.createTicketMessage({
+        ticketId: req.params.ticketId,
+        senderId: req.user.id,
+        content,
+        attachmentUrl,
+        isStaffReply,
+      });
+      
+      res.json(message);
+    } catch (error) {
+      console.error("Error adding ticket message:", error);
+      res.status(500).json({ error: "Failed to add message" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
