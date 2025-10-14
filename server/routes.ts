@@ -1012,10 +1012,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin route to get signed URL for vendor request documents
+  // Admin route to get vendor request documents
   app.get('/api/admin/vendor-requests/:id/document/:type', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id, type } = req.params;
+      console.log(`Fetching document ${type} for vendor request ${id}`);
       
       // Get the vendor request from database
       const { vendorRequests } = await import("@shared/schema");
@@ -1046,6 +1047,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Document not found" });
       }
 
+      console.log(`Document URL: ${documentUrl}`);
+
       // Extract bucket and object path from URL
       // URL format: https://storage.googleapis.com/bucket-name/.private/uploads/filename
       const urlParts = new URL(documentUrl);
@@ -1053,35 +1056,40 @@ export function registerRoutes(app: Express): Server {
       const bucketName = pathParts[0];
       const objectPath = pathParts.slice(1).join('/');
 
-      // Generate signed URL for private file access (valid for 1 hour)
+      console.log(`Bucket: ${bucketName}, Path: ${objectPath}`);
+
+      // Download from Google Cloud Storage
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectPath);
 
-      // Check if file exists
-      const [exists] = await file.exists();
-      if (!exists) {
+      // Get file metadata
+      try {
+        const [metadata] = await file.getMetadata();
+        const contentType = metadata.contentType || 'application/octet-stream';
+        const fileName = objectPath.split('/').pop() || 'document';
+        
+        console.log(`File metadata - Type: ${contentType}, Name: ${fileName}`);
+
+        // Download file content
+        const [content] = await file.download();
+        
+        // Convert buffer to base64 for transfer
+        const base64Content = content.toString('base64');
+        const dataUrl = `data:${contentType};base64,${base64Content}`;
+
+        // Return data URL with metadata
+        res.json({ 
+          url: dataUrl,
+          contentType,
+          fileName
+        });
+      } catch (error) {
+        console.error("Error downloading file:", error);
         return res.status(404).json({ message: "Document file not found in storage" });
       }
-
-      // Get file metadata
-      const [metadata] = await file.getMetadata();
-      const contentType = metadata.contentType || 'application/octet-stream';
-      
-      // Generate signed URL (valid for 1 hour)
-      const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 3600 * 1000, // 1 hour from now
-      });
-
-      // Return signed URL with metadata
-      res.json({ 
-        url: signedUrl,
-        contentType,
-        fileName: objectPath.split('/').pop() || 'document'
-      });
     } catch (error) {
-      console.error("Error getting document URL:", error);
-      res.status(500).json({ message: "Failed to get document URL" });
+      console.error("Error getting document:", error);
+      res.status(500).json({ message: "Failed to get document" });
     }
   });
 

@@ -61,7 +61,8 @@ export default function AdminVendorRequests() {
   const { toast } = useToast();
   const [requestToReject, setRequestToReject] = useState<VendorRequestWithUser | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [documentToView, setDocumentToView] = useState<{ url: string; title: string } | null>(null);
+  const [documentToView, setDocumentToView] = useState<{ url: string; title: string; contentType: string; fileName: string } | null>(null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
 
   const { data: pendingRequests = [], isLoading } = useQuery<VendorRequestWithUser[]>({
     queryKey: ['/api/admin/vendor-requests'],
@@ -156,6 +157,32 @@ export default function AdminVendorRequests() {
     rejectMutation.mutate({ id: requestToReject.id, reason: rejectionReason });
   };
 
+  const handleViewDocument = async (requestId: string, docType: string, title: string) => {
+    setLoadingDocument(true);
+    try {
+      const response = await fetch(`/api/admin/vendor-requests/${requestId}/document/${docType}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch document');
+      
+      const data = await response.json();
+      setDocumentToView({
+        url: data.url,
+        title,
+        contentType: data.contentType,
+        fileName: data.fileName
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "View Failed",
+        description: "Failed to load document. Please try again.",
+      });
+    } finally {
+      setLoadingDocument(false);
+    }
+  };
+
   const handleDownload = async (requestId: string, docType: string, fileName: string) => {
     try {
       const response = await fetch(`/api/admin/vendor-requests/${requestId}/document/${docType}`, {
@@ -163,13 +190,13 @@ export default function AdminVendorRequests() {
       });
       if (!response.ok) throw new Error('Download failed');
       
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const data = await response.json();
+      
+      // Download using signed URL
+      const link = document.createElement('a');
+      link.href = data.url;
+      link.download = fileName;
+      link.click();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -277,10 +304,8 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => setDocumentToView({ 
-                              url: `/api/admin/vendor-requests/${request.id}/document/id`, 
-                              title: 'ID Document' 
-                            })}
+                            onClick={() => handleViewDocument(request.id, 'id', 'ID Document')}
+                            disabled={loadingDocument}
                             data-testid={`button-view-id-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -288,7 +313,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => handleDownload(request.id, 'id', 'id-document.pdf')}
+                            onClick={() => handleDownload(request.id, 'id', 'id-document')}
                             data-testid={`button-download-id-${request.id}`}
                           >
                             <Download className="w-4 h-4" />
@@ -310,10 +335,8 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => setDocumentToView({ 
-                              url: `/api/admin/vendor-requests/${request.id}/document/business`, 
-                              title: 'Business Registration' 
-                            })}
+                            onClick={() => handleViewDocument(request.id, 'business', 'Business Registration')}
+                            disabled={loadingDocument}
                             data-testid={`button-view-business-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -321,7 +344,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => handleDownload(request.id, 'business', 'business-registration.pdf')}
+                            onClick={() => handleDownload(request.id, 'business', 'business-registration')}
                             data-testid={`button-download-business-${request.id}`}
                           >
                             <Download className="w-4 h-4" />
@@ -343,10 +366,8 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => setDocumentToView({ 
-                              url: `/api/admin/vendor-requests/${request.id}/document/address`, 
-                              title: 'Address Proof' 
-                            })}
+                            onClick={() => handleViewDocument(request.id, 'address', 'Address Proof')}
+                            disabled={loadingDocument}
                             data-testid={`button-view-address-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -354,7 +375,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => handleDownload(request.id, 'address', 'address-proof.pdf')}
+                            onClick={() => handleDownload(request.id, 'address', 'address-proof')}
                             data-testid={`button-download-address-${request.id}`}
                           >
                             <Download className="w-4 h-4" />
@@ -427,17 +448,58 @@ export default function AdminVendorRequests() {
 
       {/* Document Viewer Dialog */}
       <Dialog open={!!documentToView} onOpenChange={() => setDocumentToView(null)}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{documentToView?.title || 'Document'}</DialogTitle>
+        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle className="text-xl">{documentToView?.title || 'Document'}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto px-6 pb-6">
             {documentToView && (
-              <iframe
-                src={documentToView.url}
-                className="w-full h-full border-0"
-                title={documentToView.title}
-              />
+              <>
+                {/* Display Image */}
+                {documentToView.contentType.startsWith('image/') && (
+                  <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <img
+                      src={documentToView.url}
+                      alt={documentToView.title}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                )}
+                
+                {/* Display PDF */}
+                {documentToView.contentType === 'application/pdf' && (
+                  <iframe
+                    src={documentToView.url}
+                    className="w-full h-full border-0 rounded-lg"
+                    title={documentToView.title}
+                  />
+                )}
+                
+                {/* Display Other Documents */}
+                {!documentToView.contentType.startsWith('image/') && documentToView.contentType !== 'application/pdf' && (
+                  <div className="flex flex-col items-center justify-center h-full space-y-4">
+                    <FileText className="w-20 h-20 text-gray-400" />
+                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                      {documentToView.fileName}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      This file type cannot be previewed. Please download to view.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = documentToView.url;
+                        link.download = documentToView.fileName;
+                        link.click();
+                      }}
+                      className="mt-4"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download File
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </DialogContent>
