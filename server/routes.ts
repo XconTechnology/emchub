@@ -12,7 +12,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
 
 // Admin middleware for session-based admin authentication
@@ -1009,6 +1009,69 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error rejecting vendor request:", error);
       res.status(500).json({ message: "Failed to reject vendor request" });
+    }
+  });
+
+  // Admin route to download vendor request documents
+  app.get('/api/admin/vendor-requests/:id/document/:type', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id, type } = req.params;
+      
+      // Get the vendor request from database
+      const { vendorRequests } = await import("@shared/schema");
+      const requests = await db.select().from(vendorRequests).where(eq(vendorRequests.id, id)).limit(1);
+      const request = requests[0];
+      
+      if (!request) {
+        return res.status(404).json({ message: "Vendor request not found" });
+      }
+
+      // Get the document path based on type
+      let documentPath: string | null = null;
+      switch (type) {
+        case 'id':
+          documentPath = request.identificationDoc;
+          break;
+        case 'business':
+          documentPath = request.businessRegistrationDoc;
+          break;
+        case 'address':
+          documentPath = request.addressProofDoc;
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid document type" });
+      }
+
+      if (!documentPath) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Parse the document path (format: bucket/path/to/file)
+      const parts = documentPath.split('/');
+      if (parts.length < 2) {
+        return res.status(500).json({ message: "Invalid document path format" });
+      }
+
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join('/');
+
+      // Get the file from object storage
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ message: "Document file not found in storage" });
+      }
+
+      // Download and stream the file
+      const objectStorage = new ObjectStorageService();
+      await objectStorage.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error downloading vendor document:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to download document" });
+      }
     }
   });
 

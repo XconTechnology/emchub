@@ -247,7 +247,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => window.open(request.identificationDoc!, '_blank')}
+                            onClick={() => window.open(`/api/admin/vendor-requests/${request.id}/document/id`, '_blank')}
                             data-testid={`button-view-id-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -257,7 +257,7 @@ export default function AdminVendorRequests() {
                             variant="ghost"
                             onClick={() => {
                               const a = document.createElement('a');
-                              a.href = request.identificationDoc!;
+                              a.href = `/api/admin/vendor-requests/${request.id}/document/id`;
                               a.download = 'id-document';
                               a.click();
                             }}
@@ -282,7 +282,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => window.open(request.businessRegistrationDoc!, '_blank')}
+                            onClick={() => window.open(`/api/admin/vendor-requests/${request.id}/document/business`, '_blank')}
                             data-testid={`button-view-business-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -292,7 +292,7 @@ export default function AdminVendorRequests() {
                             variant="ghost"
                             onClick={() => {
                               const a = document.createElement('a');
-                              a.href = request.businessRegistrationDoc!;
+                              a.href = `/api/admin/vendor-requests/${request.id}/document/business`;
                               a.download = 'business-registration';
                               a.click();
                             }}
@@ -317,7 +317,7 @@ export default function AdminVendorRequests() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => window.open(request.addressProofDoc!, '_blank')}
+                            onClick={() => window.open(`/api/admin/vendor-requests/${request.id}/document/address`, '_blank')}
                             data-testid={`button-view-address-${request.id}`}
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -327,7 +327,7 @@ export default function AdminVendorRequests() {
                             variant="ghost"
                             onClick={() => {
                               const a = document.createElement('a');
-                              a.href = request.addressProofDoc!;
+                              a.href = `/api/admin/vendor-requests/${request.id}/document/address`;
                               a.download = 'address-proof';
                               a.click();
                             }}
