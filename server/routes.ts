@@ -507,6 +507,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin route to get all vendors
+  app.get('/api/admin/vendors', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const vendors = users.filter(user => user.role === 'vendor');
+      res.json(vendors);
+    } catch (error) {
+      console.error("Error fetching vendors:", error);
+      res.status(500).json({ message: "Failed to fetch vendors" });
+    }
+  });
+
   // Admin route to get pending approvals with user info
   app.get('/api/admin/pending-approvals', isAdminAuthenticated, async (req: any, res) => {
     try {
