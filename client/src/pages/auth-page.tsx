@@ -115,10 +115,12 @@ export default function AuthPage() {
                           <FormItem>
                             <div className="flex items-center justify-between">
                               <FormLabel>Password</FormLabel>
-                              <Link href="/forgot-password">
-                                <a className="text-sm text-[hsl(86,49%,53%)] hover:underline" data-testid="link-forgot-password">
-                                  Forgot Password?
-                                </a>
+                              <Link 
+                                href="/forgot-password" 
+                                className="text-sm text-[hsl(86,49%,53%)] hover:underline" 
+                                data-testid="link-forgot-password"
+                              >
+                                Forgot Password?
                               </Link>
                             </div>
                             <FormControl>
