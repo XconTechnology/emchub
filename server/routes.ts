@@ -1046,24 +1046,40 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Document not found" });
       }
 
-      // Since documents are stored as full URLs from object storage,
-      // we can fetch them directly using HTTP
-      const response = await fetch(documentUrl);
-      
-      if (!response.ok) {
-        return res.status(404).json({ message: "Document file not found" });
+      // Extract bucket and object path from URL
+      // URL format: https://storage.googleapis.com/bucket-name/.private/uploads/filename
+      const urlParts = new URL(documentUrl);
+      const pathParts = urlParts.pathname.split('/').filter(p => p);
+      const bucketName = pathParts[0];
+      const objectPath = pathParts.slice(1).join('/');
+
+      // Download from Google Cloud Storage with authentication
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectPath);
+
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ message: "Document file not found in storage" });
       }
 
-      // Get content type and set appropriate headers
-      const contentType = response.headers.get('content-type') || 'application/octet-stream';
-      const fileName = documentUrl.split('/').pop() || 'document';
+      // Get file metadata for content type
+      const [metadata] = await file.getMetadata();
+      const contentType = metadata.contentType || 'application/octet-stream';
+      const fileName = objectPath.split('/').pop() || 'document';
       
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
 
-      // Stream the response
-      const buffer = await response.arrayBuffer();
-      res.send(Buffer.from(buffer));
+      // Stream the file directly
+      file.createReadStream()
+        .on('error', (error) => {
+          console.error('Error streaming file:', error);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Failed to stream document" });
+          }
+        })
+        .pipe(res);
     } catch (error) {
       console.error("Error downloading vendor document:", error);
       if (!res.headersSent) {
