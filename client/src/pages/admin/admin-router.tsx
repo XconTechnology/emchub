@@ -5,6 +5,7 @@ import AdminListings from "./admin-listings";
 import AdminAddListing from "./admin-add-listing";
 import AdminEditListing from "./admin-edit-listing";
 import AdminUsers from "./admin-users";
+import AdminVendors from "./admin-vendors";
 import AdminRecycleBin from "./admin-recycle-bin";
 import AdminPendingApprovals from "./admin-pending-approvals";
 import AdminVendorRequests from "./admin-vendor-requests";
@@ -36,6 +37,7 @@ export default function AdminRouter() {
       <Switch>
         <Route path="/admin/pending-approvals" component={AdminPendingApprovals} />
         <Route path="/admin/vendor-requests" component={AdminVendorRequests} />
+        <Route path="/admin/vendors" component={AdminVendors} />
         <Route path="/admin/coupons" component={AdminCoupons} />
         <Route path="/admin/staff-help" component={AdminStaffHelp} />
         <Route path="/admin/activity-logs" component={AdminActivityLogs} />
