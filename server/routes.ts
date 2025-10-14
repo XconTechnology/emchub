@@ -1012,7 +1012,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin route to download vendor request documents
+  // Admin route to get signed URL for vendor request documents
   app.get('/api/admin/vendor-requests/:id/document/:type', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id, type } = req.params;
@@ -1053,7 +1053,7 @@ export function registerRoutes(app: Express): Server {
       const bucketName = pathParts[0];
       const objectPath = pathParts.slice(1).join('/');
 
-      // Download from Google Cloud Storage with authentication
+      // Generate signed URL for private file access (valid for 1 hour)
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectPath);
 
@@ -1063,28 +1063,25 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Document file not found in storage" });
       }
 
-      // Get file metadata for content type
+      // Get file metadata
       const [metadata] = await file.getMetadata();
       const contentType = metadata.contentType || 'application/octet-stream';
-      const fileName = objectPath.split('/').pop() || 'document';
       
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      // Generate signed URL (valid for 1 hour)
+      const [signedUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 3600 * 1000, // 1 hour from now
+      });
 
-      // Stream the file directly
-      file.createReadStream()
-        .on('error', (error) => {
-          console.error('Error streaming file:', error);
-          if (!res.headersSent) {
-            res.status(500).json({ message: "Failed to stream document" });
-          }
-        })
-        .pipe(res);
+      // Return signed URL with metadata
+      res.json({ 
+        url: signedUrl,
+        contentType,
+        fileName: objectPath.split('/').pop() || 'document'
+      });
     } catch (error) {
-      console.error("Error downloading vendor document:", error);
-      if (!res.headersSent) {
-        res.status(500).json({ message: "Failed to download document" });
-      }
+      console.error("Error getting document URL:", error);
+      res.status(500).json({ message: "Failed to get document URL" });
     }
   });
 
