@@ -46,6 +46,17 @@ Vite manages static assets with path aliases. The application incorporates custo
   - Coupon usage tracking and analytics for vendors
   - Admin dashboard for monitoring all platform coupons and usage statistics
   - Integration with order system to save coupon data and record usage history
+- **Admin Vendors Tab**: Dedicated admin page (`/admin/vendors`) to view and manage all verified vendors with:
+  - List of all users with vendor role
+  - Vendor information display (username, email, phone, join date)
+  - Role management dropdown to change user roles
+  - Dedicated API endpoint `/api/admin/vendors` to fetch vendor users
+- **Vendor Document Viewing**: Admin can view and download vendor verification documents with:
+  - Large modal preview (95vw × 90vh) for documents
+  - Support for images (PNG, JPG) and PDFs
+  - Secure download from private Google Cloud Storage
+  - Base64 data URL conversion for authenticated access
+  - Admin authentication supports both session-based and OIDC users
 
 ## External Dependencies
 

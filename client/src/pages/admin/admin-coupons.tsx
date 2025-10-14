@@ -210,7 +210,7 @@ export default function AdminCoupons() {
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-gray-500" />
                       <span className="text-gray-600 text-xs">
-                        Created: {new Date(coupon.createdAt).toLocaleDateString()}
+                        Created: {coupon.createdAt ? new Date(coupon.createdAt).toLocaleDateString() : 'N/A'}
                       </span>
                     </div>
                   </div>
