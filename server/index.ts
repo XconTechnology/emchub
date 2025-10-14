@@ -5,13 +5,31 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// CORS configuration for production
+// CORS configuration - allow both custom domain and replit domains
 app.use(cors({
-  origin: process.env.NODE_ENV === "production" ? 
-    ["https://testingprojects.site", "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev"] :
-    true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      "https://testingprojects.site",
+      "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev"
+    ];
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+    
+    // In production, check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
 
