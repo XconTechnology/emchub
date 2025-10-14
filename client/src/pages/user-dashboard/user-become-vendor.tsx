@@ -8,13 +8,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocket } from "@/hooks/use-websocket";
 import { Store, BadgeCheck, Package, DollarSign, Users, FileText, Building2, Home } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileUpload } from "@/components/file-upload";
 
 export default function UserBecomeVendor() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { subscribe } = useWebSocket();
   
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState<"individual" | "company">("individual");
@@ -91,6 +93,49 @@ export default function UserBecomeVendor() {
       addressProofDoc,
     });
   };
+
+  // Listen for real-time vendor approval/rejection
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const unsubscribeApproved = subscribe('VENDOR_REQUEST_APPROVED', (message) => {
+      if (message.data.userId === user.id) {
+        console.log('Vendor request approved:', message.data);
+        
+        // Show success toast
+        toast({
+          title: "🎉 Congratulations!",
+          description: "Your vendor application has been approved! You are now a verified vendor.",
+          duration: 10000,
+        });
+        
+        // Refresh user data
+        queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      }
+    });
+
+    const unsubscribeRejected = subscribe('VENDOR_REQUEST_REJECTED', (message) => {
+      if (message.data.userId === user.id) {
+        console.log('Vendor request rejected:', message.data);
+        
+        // Show rejection toast with reason
+        toast({
+          variant: "destructive",
+          title: "Application Rejected",
+          description: `Your vendor application was rejected. Reason: ${message.data.rejectionReason}`,
+          duration: 10000,
+        });
+        
+        // Refresh user data
+        queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+      }
+    });
+
+    return () => {
+      unsubscribeApproved();
+      unsubscribeRejected();
+    };
+  }, [user?.id, subscribe, toast]);
 
   // If user is already a verified vendor
   if (user?.vendorStatus === 'verified') {
