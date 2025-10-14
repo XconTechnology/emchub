@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { 
@@ -14,6 +15,19 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
+
+// WebSocket clients storage
+const wsClients = new Set<WebSocket>();
+
+// Broadcast event to all connected WebSocket clients
+function broadcastEvent(event: { type: string; data: any }) {
+  const message = JSON.stringify(event);
+  wsClients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
 
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
@@ -869,6 +883,18 @@ export function registerRoutes(app: Express): Server {
       // Update user vendor status to pending
       await storage.updateUserVendorStatus(req.user.id, 'pending');
 
+      // Broadcast real-time event to admin
+      broadcastEvent({
+        type: 'VENDOR_REQUEST_SUBMITTED',
+        data: {
+          requestId: vendorRequest.id,
+          userId: req.user.id,
+          userName: req.user.username,
+          businessName: vendorRequest.businessName,
+          businessType: vendorRequest.businessType,
+        }
+      });
+
       res.json(vendorRequest);
     } catch (error: any) {
       console.error("Error creating vendor request:", error);
@@ -917,6 +943,18 @@ export function registerRoutes(app: Express): Server {
 
       // Update user vendor status to pending
       await storage.updateUserVendorStatus(req.user.id, 'pending');
+
+      // Broadcast real-time event to admin
+      broadcastEvent({
+        type: 'VENDOR_REQUEST_SUBMITTED',
+        data: {
+          requestId: vendorRequest.id,
+          userId: req.user.id,
+          userName: req.user.username,
+          businessName: vendorRequest.businessName,
+          businessType: vendorRequest.businessType,
+        }
+      });
 
       res.json(vendorRequest);
     } catch (error: any) {
@@ -988,6 +1026,16 @@ export function registerRoutes(app: Express): Server {
       // Update user vendor status to verified
       await storage.updateUserVendorStatus(request.userId, 'verified');
 
+      // Broadcast real-time event to user
+      broadcastEvent({
+        type: 'VENDOR_REQUEST_APPROVED',
+        data: {
+          requestId: id,
+          userId: request.userId,
+          businessName: request.businessName,
+        }
+      });
+
       res.json({ message: "Vendor request approved successfully", request });
     } catch (error) {
       console.error("Error approving vendor request:", error);
@@ -1019,6 +1067,17 @@ export function registerRoutes(app: Express): Server {
       
       // Update user vendor status to rejected
       await storage.updateUserVendorStatus(request.userId, 'rejected');
+
+      // Broadcast real-time event to user
+      broadcastEvent({
+        type: 'VENDOR_REQUEST_REJECTED',
+        data: {
+          requestId: id,
+          userId: request.userId,
+          businessName: request.businessName,
+          rejectionReason: reason,
+        }
+      });
 
       res.json({ message: "Vendor request rejected successfully", request });
     } catch (error) {
@@ -2215,5 +2274,24 @@ export function registerRoutes(app: Express): Server {
   });
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    wsClients.add(ws);
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      wsClients.delete(ws);
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      wsClients.delete(ws);
+    });
+  });
+  
   return httpServer;
 }
