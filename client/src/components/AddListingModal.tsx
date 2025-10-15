@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,7 @@ interface AddListingModalProps {
 
 export default function AddListingModal({ isOpen, onClose, editListing }: AddListingModalProps) {
   const { toast } = useToast();
-  const [imageUrls, setImageUrls] = useState<string[]>(editListing?.images || []);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
   const isEditing = !!editListing;
 
@@ -49,28 +49,7 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
 
   const form = useForm<AddListingData>({
     resolver: zodResolver(insertListingSchema),
-    defaultValues: editListing ? {
-      type: "listing",
-      title: editListing.title || "",
-      description: editListing.description || "",
-      categoryId: editListing.categoryId || "",
-      address: editListing.address || "",
-      city: editListing.city || "",
-      postalCode: editListing.postalCode || "",
-      isOnlineOnly: editListing.isOnlineOnly || false,
-      phone: editListing.phone || "",
-      email: editListing.email || "",
-      website: editListing.website || "",
-      images: editListing.images || [],
-      tags: editListing.tags || [],
-      price: editListing.price,
-      inventory: editListing.inventory,
-      duration: editListing.duration,
-      eventDate: editListing.eventDate,
-      eventEndDate: editListing.eventEndDate,
-      capacity: editListing.capacity,
-      eventPrice: editListing.eventPrice,
-    } : {
+    defaultValues: {
       type: "listing",
       title: "",
       description: "",
@@ -93,6 +72,58 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
       eventPrice: undefined,
     },
   });
+
+  useEffect(() => {
+    if (isOpen && editListing) {
+      form.reset({
+        type: "listing",
+        title: editListing.title || "",
+        description: editListing.description || "",
+        categoryId: editListing.categoryId || "",
+        address: editListing.address || "",
+        city: editListing.city || "",
+        postalCode: editListing.postalCode || "",
+        isOnlineOnly: editListing.isOnlineOnly || false,
+        phone: editListing.phone || "",
+        email: editListing.email || "",
+        website: editListing.website || "",
+        images: editListing.images || [],
+        tags: editListing.tags || [],
+        price: editListing.price,
+        inventory: editListing.inventory,
+        duration: editListing.duration,
+        eventDate: editListing.eventDate,
+        eventEndDate: editListing.eventEndDate,
+        capacity: editListing.capacity,
+        eventPrice: editListing.eventPrice,
+      });
+      setImageUrls(editListing.images || []);
+    } else if (isOpen && !editListing) {
+      form.reset({
+        type: "listing",
+        title: "",
+        description: "",
+        categoryId: "",
+        address: "",
+        city: "",
+        postalCode: "",
+        isOnlineOnly: false,
+        phone: "",
+        email: "",
+        website: "",
+        images: [],
+        tags: [],
+        price: undefined,
+        inventory: undefined,
+        duration: undefined,
+        eventDate: undefined,
+        eventEndDate: undefined,
+        capacity: undefined,
+        eventPrice: undefined,
+      });
+      setImageUrls([]);
+    }
+  }, [isOpen, editListing, form]);
 
   const addListingMutation = useMutation({
     mutationFn: async (data: AddListingData) => {

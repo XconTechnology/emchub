@@ -9,6 +9,7 @@ import { Store, Edit, Trash2, Plus, MapPin, Phone, Mail } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Listing } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AddListingModal from "@/components/AddListingModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,8 @@ export default function UserMyListings() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [deletingListing, setDeletingListing] = useState<Listing | null>(null);
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("published");
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
@@ -92,7 +95,7 @@ export default function UserMyListings() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => setLocation(`/dashboard/edit-listing/${listing.id}`)}
+              onClick={() => setEditingListing(listing)}
               data-testid={`button-edit-${listing.id}`}
             >
               <Edit className="w-4 h-4" />
@@ -154,7 +157,7 @@ export default function UserMyListings() {
         </div>
         {user?.vendorStatus === 'verified' && (
           <Button
-            onClick={() => setLocation("/dashboard/create-listing")}
+            onClick={() => setIsAddModalOpen(true)}
             className="gap-2"
             style={{ backgroundColor: '#8FC24C' }}
             data-testid="button-create-listing"
@@ -228,7 +231,7 @@ export default function UserMyListings() {
                 <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-600 mb-4">No approved listings yet</p>
                 <Button
-                  onClick={() => setLocation("/dashboard/create-listing")}
+                  onClick={() => setIsAddModalOpen(true)}
                   style={{ backgroundColor: '#8FC24C' }}
                   data-testid="button-create-first-listing"
                 >
@@ -278,6 +281,16 @@ export default function UserMyListings() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Add/Edit Listing Modal */}
+      <AddListingModal 
+        isOpen={isAddModalOpen || !!editingListing}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingListing(null);
+        }}
+        editListing={editingListing}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingListing} onOpenChange={() => setDeletingListing(null)}>
