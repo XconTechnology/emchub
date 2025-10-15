@@ -55,6 +55,7 @@ import UserCheckout from "./user-checkout";
 import UserPurchases from "./user-purchases";
 import UserActivity from "./user-activity";
 import UserBecomeVendor from "./user-become-vendor";
+import UserRecycleBin from "./user-recycle-bin";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
