@@ -9,11 +9,23 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
 import AddProductModal from "@/components/AddProductModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UserProducts() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Listing | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Listing | null>(null);
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -27,11 +39,27 @@ export default function UserProducts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
       toast({ title: "Product deleted successfully" });
+      setProductToDelete(null);
     },
     onError: () => {
       toast({ title: "Failed to delete product", variant: "destructive" });
+      setProductToDelete(null);
     },
   });
+
+  const handleEdit = (product: Listing) => {
+    setEditingProduct(product);
+  };
+
+  const handleDelete = (product: Listing) => {
+    setProductToDelete(product);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      deleteProductMutation.mutate(productToDelete.id);
+    }
+  };
 
   const products = userListings?.filter(item => item.type === 'product') || [];
 
@@ -61,13 +89,18 @@ export default function UserProducts() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" data-testid={`button-edit-${product.id}`}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleEdit(product)}
+              data-testid={`button-edit-${product.id}`}
+            >
               <Edit className="w-4 h-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => deleteProductMutation.mutate(product.id)}
+              onClick={() => handleDelete(product)}
               data-testid={`button-delete-${product.id}`}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
@@ -171,9 +204,34 @@ export default function UserProducts() {
       )}
 
       <AddProductModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isAddModalOpen || !!editingProduct}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        editProduct={editingProduct}
       />
+
+      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{productToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
