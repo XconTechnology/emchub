@@ -11,7 +11,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, X } from "lucide-react";
 
 const productSchema = insertListingSchema.extend({
@@ -34,19 +34,11 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
   const { user } = useAuth();
   const { toast } = useToast();
   const isEditing = !!editProduct;
-  const [imageUrl, setImageUrl] = useState<string>(editProduct?.images?.[0] || "");
+  const [imageUrl, setImageUrl] = useState<string>("");
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: editProduct ? {
-      type: "product",
-      title: editProduct.title || "",
-      description: editProduct.description || "",
-      customCategory: editProduct.customCategory || "",
-      price: editProduct.price?.toString() || "",
-      inventory: editProduct.inventory?.toString() || "",
-      status: editProduct.status || "pending",
-    } : {
+    defaultValues: {
       type: "product",
       title: "",
       description: "",
@@ -56,6 +48,32 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       status: "pending",
     },
   });
+
+  useEffect(() => {
+    if (isOpen && editProduct) {
+      form.reset({
+        type: "product",
+        title: editProduct.title || "",
+        description: editProduct.description || "",
+        customCategory: editProduct.customCategory || "",
+        price: editProduct.price?.toString() || "",
+        inventory: editProduct.inventory?.toString() || "",
+        status: editProduct.status || "pending",
+      });
+      setImageUrl(editProduct.images?.[0] || "");
+    } else if (isOpen && !editProduct) {
+      form.reset({
+        type: "product",
+        title: "",
+        description: "",
+        customCategory: "",
+        price: "",
+        inventory: "",
+        status: "pending",
+      });
+      setImageUrl("");
+    }
+  }, [isOpen, editProduct, form]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {

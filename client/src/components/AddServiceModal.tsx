@@ -13,7 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
@@ -36,10 +36,8 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
   const { user } = useAuth();
   const { toast } = useToast();
   const isEditing = !!editService;
-  const [imageUrl, setImageUrl] = useState<string>(editService?.images?.[0] || "");
-  const [useTimeDollars, setUseTimeDollars] = useState(
-    editService?.paymentMethods?.includes('td') || false
-  );
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [useTimeDollars, setUseTimeDollars] = useState(false);
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -47,15 +45,7 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
-    defaultValues: editService ? {
-      type: "service",
-      title: editService.title || "",
-      description: editService.description || "",
-      categoryId: editService.categoryId || "",
-      price: editService.price?.toString() || "",
-      isActive: editService.isActive ?? true,
-      status: editService.status || "pending",
-    } : {
+    defaultValues: {
       type: "service",
       title: "",
       description: "",
@@ -65,6 +55,34 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
       status: "pending",
     },
   });
+
+  useEffect(() => {
+    if (isOpen && editService) {
+      form.reset({
+        type: "service",
+        title: editService.title || "",
+        description: editService.description || "",
+        categoryId: editService.categoryId || "",
+        price: editService.price?.toString() || "",
+        isActive: editService.isActive ?? true,
+        status: editService.status || "pending",
+      });
+      setImageUrl(editService.images?.[0] || "");
+      setUseTimeDollars(editService.paymentMethods?.includes('td') || false);
+    } else if (isOpen && !editService) {
+      form.reset({
+        type: "service",
+        title: "",
+        description: "",
+        categoryId: "",
+        price: "",
+        isActive: true,
+        status: "pending",
+      });
+      setImageUrl("");
+      setUseTimeDollars(false);
+    }
+  }, [isOpen, editService, form]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {

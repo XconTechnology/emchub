@@ -13,7 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, X } from "lucide-react";
 
 const eventSchema = insertListingSchema.extend({
@@ -36,7 +36,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
   const { user } = useAuth();
   const { toast } = useToast();
   const isEditing = !!editEvent;
-  const [imageUrl, setImageUrl] = useState<string>(editEvent?.images?.[0] || "");
+  const [imageUrl, setImageUrl] = useState<string>("");
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -44,17 +44,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
-    defaultValues: editEvent ? {
-      type: "event",
-      title: editEvent.title || "",
-      description: editEvent.description || "",
-      categoryId: editEvent.categoryId || "",
-      eventDate: editEvent.eventDate ? new Date(editEvent.eventDate).toISOString().split('T')[0] : "",
-      eventPrice: editEvent.eventPrice?.toString() || "",
-      capacity: editEvent.capacity?.toString() || "",
-      address: editEvent.address || "",
-      status: editEvent.status || "pending",
-    } : {
+    defaultValues: {
       type: "event",
       title: "",
       description: "",
@@ -66,6 +56,36 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
       status: "pending",
     },
   });
+
+  useEffect(() => {
+    if (isOpen && editEvent) {
+      form.reset({
+        type: "event",
+        title: editEvent.title || "",
+        description: editEvent.description || "",
+        categoryId: editEvent.categoryId || "",
+        eventDate: editEvent.eventDate ? new Date(editEvent.eventDate).toISOString().split('T')[0] : "",
+        eventPrice: editEvent.eventPrice?.toString() || "",
+        capacity: editEvent.capacity?.toString() || "",
+        address: editEvent.address || "",
+        status: editEvent.status || "pending",
+      });
+      setImageUrl(editEvent.images?.[0] || "");
+    } else if (isOpen && !editEvent) {
+      form.reset({
+        type: "event",
+        title: "",
+        description: "",
+        categoryId: "",
+        eventDate: "",
+        eventPrice: "",
+        capacity: "",
+        address: "",
+        status: "pending",
+      });
+      setImageUrl("");
+    }
+  }, [isOpen, editEvent, form]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
