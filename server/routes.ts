@@ -223,6 +223,56 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Vendor recycle bin routes
+  app.get('/api/listings/user/deleted', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const deletedListings = await storage.getUserDeletedListings(userId);
+      res.json(deletedListings);
+    } catch (error) {
+      console.error("Error fetching deleted listings:", error);
+      res.status(500).json({ message: "Failed to fetch deleted listings" });
+    }
+  });
+
+  app.post('/api/listings/:id/restore', isAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const userId = req.user.id;
+      
+      // Verify the listing belongs to the user
+      const existingListing = await storage.getListing(listingId);
+      if (!existingListing || existingListing.userId !== userId) {
+        return res.status(404).json({ message: "Listing not found or access denied" });
+      }
+      
+      const listing = await storage.restoreListing(listingId);
+      res.json({ message: "Listing restored successfully", listing });
+    } catch (error) {
+      console.error("Error restoring listing:", error);
+      res.status(500).json({ message: "Failed to restore listing" });
+    }
+  });
+
+  app.delete('/api/listings/:id/permanent', isAuthenticated, async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const userId = req.user.id;
+      
+      // Verify the listing belongs to the user
+      const existingListing = await storage.getListing(listingId);
+      if (!existingListing || existingListing.userId !== userId) {
+        return res.status(404).json({ message: "Listing not found or access denied" });
+      }
+      
+      await storage.permanentlyDeleteListing(listingId);
+      res.json({ message: "Listing permanently deleted" });
+    } catch (error) {
+      console.error("Error permanently deleting listing:", error);
+      res.status(500).json({ message: "Failed to permanently delete listing" });
+    }
+  });
+
   app.get('/api/listings/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
