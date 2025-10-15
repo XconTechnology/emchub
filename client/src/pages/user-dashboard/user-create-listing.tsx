@@ -26,34 +26,20 @@ import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation, useRoute } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import type { Category, Listing } from "@shared/schema";
+import type { Category } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Upload, X, Store, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import RequestStaffHelpButton from "@/components/RequestStaffHelpButton";
 
 export default function UserCreateListing() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/dashboard/edit-listing/:id");
-  const isEditing = !!match;
-  const listingId = params?.id;
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState("");
-
-  // Fetch existing listing if editing
-  const { data: existingListing } = useQuery<Listing>({
-    queryKey: ['/api/listings', listingId],
-    queryFn: async () => {
-      const res = await fetch(`/api/listings/${listingId}`);
-      if (!res.ok) throw new Error('Failed to fetch listing');
-      return res.json();
-    },
-    enabled: isEditing && !!listingId,
-  });
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -80,30 +66,6 @@ export default function UserCreateListing() {
     },
   });
 
-  // Pre-fill form when editing
-  useEffect(() => {
-    if (existingListing && isEditing) {
-      form.reset({
-        type: "business",
-        title: existingListing.title || "",
-        description: existingListing.description || "",
-        categoryId: existingListing.categoryId || "",
-        phone: existingListing.phone || "",
-        email: existingListing.email || "",
-        website: existingListing.website || "",
-        address: existingListing.address || "",
-        city: existingListing.city || "",
-        postalCode: existingListing.postalCode || "",
-        latitude: existingListing.latitude || "",
-        longitude: existingListing.longitude || "",
-        isOnlineOnly: existingListing.isOnlineOnly || false,
-        customCategory: existingListing.customCategory || "",
-        status: (existingListing.status || "pending") as "pending" | "published" | "rejected",
-      });
-      setUploadedImages(existingListing.images || []);
-    }
-  }, [existingListing, isEditing, form]);
-
   const createListingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertListingSchema>) => {
       const cleanedData = Object.fromEntries(
@@ -112,25 +74,19 @@ export default function UserCreateListing() {
           value === '' ? undefined : value
         ])
       );
-      if (isEditing && listingId) {
-        return apiRequest('PUT', `/api/listings/${listingId}`, cleanedData);
-      }
       return apiRequest('POST', '/api/listings', cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/listings', listingId] });
       toast({
-        title: isEditing ? "Listing updated!" : "Listing submitted!",
-        description: isEditing 
-          ? "Your changes have been saved."
-          : "Your listing has been submitted for approval.",
+        title: "Listing submitted!",
+        description: "Your listing has been submitted for approval.",
       });
       setLocation("/dashboard/my-listings");
     },
     onError: (error: any) => {
       toast({
-        title: isEditing ? "Failed to update listing" : "Failed to create listing",
+        title: "Failed to create listing",
         description: error.message || "Please try again",
         variant: "destructive",
       });
@@ -191,10 +147,10 @@ export default function UserCreateListing() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Store className="w-6 h-6" />
-              {isEditing ? "Edit Business Listing" : "Create New Business Listing"}
+              Create New Business Listing
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {isEditing ? "Update your business information" : "Add your business to the EMC HUB directory"}
+              Add your business to the EMC HUB directory
             </p>
           </div>
         </div>
@@ -473,9 +429,7 @@ export default function UserCreateListing() {
                   className="flex-1"
                   data-testid="button-submit-listing"
                 >
-                  {createListingMutation.isPending 
-                    ? (isEditing ? "Saving..." : "Submitting...") 
-                    : (isEditing ? "Save Changes" : "Submit for Approval")}
+                  {createListingMutation.isPending ? "Submitting..." : "Submit for Approval"}
                 </Button>
                 <Button
                   type="button"
