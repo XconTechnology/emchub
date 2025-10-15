@@ -8,10 +8,22 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UserEvents() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [editingEvent, setEditingEvent] = useState<Listing | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<Listing | null>(null);
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -25,11 +37,31 @@ export default function UserEvents() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
       toast({ title: "Event deleted successfully" });
+      setEventToDelete(null);
     },
     onError: () => {
       toast({ title: "Failed to delete event", variant: "destructive" });
+      setEventToDelete(null);
     },
   });
+
+  const handleEdit = (event: Listing) => {
+    // TODO: Create AddEventModal component
+    toast({ 
+      title: "Event editing coming soon", 
+      description: "Event editing functionality will be available once AddEventModal is implemented." 
+    });
+  };
+
+  const handleDelete = (event: Listing) => {
+    setEventToDelete(event);
+  };
+
+  const confirmDelete = () => {
+    if (eventToDelete) {
+      deleteEventMutation.mutate(eventToDelete.id);
+    }
+  };
 
   const events = userListings?.filter(item => item.type === 'event') || [];
 
@@ -61,13 +93,18 @@ export default function UserEvents() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" data-testid={`button-edit-${event.id}`}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleEdit(event)}
+              data-testid={`button-edit-${event.id}`}
+            >
               <Edit className="w-4 h-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => deleteEventMutation.mutate(event.id)}
+              onClick={() => handleDelete(event)}
               data-testid={`button-delete-${event.id}`}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
@@ -168,6 +205,27 @@ export default function UserEvents() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{eventToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
