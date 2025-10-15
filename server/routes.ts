@@ -1782,7 +1782,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/listing-images", isAdminAuthenticated, async (req, res) => {
+  app.put("/api/listing-images", isAuthenticated, async (req, res) => {
     if (!req.body.imageURL) {
       return res.status(400).json({ error: "imageURL is required" });
     }
@@ -1792,12 +1792,13 @@ export function registerRoutes(app: Express): Server {
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.imageURL,
         {
-          owner: "admin",
+          owner: req.user?.id || "admin",
           visibility: "public",
         },
       );
 
       res.status(200).json({
+        publicURL: objectPath,
         objectPath: objectPath,
       });
     } catch (error) {
