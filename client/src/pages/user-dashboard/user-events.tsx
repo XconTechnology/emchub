@@ -8,6 +8,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
+import AddEventModal from "@/components/AddEventModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import {
 export default function UserEvents() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Listing | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Listing | null>(null);
 
@@ -46,11 +48,7 @@ export default function UserEvents() {
   });
 
   const handleEdit = (event: Listing) => {
-    // TODO: Create AddEventModal component
-    toast({ 
-      title: "Event editing coming soon", 
-      description: "Event editing functionality will be available once AddEventModal is implemented." 
-    });
+    setEditingEvent(event);
   };
 
   const handleDelete = (event: Listing) => {
@@ -148,7 +146,7 @@ export default function UserEvents() {
           <h2 className="text-2xl font-bold">My Events</h2>
           <p className="text-gray-600">Manage your event listings</p>
         </div>
-        <Button data-testid="button-add-event">
+        <Button onClick={() => setIsAddModalOpen(true)} data-testid="button-add-event">
           <Plus className="w-4 h-4 mr-2" />
           Create New Event
         </Button>
@@ -198,13 +196,22 @@ export default function UserEvents() {
           <CardContent>
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600 mb-4">No events yet</p>
-            <Button>
+            <Button onClick={() => setIsAddModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Event
             </Button>
           </CardContent>
         </Card>
       )}
+
+      <AddEventModal 
+        isOpen={isAddModalOpen || !!editingEvent}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingEvent(null);
+        }}
+        editEvent={editingEvent}
+      />
 
       <AlertDialog open={!!eventToDelete} onOpenChange={(open) => !open && setEventToDelete(null)}>
         <AlertDialogContent>
