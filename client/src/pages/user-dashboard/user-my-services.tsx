@@ -9,11 +9,23 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Listing } from "@shared/schema";
 import AddServiceModal from "@/components/AddServiceModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UserMyServices() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Listing | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<Listing | null>(null);
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -27,11 +39,27 @@ export default function UserMyServices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
       toast({ title: "Service deleted successfully" });
+      setServiceToDelete(null);
     },
     onError: () => {
       toast({ title: "Failed to delete service", variant: "destructive" });
+      setServiceToDelete(null);
     },
   });
+
+  const handleEdit = (service: Listing) => {
+    setEditingService(service);
+  };
+
+  const handleDelete = (service: Listing) => {
+    setServiceToDelete(service);
+  };
+
+  const confirmDelete = () => {
+    if (serviceToDelete) {
+      deleteServiceMutation.mutate(serviceToDelete.id);
+    }
+  };
 
   const services = userListings?.filter(item => item.type === 'service') || [];
 
@@ -62,13 +90,18 @@ export default function UserMyServices() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" data-testid={`button-edit-${service.id}`}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleEdit(service)}
+              data-testid={`button-edit-${service.id}`}
+            >
               <Edit className="w-4 h-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => deleteServiceMutation.mutate(service.id)}
+              onClick={() => handleDelete(service)}
               data-testid={`button-delete-${service.id}`}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
@@ -165,9 +198,34 @@ export default function UserMyServices() {
       )}
 
       <AddServiceModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        isOpen={isAddModalOpen || !!editingService}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingService(null);
+        }}
+        editService={editingService}
       />
+
+      <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{serviceToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirm-delete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
