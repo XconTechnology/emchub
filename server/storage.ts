@@ -101,6 +101,7 @@ export interface IStorage {
   softDeleteListing(id: string): Promise<Listing>;
   restoreListing(id: string): Promise<Listing>;
   getDeletedListings(): Promise<Listing[]>;
+  getUserDeletedListings(userId: string): Promise<Listing[]>;
   permanentlyDeleteListing(id: string): Promise<void>;
   updateListingStatus(id: string, status: string): Promise<Listing>;
   
@@ -370,7 +371,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserListings(userId: string): Promise<Listing[]> {
     // Return all user listings regardless of moderation status for "My Listings" page
-    return db.select().from(listings).where(eq(listings.userId, userId));
+    // Exclude soft-deleted items (those in recycle bin)
+    return db.select().from(listings).where(and(
+      eq(listings.userId, userId),
+      sql`${listings.deletedAt} IS NULL`
+    ));
   }
 
   async getListing(id: string): Promise<Listing | undefined> {
@@ -388,7 +393,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteListing(id: string): Promise<void> {
-    await db.delete(listings).where(eq(listings.id, id));
+    // Soft delete - set deletedAt timestamp instead of actually deleting
+    await db
+      .update(listings)
+      .set({ deletedAt: new Date() })
+      .where(eq(listings.id, id));
   }
 
   // Booking operations
@@ -665,6 +674,13 @@ export class DatabaseStorage implements IStorage {
   
   async getDeletedListings(): Promise<Listing[]> {
     return db.select().from(listings).where(sql`${listings.deletedAt} IS NOT NULL`);
+  }
+  
+  async getUserDeletedListings(userId: string): Promise<Listing[]> {
+    return db.select().from(listings).where(and(
+      eq(listings.userId, userId),
+      sql`${listings.deletedAt} IS NOT NULL`
+    ));
   }
   
   async permanentlyDeleteListing(id: string): Promise<void> {
