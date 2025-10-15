@@ -230,6 +230,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
             <Route path="/dashboard/my-listings" component={UserMyListings} />
             <Route path="/dashboard/create-listing" component={UserCreateListing} />
+            <Route path="/dashboard/edit-listing/:id" component={UserCreateListing} />
             <Route path="/dashboard/products" component={UserProducts} />
             <Route path="/dashboard/my-services" component={UserMyServices} />
             <Route path="/dashboard/events" component={UserEvents} />
