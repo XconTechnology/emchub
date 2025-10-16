@@ -182,6 +182,7 @@ export const bookings = pgTable("bookings", {
 export const coupons = pgTable("coupons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who created the coupon
+  productId: varchar("product_id").references(() => listings.id), // Optional: specific product this coupon applies to
   code: varchar("code").notNull().unique(),
   title: varchar("title").notNull(), // Coupon title/name
   description: text("description"), // Coupon description
