@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -62,13 +62,8 @@ export default function UserDashboardRouter() {
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      setLocation("/auth");
-    }
-  }, [user, setLocation]);
-
   if (!user) {
+    setLocation("/auth");
     return null;
   }
 
@@ -115,18 +110,16 @@ export default function UserDashboardRouter() {
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 transition-transform duration-200 ease-in-out flex flex-col`}
         style={{ backgroundColor: '#8FC24C' }}
       >
-        {/* EMC HUB Logo/Link */}
+        {/* User info */}
         <div className="p-6 border-b border-white/10">
-          <Link href="/" data-testid="link-emc-hub-home">
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
-              <h3 className="font-bold text-white text-xl" data-testid="text-emc-hub">
-                EMC HUB
-              </h3>
-              {user.vendorStatus === 'verified' && (
-                <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
-              )}
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-white text-lg truncate" data-testid="text-username">
+              {user.username}
+            </h3>
+            {user.vendorStatus === 'verified' && (
+              <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+            )}
+          </div>
         </div>
 
         {/* Navigation */}
