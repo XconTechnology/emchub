@@ -75,20 +75,21 @@ export interface IStorage {
   // Coupon operations
   getCoupon(code: string): Promise<Coupon | undefined>;
   getCouponById(id: string): Promise<Coupon | undefined>;
-  validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number, productIds?: string[]): Promise<{ 
+  validateCoupon(code: string, vendorId: string | null, totalAmount: number, productIds?: string[]): Promise<{ 
     valid: boolean; 
-    cashDiscount: number; 
-    tdDiscount: number;
+    discount: number;
     coupon?: Coupon;
     error?: string;
   }>;
-  useCoupon(couponId: string, userId: string, orderId: string, cashDiscount: number, tdDiscount: number): Promise<void>;
-  createCoupon(coupon: InsertCoupon & { vendorId: string }): Promise<Coupon>;
+  useCoupon(couponId: string, userId: string, orderId: string, discount: number): Promise<void>;
+  createCoupon(coupon: InsertCoupon): Promise<Coupon>;
   getVendorCoupons(vendorId: string): Promise<Coupon[]>;
-  getAllCoupons(status?: string): Promise<Coupon[]>;
+  getAllCoupons(filters?: { status?: string; issuer?: string }): Promise<Coupon[]>;
   getCouponUsage(couponId: string): Promise<any[]>;
-  getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalCashDiscount: number; totalTdDiscount: number; users: any[] }>;
+  getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalDiscount: number; users: any[] }>;
   updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon>;
+  approveCoupon(id: string, adminId: string): Promise<Coupon>;
+  rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon>;
   deleteCoupon(id: string): Promise<void>;
   
   // Admin moderation operations
@@ -432,83 +433,94 @@ export class DatabaseStorage implements IStorage {
     return coupon;
   }
 
-  async validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number, productIds?: string[]): Promise<{ 
+  async validateCoupon(code: string, vendorId: string | null, totalAmount: number, productIds?: string[]): Promise<{ 
     valid: boolean; 
-    cashDiscount: number; 
-    tdDiscount: number;
+    discount: number;
     coupon?: Coupon;
     error?: string;
   }> {
     const coupon = await this.getCoupon(code);
     
-    console.log('Validating coupon:', { code, vendorId, productIds, coupon: coupon ? { id: coupon.id, vendorId: coupon.vendorId, productId: coupon.productId, isActive: coupon.isActive, status: coupon.status } : null });
+    console.log('Validating coupon:', { code, vendorId, totalAmount, productIds, coupon: coupon ? { 
+      id: coupon.id, 
+      couponType: coupon.couponType,
+      issuer: coupon.issuer,
+      scope: coupon.scope,
+      vendorId: coupon.vendorId, 
+      productId: coupon.productId,
+      status: coupon.status 
+    } : null });
     
     if (!coupon) {
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon not found' };
+      return { valid: false, discount: 0, error: 'Coupon not found' };
     }
 
-    if (!coupon.isActive || coupon.status !== 'active') {
-      console.log('Coupon inactive check failed:', { isActive: coupon.isActive, status: coupon.status });
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is inactive' };
+    // Check status - vendor coupons must be approved, admin coupons can be active
+    if (coupon.issuer === 'vendor' && coupon.status !== 'approved') {
+      console.log('Vendor coupon not approved:', { status: coupon.status });
+      return { valid: false, discount: 0, error: 'This coupon is not yet approved or is inactive' };
+    }
+    
+    if (coupon.issuer === 'admin' && coupon.status !== 'approved' && coupon.status !== 'active') {
+      console.log('Admin coupon not active:', { status: coupon.status });
+      return { valid: false, discount: 0, error: 'This coupon is not active' };
     }
 
-    // Check if coupon belongs to the same vendor
-    if (coupon.vendorId !== vendorId) {
-      console.log('Vendor mismatch:', { couponVendorId: coupon.vendorId, providedVendorId: vendorId });
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not valid for this vendor' };
+    // Check vendor scope
+    if (coupon.scope === 'vendor') {
+      // Vendor-specific coupon - must match the vendor
+      if (coupon.vendorId !== vendorId) {
+        console.log('Vendor mismatch:', { couponVendorId: coupon.vendorId, providedVendorId: vendorId });
+        return { valid: false, discount: 0, error: 'This coupon is not valid for this vendor' };
+      }
     }
+    // Platform coupons (admin-issued) can be used with any vendor
 
     // Check if coupon is product-specific
     if (coupon.productId) {
       if (!productIds || productIds.length === 0) {
         console.log('Product-specific coupon but no products provided');
-        return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'This coupon requires specific products in your cart' };
+        return { valid: false, discount: 0, error: 'This coupon requires specific products in your cart' };
       }
       
       if (!productIds.includes(coupon.productId)) {
         console.log('Product not in cart:', { requiredProductId: coupon.productId, cartProductIds: productIds });
-        return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'This coupon is only valid for a specific product not in your cart' };
+        return { valid: false, discount: 0, error: 'This coupon is only valid for a specific product not in your cart' };
       }
     }
     
     const now = new Date();
     if (coupon.validFrom && now < coupon.validFrom) {
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not yet valid' };
+      return { valid: false, discount: 0, error: 'Coupon is not yet valid' };
     }
 
     if (coupon.validUntil && now > coupon.validUntil) {
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon has expired' };
+      return { valid: false, discount: 0, error: 'Coupon has expired' };
     }
     
     if (coupon.usageLimit && (coupon.usedCount || 0) >= coupon.usageLimit) {
-      return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon usage limit reached' };
+      return { valid: false, discount: 0, error: 'Coupon usage limit reached' };
     }
     
-    let cashDiscount = 0;
-    let tdDiscount = 0;
+    let discount = 0;
 
-    // Calculate discounts based on coupon type
-    if (coupon.discountType === 'cash' || coupon.discountType === 'both') {
-      if (coupon.cashDiscountType === 'percentage') {
-        cashDiscount = (cashAmount * Number(coupon.cashDiscountValue || 0)) / 100;
-      } else if (coupon.cashDiscountType === 'fixed') {
-        cashDiscount = Number(coupon.cashDiscountValue || 0);
+    // Calculate discount based on coupon type
+    if (coupon.couponType === 'cash') {
+      // Cash coupon: provides fixed cash value
+      discount = Number(coupon.cashValue || 0);
+    } else if (coupon.couponType === 'discount') {
+      // Discount coupon: percentage or fixed amount off
+      if (coupon.discountType === 'percentage') {
+        discount = (totalAmount * Number(coupon.discountValue || 0)) / 100;
+      } else if (coupon.discountType === 'fixed') {
+        discount = Number(coupon.discountValue || 0);
       }
     }
 
-    if (coupon.discountType === 'timedollar' || coupon.discountType === 'both') {
-      if (coupon.tdDiscountType === 'percentage') {
-        tdDiscount = (tdAmount * Number(coupon.tdDiscountValue || 0)) / 100;
-      } else if (coupon.tdDiscountType === 'fixed') {
-        tdDiscount = Number(coupon.tdDiscountValue || 0);
-      }
-    }
-
-    // Ensure discounts don't exceed the amounts
-    cashDiscount = Math.min(cashDiscount, cashAmount);
-    tdDiscount = Math.min(tdDiscount, tdAmount);
+    // Ensure discount doesn't exceed total amount
+    discount = Math.min(discount, totalAmount);
     
-    return { valid: true, cashDiscount, tdDiscount, coupon };
+    return { valid: true, discount, coupon };
   }
 
   async getCouponById(id: string): Promise<Coupon | undefined> {
@@ -516,7 +528,7 @@ export class DatabaseStorage implements IStorage {
     return coupon;
   }
 
-  async useCoupon(couponId: string, userId: string, orderId: string, cashDiscount: number, tdDiscount: number): Promise<void> {
+  async useCoupon(couponId: string, userId: string, orderId: string, discount: number): Promise<void> {
     // Increment used count
     await db
       .update(coupons)
@@ -528,8 +540,8 @@ export class DatabaseStorage implements IStorage {
       couponId,
       userId,
       orderId,
-      cashDiscount: cashDiscount.toString(),
-      tdDiscount: tdDiscount.toString(),
+      cashDiscount: discount.toString(),
+      tdDiscount: "0",
     });
   }
 
@@ -553,17 +565,15 @@ export class DatabaseStorage implements IStorage {
     return usage;
   }
 
-  async getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalCashDiscount: number; totalTdDiscount: number; users: any[] }> {
+  async getCouponAnalytics(couponId: string): Promise<{ totalUsed: number; totalDiscount: number; users: any[] }> {
     const usage = await this.getCouponUsage(couponId);
     
     const totalUsed = usage.length;
-    const totalCashDiscount = usage.reduce((sum, u) => sum + Number(u.cashDiscount || 0), 0);
-    const totalTdDiscount = usage.reduce((sum, u) => sum + Number(u.tdDiscount || 0), 0);
+    const totalDiscount = usage.reduce((sum, u) => sum + Number(u.cashDiscount || 0), 0);
     
     return {
       totalUsed,
-      totalCashDiscount,
-      totalTdDiscount,
+      totalDiscount,
       users: usage,
     };
   }
@@ -836,7 +846,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Coupon operations implementation
-  async createCoupon(couponData: InsertCoupon & { vendorId: string }): Promise<Coupon> {
+  async createCoupon(couponData: InsertCoupon): Promise<Coupon> {
     const [coupon] = await db
       .insert(coupons)
       .values(couponData as any)
@@ -848,17 +858,41 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(coupons).where(eq(coupons.vendorId, vendorId)).orderBy(coupons.createdAt);
   }
   
-  async getAllCoupons(status?: string): Promise<Coupon[]> {
-    if (status) {
-      return db.select().from(coupons).where(eq(coupons.status, status)).orderBy(coupons.createdAt);
+  async getAllCoupons(filters?: { status?: string; issuer?: string }): Promise<Coupon[]> {
+    let query = db.select().from(coupons);
+    
+    if (filters?.status) {
+      query = query.where(eq(coupons.status, filters.status)) as any;
     }
-    return db.select().from(coupons).orderBy(coupons.createdAt);
+    if (filters?.issuer) {
+      query = query.where(eq(coupons.issuer, filters.issuer)) as any;
+    }
+    
+    return query.orderBy(coupons.createdAt);
   }
   
   async updateCoupon(id: string, data: Partial<InsertCoupon>): Promise<Coupon> {
     const [coupon] = await db
       .update(coupons)
       .set({ ...data, updatedAt: new Date() })
+      .where(eq(coupons.id, id))
+      .returning();
+    return coupon;
+  }
+  
+  async approveCoupon(id: string, adminId: string): Promise<Coupon> {
+    const [coupon] = await db
+      .update(coupons)
+      .set({ status: 'approved', approvedBy: adminId, updatedAt: new Date() })
+      .where(eq(coupons.id, id))
+      .returning();
+    return coupon;
+  }
+  
+  async rejectCoupon(id: string, adminId: string, reason: string): Promise<Coupon> {
+    const [coupon] = await db
+      .update(coupons)
+      .set({ status: 'rejected', approvedBy: adminId, rejectionReason: reason, updatedAt: new Date() })
       .where(eq(coupons.id, id))
       .returning();
     return coupon;
@@ -1147,7 +1181,8 @@ export class DatabaseStorage implements IStorage {
     
     // Record coupon usage if a coupon was applied
     if (couponId) {
-      await this.useCoupon(couponId, userId, order.id, cashDiscountValue, tdDiscountValue);
+      const totalDiscount = cashDiscountValue + tdDiscountValue;
+      await this.useCoupon(couponId, userId, order.id, totalDiscount);
     }
 
     // Clear cart
