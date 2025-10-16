@@ -81,16 +81,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       inventory: "",
       status: "pending",
       createCoupon: false,
-      coupon: {
-        code: "",
-        title: "",
-        description: "",
-        discountType: "cash",
-        cashDiscountType: "percentage",
-        cashDiscountValue: "",
-        usageLimit: "",
-        validUntil: "",
-      },
+      coupon: undefined,
     },
   });
 
@@ -107,6 +98,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         inventory: editProduct.inventory?.toString() || "",
         status: editProduct.status || "pending",
         createCoupon: false,
+        coupon: undefined,
       });
       setImageUrl(editProduct.images?.[0] || "");
       setCreateCoupon(false);
@@ -120,21 +112,35 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         inventory: "",
         status: "pending",
         createCoupon: false,
-        coupon: {
-          code: "",
-          title: "",
-          description: "",
-          discountType: "cash",
-          cashDiscountType: "percentage",
-          cashDiscountValue: "",
-          usageLimit: "",
-          validUntil: "",
-        },
+        coupon: undefined,
       });
       setImageUrl("");
       setCreateCoupon(false);
     }
   }, [isOpen, editProduct, form]);
+
+  // Handle createCoupon toggle
+  const handleCreateCouponToggle = (checked: boolean) => {
+    setCreateCoupon(checked);
+    form.setValue("createCoupon", checked);
+    
+    if (checked) {
+      // Initialize coupon with default values when toggled on
+      form.setValue("coupon", {
+        code: "",
+        title: "",
+        description: "",
+        discountType: "cash",
+        cashDiscountType: "percentage",
+        cashDiscountValue: "",
+        usageLimit: "",
+        validUntil: "",
+      });
+    } else {
+      // Clear coupon data when toggled off
+      form.setValue("coupon", undefined);
+    }
+  };
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -340,10 +346,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
                 <Checkbox
                   id="createCoupon"
                   checked={createCoupon}
-                  onCheckedChange={(checked) => {
-                    setCreateCoupon(checked as boolean);
-                    form.setValue("createCoupon", checked as boolean);
-                  }}
+                  onCheckedChange={(checked) => handleCreateCouponToggle(checked as boolean)}
                   data-testid="checkbox-create-coupon"
                 />
                 <Label htmlFor="createCoupon" className="flex items-center gap-2 cursor-pointer">
