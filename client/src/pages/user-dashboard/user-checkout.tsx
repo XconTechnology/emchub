@@ -166,22 +166,27 @@ export default function UserCheckout() {
   const getMaxTdAllowed = () => {
     if (!cartItems || cartItems.length === 0) return 0;
     // Use the minimum maxTimedollarPercentage among all products in cart
+    // Default to 100% for legacy products without maxTimedollarPercentage
     const minMaxTdPercentage = Math.min(
-      ...cartItems.map(item => item.product.maxTimedollarPercentage || 0)
+      ...cartItems.map(item => item.product.maxTimedollarPercentage ?? 100)
     );
     return (total * minMaxTdPercentage) / 100;
   };
   
   const maxTdAllowed = getMaxTdAllowed();
+  const maxTdPercentage = Math.min(
+    ...cartItems?.map(item => item.product.maxTimedollarPercentage ?? 100) || [100]
+  );
   
   // Calculate amounts before discounts
   const cashAmountBeforeDiscount = 
     paymentMethod === "cash" ? total : 
+    paymentMethod === "timedollar" ? Math.max(0, total - maxTdAllowed) : // Cap TD to maxTdAllowed
     paymentMethod === "both" ? total - Math.min(userTdInput, maxTdAllowed) : 
     0;
   
   const tdAmountBeforeDiscount = 
-    paymentMethod === "timedollar" ? total : 
+    paymentMethod === "timedollar" ? Math.min(total, maxTdAllowed) : // Enforce TD cap
     paymentMethod === "both" ? Math.min(userTdInput, maxTdAllowed) : 
     0;
   
@@ -247,6 +252,12 @@ export default function UserCheckout() {
       orderData.couponId = appliedCoupon.id;
       orderData.cashDiscount = couponDiscounts.cash;
       orderData.tdDiscount = couponDiscounts.td;
+    }
+
+    // If user selected "timedollar" but maxTdPercentage < 100%, the payment is actually "both"
+    // Update paymentMethod to reflect the actual mixed payment
+    if (data.paymentMethod === "timedollar" && cashAmount > 0 && tdAmount > 0) {
+      orderData.paymentMethod = "both";
     }
 
     createOrderMutation.mutate(orderData);
@@ -355,16 +366,39 @@ export default function UserCheckout() {
                       </div>
                       <Coins className="w-8 h-8 text-[#8FC24C]" />
                     </div>
-                    <Alert variant={hasEnoughTD ? "default" : "destructive"}>
-                      <AlertCircle className="w-4 h-4" />
-                      <AlertDescription>
-                        {hasEnoughTD ? (
-                          <>Cost: <strong>{total.toFixed(0)} TD</strong>. You have sufficient balance!</>
-                        ) : (
-                          <>You need <strong>{total.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
+                    
+                    {maxTdPercentage < 100 && (
+                      <>
+                        <Alert>
+                          <AlertCircle className="w-4 h-4" />
+                          <AlertDescription>
+                            Products in your cart allow max {maxTdPercentage}% TimeDollar payment. 
+                            You'll pay <strong>{tdAmount.toFixed(0)} TD</strong> + <strong>${cashAmount.toFixed(2)} cash</strong>.
+                          </AlertDescription>
+                        </Alert>
+                        {!hasEnoughTD && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="w-4 h-4" />
+                            <AlertDescription>
+                              Insufficient TimeDollar balance! You need <strong>{tdAmount.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>.
+                            </AlertDescription>
+                          </Alert>
                         )}
-                      </AlertDescription>
-                    </Alert>
+                      </>
+                    )}
+                    
+                    {maxTdPercentage >= 100 && (
+                      <Alert variant={hasEnoughTD ? "default" : "destructive"}>
+                        <AlertCircle className="w-4 h-4" />
+                        <AlertDescription>
+                          {hasEnoughTD ? (
+                            <>Cost: <strong>{total.toFixed(0)} TD</strong>. You have sufficient balance!</>
+                          ) : (
+                            <>You need <strong>{total.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="both" className="mt-4 space-y-4">
