@@ -539,58 +539,6 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Vendor Status Section */}
-        <Card className="wp-card mb-6 shadow-lg border-0 overflow-hidden">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl font-bold">Vendor Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {user?.vendorStatus === 'verified' ? (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-7 h-7 text-green-600" />
-                  </div>
-                  <div>
-                    <Badge variant="secondary" className="bg-green-600 text-white px-4 py-1.5 text-sm font-semibold mb-1" data-testid="badge-verified-vendor">
-                      Verified Vendor ✅
-                    </Badge>
-                    <p className="text-sm text-green-700 mt-2">You can now list products and services on the platform</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {user?.vendorStatus === 'pending' && (
-                  <div className="flex items-center gap-3 px-5 py-4 bg-yellow-50 border-2 border-yellow-200 rounded-2xl shadow-sm" data-testid="vendor-status-pending">
-                    <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                    <span className="text-yellow-800 font-medium">Your vendor verification request has been submitted for review.</span>
-                  </div>
-                )}
-                {user?.vendorStatus === 'rejected' && (
-                  <div className="flex items-center gap-3 px-5 py-4 bg-red-50 border-2 border-red-200 rounded-2xl shadow-sm" data-testid="vendor-status-rejected">
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                    <span className="text-red-800 font-medium">Your vendor verification request was rejected.</span>
-                  </div>
-                )}
-                {user?.vendorStatus === 'none' && (
-                  <div className="px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl">
-                    <p className="text-gray-700 font-medium">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services.</p>
-                  </div>
-                )}
-                <Button 
-                  onClick={() => setIsBecomeVendorModalOpen(true)}
-                  className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)] shadow-md hover:shadow-lg transition-all"
-                  data-testid="button-become-vendor"
-                >
-                  <ShieldCheck className="w-4 h-4 mr-2" />
-                  {user?.vendorStatus === 'rejected' ? 'Reapply for Vendor Status' : 'Become a Vendor'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Security - Change Password */}
         <Card className="wp-card mb-6 shadow-lg border-0">
           <CardHeader className="pb-4">

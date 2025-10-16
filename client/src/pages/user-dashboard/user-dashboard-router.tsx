@@ -73,7 +73,6 @@ export default function UserDashboardRouter() {
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
-    { name: "Become a Vendor", path: "/dashboard/become-vendor", icon: BadgeDollarSign, testId: "nav-become-vendor" },
   ];
 
   // Navigation items for verified vendors
@@ -148,6 +147,25 @@ export default function UserDashboardRouter() {
             })}
           </ul>
         </nav>
+
+        {/* Logout button at the bottom of sidebar */}
+        <div className="p-3 border-t border-white/10">
+          <Button
+            onClick={() => {
+              logoutMutation.mutate(undefined, {
+                onSuccess: () => {
+                  setLocation("/");
+                }
+              });
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-white/90 hover:bg-white/15 hover:text-white hover:shadow-sm bg-transparent border-0"
+            data-testid="button-logout-sidebar"
+            disabled={logoutMutation.isPending}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <span className="font-medium">Logout</span>
+          </Button>
+        </div>
       </aside>
 
       {/* Main content */}
@@ -176,42 +194,21 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/pricing" && "Pricing Settings"}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
+            {location === "/dashboard/recycle-bin" && "Recycle Bin"}
           </h1>
           
           <div className="flex items-center gap-3">
-            <Button
-              onClick={() => setLocation("/dashboard/browse")}
-              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
-              data-testid="button-browse-navbar"
-            >
-              <Search className="w-4 h-4" />
-              Browse
-            </Button>
-            
-            <Button
-              onClick={() => setLocation("/dashboard/cart")}
-              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
-              data-testid="button-cart-navbar"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Cart
-            </Button>
-            
-            <Button
-              onClick={() => {
-                logoutMutation.mutate(undefined, {
-                  onSuccess: () => {
-                    setLocation("/");
-                  }
-                });
-              }}
-              className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
-              data-testid="button-logout"
-              disabled={logoutMutation.isPending}
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
+            {/* Show Become a Vendor button for normal users only */}
+            {user?.vendorStatus !== 'verified' && (
+              <Button
+                onClick={() => setLocation("/dashboard/become-vendor")}
+                className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+                data-testid="button-become-vendor-navbar"
+              >
+                <BadgeDollarSign className="w-4 h-4" />
+                Become a Vendor
+              </Button>
+            )}
           </div>
         </header>
 
@@ -239,6 +236,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/pricing" component={UserPricing} />
             <Route path="/dashboard/cart" component={UserCart} />
             <Route path="/dashboard/checkout" component={UserCheckout} />
+            <Route path="/dashboard/recycle-bin" component={UserRecycleBin} />
           </Switch>
         </div>
       </main>
