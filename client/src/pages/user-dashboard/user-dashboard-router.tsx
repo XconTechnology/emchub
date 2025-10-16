@@ -115,16 +115,18 @@ export default function UserDashboardRouter() {
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 transition-transform duration-200 ease-in-out flex flex-col`}
         style={{ backgroundColor: '#8FC24C' }}
       >
-        {/* User info */}
+        {/* EMC HUB Logo/Link */}
         <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-white text-lg truncate" data-testid="text-username">
-              {user.username}
-            </h3>
-            {user.vendorStatus === 'verified' && (
-              <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
-            )}
-          </div>
+          <Link href="/" data-testid="link-emc-hub-home">
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
+              <h3 className="font-bold text-white text-xl" data-testid="text-emc-hub">
+                EMC HUB
+              </h3>
+              {user.vendorStatus === 'verified' && (
+                <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+              )}
+            </div>
+          </Link>
         </div>
 
         {/* Navigation */}

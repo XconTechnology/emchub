@@ -187,40 +187,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
               </div>
             )}
 
-            {/* Max TimeDollar Percentage */}
-            {product.maxTimedollarPercentage !== null && product.maxTimedollarPercentage !== undefined && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Max TimeDollar Allowed
-                  </span>
-                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" data-testid="max-td-badge">
-                    {product.maxTimedollarPercentage}%
-                  </Badge>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  Customers can pay up to {product.maxTimedollarPercentage}% of the price in TimeDollars
-                </p>
-              </div>
-            )}
-
-            {/* Linked Coupon */}
-            {product.couponId && (
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Promo Code Linked
-                  </span>
-                  <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300" data-testid="coupon-badge">
-                    Active
-                  </Badge>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  This product has a promotional coupon attached
-                </p>
-              </div>
-            )}
-
             <Separator />
 
             {/* Description */}

@@ -136,8 +136,6 @@ export const listings = pgTable("listings", {
   paymentType: varchar("payment_type").default("cash_only"), // 'cash_only' | 'timedollar_only' | 'both_choice' | 'combo'
   cashPercentage: integer("cash_percentage"), // For 'combo' type: 0-100
   timedollarPercentage: integer("timedollar_percentage"), // For 'combo' type: 0-100
-  maxTimedollarPercentage: integer("max_timedollar_percentage"), // Maximum % of price that can be paid in TD (0-100)
-  couponId: varchar("coupon_id").references(() => coupons.id), // Optional promo code linked to product
   
   // Service-specific fields
   duration: integer("duration_minutes"), // Duration in minutes

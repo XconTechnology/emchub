@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +46,6 @@ interface CartItem {
     title: string;
     price: string;
     imageUrl?: string;
-    maxTimedollarPercentage?: number; // Max % that can be paid in TD
   };
 }
 
@@ -57,7 +57,7 @@ export default function UserCheckout() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [orderCompleted, setOrderCompleted] = useState(false);
-  const [userTdInput, setUserTdInput] = useState(0); // TD amount user wants to use
+  const [comboSplitPercentage, setComboSplitPercentage] = useState(50);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscounts, setCouponDiscounts] = useState({ cash: 0, td: 0 });
@@ -162,33 +162,9 @@ export default function UserCheckout() {
 
   const total = calculateTotal();
   
-  // Calculate max TD allowed based on products
-  const getMaxTdAllowed = () => {
-    if (!cartItems || cartItems.length === 0) return 0;
-    // Use the minimum maxTimedollarPercentage among all products in cart
-    // Default to 100% for legacy products without maxTimedollarPercentage
-    const minMaxTdPercentage = Math.min(
-      ...cartItems.map(item => item.product.maxTimedollarPercentage ?? 100)
-    );
-    return (total * minMaxTdPercentage) / 100;
-  };
-  
-  const maxTdAllowed = getMaxTdAllowed();
-  const maxTdPercentage = Math.min(
-    ...cartItems?.map(item => item.product.maxTimedollarPercentage ?? 100) || [100]
-  );
-  
   // Calculate amounts before discounts
-  const cashAmountBeforeDiscount = 
-    paymentMethod === "cash" ? total : 
-    paymentMethod === "timedollar" ? Math.max(0, total - maxTdAllowed) : // Cap TD to maxTdAllowed
-    paymentMethod === "both" ? total - Math.min(userTdInput, maxTdAllowed) : 
-    0;
-  
-  const tdAmountBeforeDiscount = 
-    paymentMethod === "timedollar" ? Math.min(total, maxTdAllowed) : // Enforce TD cap
-    paymentMethod === "both" ? Math.min(userTdInput, maxTdAllowed) : 
-    0;
+  const cashAmountBeforeDiscount = paymentMethod === "cash" ? total : paymentMethod === "both" ? (total * comboSplitPercentage) / 100 : 0;
+  const tdAmountBeforeDiscount = paymentMethod === "timedollar" ? total : paymentMethod === "both" ? (total * (100 - comboSplitPercentage)) / 100 : 0;
   
   // Apply discounts
   const cashAmount = Math.max(0, cashAmountBeforeDiscount - couponDiscounts.cash);
@@ -252,12 +228,6 @@ export default function UserCheckout() {
       orderData.couponId = appliedCoupon.id;
       orderData.cashDiscount = couponDiscounts.cash;
       orderData.tdDiscount = couponDiscounts.td;
-    }
-
-    // If user selected "timedollar" but maxTdPercentage < 100%, the payment is actually "both"
-    // Update paymentMethod to reflect the actual mixed payment
-    if (data.paymentMethod === "timedollar" && cashAmount > 0 && tdAmount > 0) {
-      orderData.paymentMethod = "both";
     }
 
     createOrderMutation.mutate(orderData);
@@ -366,39 +336,16 @@ export default function UserCheckout() {
                       </div>
                       <Coins className="w-8 h-8 text-[#8FC24C]" />
                     </div>
-                    
-                    {maxTdPercentage < 100 && (
-                      <>
-                        <Alert>
-                          <AlertCircle className="w-4 h-4" />
-                          <AlertDescription>
-                            Products in your cart allow max {maxTdPercentage}% TimeDollar payment. 
-                            You'll pay <strong>{tdAmount.toFixed(0)} TD</strong> + <strong>${cashAmount.toFixed(2)} cash</strong>.
-                          </AlertDescription>
-                        </Alert>
-                        {!hasEnoughTD && (
-                          <Alert variant="destructive">
-                            <AlertCircle className="w-4 h-4" />
-                            <AlertDescription>
-                              Insufficient TimeDollar balance! You need <strong>{tdAmount.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>.
-                            </AlertDescription>
-                          </Alert>
+                    <Alert variant={hasEnoughTD ? "default" : "destructive"}>
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>
+                        {hasEnoughTD ? (
+                          <>Cost: <strong>{total.toFixed(0)} TD</strong>. You have sufficient balance!</>
+                        ) : (
+                          <>You need <strong>{total.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
                         )}
-                      </>
-                    )}
-                    
-                    {maxTdPercentage >= 100 && (
-                      <Alert variant={hasEnoughTD ? "default" : "destructive"}>
-                        <AlertCircle className="w-4 h-4" />
-                        <AlertDescription>
-                          {hasEnoughTD ? (
-                            <>Cost: <strong>{total.toFixed(0)} TD</strong>. You have sufficient balance!</>
-                          ) : (
-                            <>You need <strong>{total.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
-                          )}
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                      </AlertDescription>
+                    </Alert>
                   </TabsContent>
 
                   <TabsContent value="both" className="mt-4 space-y-4">
@@ -411,22 +358,20 @@ export default function UserCheckout() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">How much would you like to pay with TimeDollars?</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={Math.min(maxTdAllowed, tdBalance?.balance || 0)}
-                          value={userTdInput}
-                          onChange={(e) => setUserTdInput(parseFloat(e.target.value) || 0)}
-                          placeholder={`Enter TD amount (max: ${Math.min(maxTdAllowed, tdBalance?.balance || 0).toFixed(0)} TD)`}
-                          data-testid="input-td-amount"
-                        />
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Maximum allowed: {maxTdAllowed.toFixed(0)} TD ({Math.round((maxTdAllowed / total) * 100)}% of total)
-                        </p>
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium">Split Payment</label>
+                        <span className="text-sm text-gray-600">
+                          {comboSplitPercentage}% Cash / {100 - comboSplitPercentage}% TD
+                        </span>
                       </div>
-                      
+                      <Slider
+                        value={[comboSplitPercentage]}
+                        onValueChange={(value) => setComboSplitPercentage(value[0])}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                        data-testid="slider-payment-split"
+                      />
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div className="p-3 border rounded-lg">
                           <p className="text-sm text-gray-600 dark:text-gray-400">Cash Amount</p>
@@ -437,21 +382,11 @@ export default function UserCheckout() {
                           <p className="text-xl font-bold" data-testid="text-td-amount">{tdAmount.toFixed(0)} TD</p>
                         </div>
                       </div>
-                      
-                      {!hasEnoughTD && userTdInput > 0 && (
+                      {!hasEnoughTD && (
                         <Alert variant="destructive">
                           <AlertCircle className="w-4 h-4" />
                           <AlertDescription>
                             Insufficient TimeDollar balance! You need {tdAmount.toFixed(0)} TD but only have {tdBalance?.balance || 0} TD.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      
-                      {userTdInput > maxTdAllowed && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="w-4 h-4" />
-                          <AlertDescription>
-                            You can only pay up to {maxTdAllowed.toFixed(0)} TD for this order (maximum {Math.round((maxTdAllowed / total) * 100)}% allowed).
                           </AlertDescription>
                         </Alert>
                       )}
