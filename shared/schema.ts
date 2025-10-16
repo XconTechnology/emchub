@@ -181,34 +181,41 @@ export const bookings = pgTable("bookings", {
 // Enhanced coupon codes system
 export const coupons = pgTable("coupons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who created the coupon
+  
+  // Coupon Type: 'discount' or 'cash'
+  couponType: varchar("coupon_type").notNull(), // 'discount' | 'cash'
+  
+  // Issuer: 'vendor' or 'admin'
+  issuer: varchar("issuer").notNull(), // 'vendor' | 'admin'
+  vendorId: varchar("vendor_id").references(() => users.id), // Vendor who created (null for admin coupons)
+  
+  // Applicability
+  scope: varchar("scope").notNull().default("vendor"), // 'vendor' (vendor's products only) | 'platform' (all products)
   productId: varchar("product_id").references(() => listings.id), // Optional: specific product this coupon applies to
+  
   code: varchar("code").notNull().unique(),
-  title: varchar("title").notNull(), // Coupon title/name
-  description: text("description"), // Coupon description
+  title: varchar("title").notNull(),
+  description: text("description"),
   
-  // Discount configuration
-  discountType: varchar("discount_type").notNull(), // 'cash' | 'timedollar' | 'both'
+  // For discount coupons: percentage or fixed amount off
+  discountType: varchar("discount_type"), // 'percentage' | 'fixed' (for discount coupons)
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }), // Discount amount or percentage
   
-  // Cash discount (when discountType is 'cash' or 'both')
-  cashDiscountType: varchar("cash_discount_type"), // 'percentage' | 'fixed'
-  cashDiscountValue: decimal("cash_discount_value", { precision: 10, scale: 2 }),
-  
-  // TimeDollar discount (when discountType is 'timedollar' or 'both')
-  tdDiscountType: varchar("td_discount_type"), // 'percentage' | 'fixed'
-  tdDiscountValue: decimal("td_discount_value", { precision: 10, scale: 2 }),
+  // For cash coupons: fixed HK$ value (e.g., HK$60 = 1 TD)
+  cashValue: decimal("cash_value", { precision: 10, scale: 2 }), // Cash value for cash coupons
   
   // Usage limits and tracking
-  usageLimit: integer("usage_limit"), // Max number of total uses
+  usageLimit: integer("usage_limit"),
   usedCount: integer("used_count").default(0),
   
   // Validity period
   validFrom: timestamp("valid_from").defaultNow(),
   validUntil: timestamp("valid_until"),
   
-  // Status and moderation
-  status: varchar("status").notNull().default("active"), // 'active' | 'inactive' | 'expired'
-  isActive: boolean("is_active").default(true),
+  // Status and approval (for vendor coupons)
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected' | 'expired' | 'inactive'
+  approvedBy: varchar("approved_by").references(() => users.id), // Admin who approved (for vendor coupons)
+  rejectionReason: text("rejection_reason"), // Reason for rejection
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -410,8 +417,8 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 
 export const insertCouponSchema = createInsertSchema(coupons).omit({
   id: true,
-  vendorId: true,
   usedCount: true,
+  approvedBy: true,
   createdAt: true,
   updatedAt: true,
 });
