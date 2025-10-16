@@ -297,6 +297,18 @@ export default function UserDashboardHome() {
             </CardHeader>
           </Card>
 
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation("/dashboard/become-vendor")}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Store className="w-8 h-8 text-purple-500" />
+                <div>
+                  <CardTitle className="text-lg">Become a Vendor</CardTitle>
+                  <CardDescription>Start selling today</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
           <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white col-span-full md:col-span-2 lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

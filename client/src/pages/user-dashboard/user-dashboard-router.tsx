@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import {
   Store,
   ShoppingCart,
   ShoppingBag,
-  Activity
+  Activity,
+  BadgeDollarSign
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,21 +56,14 @@ import UserPurchases from "./user-purchases";
 import UserActivity from "./user-activity";
 import UserBecomeVendor from "./user-become-vendor";
 import UserRecycleBin from "./user-recycle-bin";
-import { BecomeVendorModal } from "@/components/BecomeVendorModal";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [becomeVendorModalOpen, setBecomeVendorModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (!user) {
-      setLocation("/auth");
-    }
-  }, [user, setLocation]);
 
   if (!user) {
+    setLocation("/auth");
     return null;
   }
 
@@ -79,6 +73,7 @@ export default function UserDashboardRouter() {
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+    { name: "Become a Vendor", path: "/dashboard/become-vendor", icon: BadgeDollarSign, testId: "nav-become-vendor" },
   ];
 
   // Navigation items for verified vendors
@@ -202,17 +197,6 @@ export default function UserDashboardRouter() {
               Cart
             </Button>
             
-            {user?.vendorStatus !== 'verified' && (
-              <Button
-                onClick={() => setBecomeVendorModalOpen(true)}
-                className="gap-2 bg-white text-[#8FC24C] hover:bg-white/90 border-0 font-semibold"
-                data-testid="button-become-vendor-navbar"
-              >
-                <Store className="w-4 h-4" />
-                Become a Vendor
-              </Button>
-            )}
-            
             <Button
               onClick={() => {
                 logoutMutation.mutate(undefined, {
@@ -266,12 +250,6 @@ export default function UserDashboardRouter() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Become a Vendor Modal */}
-      <BecomeVendorModal
-        isOpen={becomeVendorModalOpen}
-        onClose={() => setBecomeVendorModalOpen(false)}
-      />
     </div>
   );
 }

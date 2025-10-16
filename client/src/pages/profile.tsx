@@ -575,9 +575,17 @@ export default function Profile() {
                 )}
                 {user?.vendorStatus === 'none' && (
                   <div className="px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl">
-                    <p className="text-gray-700 font-medium">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services. Click the "Become a Vendor" button in the top navigation bar.</p>
+                    <p className="text-gray-700 font-medium">You are not currently a vendor. Apply to become a verified vendor to start selling your products and services.</p>
                   </div>
                 )}
+                <Button 
+                  onClick={() => setIsBecomeVendorModalOpen(true)}
+                  className="bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)] shadow-md hover:shadow-lg transition-all"
+                  data-testid="button-become-vendor"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  {user?.vendorStatus === 'rejected' ? 'Reapply for Vendor Status' : 'Become a Vendor'}
+                </Button>
               </div>
             )}
           </CardContent>
