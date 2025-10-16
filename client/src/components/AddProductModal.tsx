@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
@@ -16,9 +17,11 @@ import { Upload, X } from "lucide-react";
 
 const productSchema = insertListingSchema.extend({
   title: z.string().min(1, "Product name is required"),
-  price: z.string().min(1, "Price is required"),
+  price: z.string().min(1, "Cash price is required"),
   inventory: z.string().min(1, "Stock quantity is required"),
   customCategory: z.string().optional(),
+  maxTimedollarPercentage: z.string().optional(),
+  couponId: z.string().optional(),
   status: z.enum(["draft", "published", "pending", "rejected"]),
 });
 
@@ -36,6 +39,12 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
   const isEditing = !!editProduct;
   const [imageUrl, setImageUrl] = useState<string>("");
 
+  // Fetch vendor's coupons
+  const { data: vendorCoupons } = useQuery<any[]>({
+    queryKey: ['/api/coupons/vendor', user?.id],
+    enabled: !!user && isOpen,
+  });
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -45,6 +54,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       customCategory: "",
       price: "",
       inventory: "",
+      maxTimedollarPercentage: "",
+      couponId: "",
       status: "pending",
     },
   });
@@ -58,6 +69,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: editProduct.customCategory || "",
         price: editProduct.price?.toString() || "",
         inventory: editProduct.inventory?.toString() || "",
+        maxTimedollarPercentage: editProduct.maxTimedollarPercentage?.toString() || "",
+        couponId: editProduct.couponId || "",
         status: editProduct.status || "pending",
       });
       setImageUrl(editProduct.images?.[0] || "");
@@ -69,6 +82,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: "",
         price: "",
         inventory: "",
+        maxTimedollarPercentage: "",
+        couponId: "",
         status: "pending",
       });
       setImageUrl("");
@@ -109,6 +124,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         userId: user?.id,
         price: data.price,
         inventory: parseInt(data.inventory),
+        maxTimedollarPercentage: data.maxTimedollarPercentage ? parseInt(data.maxTimedollarPercentage) : null,
+        couponId: data.couponId || null,
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
@@ -192,7 +209,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="price">Price *</Label>
+              <Label htmlFor="price">Cash Price (HKD) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -218,6 +235,47 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
               {form.formState.errors.inventory && (
                 <p className="text-sm text-red-500">{form.formState.errors.inventory.message}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="maxTimedollarPercentage">Max TimeDollar Allowed (%)</Label>
+              <Input
+                id="maxTimedollarPercentage"
+                type="number"
+                min="0"
+                max="100"
+                {...form.register("maxTimedollarPercentage")}
+                placeholder="e.g., 20 (means 20% can be paid in TD)"
+                data-testid="input-max-td-percent"
+              />
+              <p className="text-xs text-muted-foreground">
+                Set the maximum percentage of the price that can be paid with TimeDollars (0-100%)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="couponId">Promo Code (Optional)</Label>
+              <Select 
+                value={form.watch("couponId")} 
+                onValueChange={(value) => form.setValue("couponId", value)}
+              >
+                <SelectTrigger data-testid="select-promo-code">
+                  <SelectValue placeholder="Select a promo code" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No promo code</SelectItem>
+                  {vendorCoupons?.map((coupon) => (
+                    <SelectItem key={coupon.id} value={coupon.id}>
+                      {coupon.code} - {coupon.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Link an existing promo code to this product
+              </p>
             </div>
           </div>
 
