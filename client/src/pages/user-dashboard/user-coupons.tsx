@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Ticket, Plus, Trash2, Calendar, Users, BarChart3, Edit, Power } from "lucide-react";
+import { Ticket, Plus, Trash2, Calendar, Users, BarChart3, Edit, Power, Clock, CheckCircle, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -45,15 +45,13 @@ export default function UserCoupons() {
     code: "",
     title: "",
     description: "",
-    discountType: "cash" as "cash" | "timedollar" | "both",
-    cashDiscountType: "percentage" as "percentage" | "fixed",
-    cashDiscountValue: "",
-    tdDiscountType: "percentage" as "percentage" | "fixed",
-    tdDiscountValue: "",
+    discountType: "percentage" as "percentage" | "fixed",
+    discountValue: "",
+    scope: "vendor" as "vendor" | "platform",
+    productId: null as string | null,
     usageLimit: "",
     validFrom: "",
     validUntil: "",
-    isActive: true,
   });
 
   const { data: coupons = [], isLoading } = useQuery<Coupon[]>({
@@ -62,8 +60,7 @@ export default function UserCoupons() {
 
   const { data: analytics } = useQuery<{
     totalUsed: number;
-    totalCashDiscount: number;
-    totalTdDiscount: number;
+    totalDiscount: number;
     users: any[];
   }>({
     queryKey: ["/api/coupons", viewingAnalytics?.id, "analytics"],
@@ -74,7 +71,10 @@ export default function UserCoupons() {
     mutationFn: async (data: any) => apiRequest("POST", "/api/coupons", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/vendor"] });
-      toast({ title: "Coupon created successfully" });
+      toast({ 
+        title: "Coupon submitted for approval",
+        description: "Your coupon will be reviewed by an admin before activation."
+      });
       setIsCreateOpen(false);
       resetForm();
     },
@@ -90,6 +90,7 @@ export default function UserCoupons() {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/vendor"] });
       toast({ title: "Coupon updated successfully" });
       setEditingCoupon(null);
+      resetForm();
     },
     onError: (error: any) => {
       toast({ title: "Failed to update coupon", description: error.message, variant: "destructive" });
@@ -113,15 +114,13 @@ export default function UserCoupons() {
       code: "",
       title: "",
       description: "",
-      discountType: "cash",
-      cashDiscountType: "percentage",
-      cashDiscountValue: "",
-      tdDiscountType: "percentage",
-      tdDiscountValue: "",
+      discountType: "percentage",
+      discountValue: "",
+      scope: "vendor",
+      productId: null,
       usageLimit: "",
       validFrom: "",
       validUntil: "",
-      isActive: true,
     });
   };
 
@@ -130,15 +129,13 @@ export default function UserCoupons() {
       code: coupon.code,
       title: coupon.title || "",
       description: coupon.description || "",
-      discountType: coupon.discountType as any,
-      cashDiscountType: (coupon.cashDiscountType || "percentage") as any,
-      cashDiscountValue: coupon.cashDiscountValue || "",
-      tdDiscountType: (coupon.tdDiscountType || "percentage") as any,
-      tdDiscountValue: coupon.tdDiscountValue || "",
+      discountType: (coupon.discountType || "percentage") as any,
+      discountValue: coupon.discountValue?.toString() || "",
+      scope: (coupon.scope || "vendor") as any,
+      productId: coupon.productId || null,
       usageLimit: coupon.usageLimit?.toString() || "",
       validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : "",
       validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : "",
-      isActive: coupon.isActive ?? true,
     });
     setEditingCoupon(coupon);
   };
@@ -150,24 +147,15 @@ export default function UserCoupons() {
       code: formData.code.toUpperCase(),
       title: formData.title,
       description: formData.description,
+      couponType: "discount",
       discountType: formData.discountType,
+      discountValue: parseFloat(formData.discountValue),
+      scope: formData.scope,
+      productId: formData.scope === "platform" ? null : formData.productId,
       usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
       validFrom: formData.validFrom || undefined,
       validUntil: formData.validUntil || undefined,
-      isActive: formData.isActive,
     };
-
-    // Add cash discount fields if applicable
-    if (formData.discountType === 'cash' || formData.discountType === 'both') {
-      payload.cashDiscountType = formData.cashDiscountType;
-      payload.cashDiscountValue = formData.cashDiscountValue;
-    }
-
-    // Add TD discount fields if applicable
-    if (formData.discountType === 'timedollar' || formData.discountType === 'both') {
-      payload.tdDiscountType = formData.tdDiscountType;
-      payload.tdDiscountValue = formData.tdDiscountValue;
-    }
 
     if (editingCoupon) {
       updateMutation.mutate({ id: editingCoupon.id, data: payload });
@@ -177,23 +165,44 @@ export default function UserCoupons() {
   };
 
   const getDiscountDisplay = (coupon: Coupon) => {
-    const parts = [];
-    
-    if (coupon.discountType === 'cash' || coupon.discountType === 'both') {
-      const cashDiscount = coupon.cashDiscountType === 'percentage' 
-        ? `${coupon.cashDiscountValue}% off Cash`
-        : `$${coupon.cashDiscountValue} off Cash`;
-      parts.push(cashDiscount);
+    if (coupon.couponType === "cash") {
+      return `HK$${coupon.discountValue} Cash Coupon`;
     }
-    
-    if (coupon.discountType === 'timedollar' || coupon.discountType === 'both') {
-      const tdDiscount = coupon.tdDiscountType === 'percentage'
-        ? `${coupon.tdDiscountValue}% off TD`
-        : `${coupon.tdDiscountValue} TD off`;
-      parts.push(tdDiscount);
+    return coupon.discountType === 'percentage' 
+      ? `${coupon.discountValue}% off`
+      : `HK$${coupon.discountValue} off`;
+  };
+
+  const getApprovalBadge = (coupon: Coupon) => {
+    if (coupon.status === "approved") {
+      return (
+        <Badge variant="default" className="bg-green-600" data-testid={`approval-${coupon.id}`}>
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Approved
+        </Badge>
+      );
+    } else if (coupon.status === "rejected") {
+      return (
+        <Badge variant="destructive" data-testid={`approval-${coupon.id}`}>
+          <XCircle className="w-3 h-3 mr-1" />
+          Rejected
+        </Badge>
+      );
+    } else if (coupon.status === "inactive") {
+      return (
+        <Badge variant="secondary" data-testid={`approval-${coupon.id}`}>
+          <Power className="w-3 h-3 mr-1" />
+          Inactive
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="secondary" data-testid={`approval-${coupon.id}`}>
+          <Clock className="w-3 h-3 mr-1" />
+          Pending Approval
+        </Badge>
+      );
     }
-    
-    return parts.join(' + ');
   };
 
   if (user?.vendorStatus !== 'verified') {
@@ -211,7 +220,10 @@ export default function UserCoupons() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">My Coupons</h2>
-          <p className="text-gray-600">Create and manage discount coupons for your products and services</p>
+          <p className="text-gray-600">Create discount coupons for your products and services</p>
+          <p className="text-sm text-amber-600 mt-1">
+            Note: All vendor coupons require admin approval before activation
+          </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
@@ -222,9 +234,9 @@ export default function UserCoupons() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Coupon</DialogTitle>
+              <DialogTitle>Create New Discount Coupon</DialogTitle>
               <DialogDescription>
-                Create a discount coupon that customers can use at checkout
+                Create a discount coupon that customers can use at checkout. Your coupon will require admin approval.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -265,94 +277,52 @@ export default function UserCoupons() {
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="discountType">Discount Type*</Label>
+                    <Select
+                      value={formData.discountType}
+                      onValueChange={(value: any) => setFormData({ ...formData, discountType: value })}
+                    >
+                      <SelectTrigger data-testid="select-discount-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount (HK$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="discountValue">Discount Value*</Label>
+                    <Input
+                      id="discountValue"
+                      data-testid="input-discount-value"
+                      type="number"
+                      step="0.01"
+                      placeholder={formData.discountType === "percentage" ? "10" : "50"}
+                      value={formData.discountValue}
+                      onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="discountType">Discount Type*</Label>
+                  <Label htmlFor="scope">Coupon Scope*</Label>
                   <Select
-                    value={formData.discountType}
-                    onValueChange={(value: any) => setFormData({ ...formData, discountType: value })}
+                    value={formData.scope}
+                    onValueChange={(value: any) => setFormData({ ...formData, scope: value })}
                   >
-                    <SelectTrigger data-testid="select-discount-type">
+                    <SelectTrigger data-testid="select-scope">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">Cash Only</SelectItem>
-                      <SelectItem value="timedollar">TimeDollar Only</SelectItem>
-                      <SelectItem value="both">Both Cash & TimeDollar</SelectItem>
+                      <SelectItem value="vendor">All My Products/Services</SelectItem>
+                      <SelectItem value="platform">Platform-Wide (Admin Only)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-
-                {(formData.discountType === 'cash' || formData.discountType === 'both') && (
-                  <div className="border-l-4 border-green-500 pl-4 space-y-3">
-                    <h4 className="font-semibold text-sm text-green-700">Cash Discount</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="cashDiscountType">Type*</Label>
-                        <Select
-                          value={formData.cashDiscountType}
-                          onValueChange={(value: any) => setFormData({ ...formData, cashDiscountType: value })}
-                        >
-                          <SelectTrigger data-testid="select-cash-discount-type">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="percentage">Percentage (%)</SelectItem>
-                            <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="cashDiscountValue">Value*</Label>
-                        <Input
-                          id="cashDiscountValue"
-                          data-testid="input-cash-discount-value"
-                          type="number"
-                          step="0.01"
-                          placeholder={formData.cashDiscountType === "percentage" ? "10" : "5.00"}
-                          value={formData.cashDiscountValue}
-                          onChange={(e) => setFormData({ ...formData, cashDiscountValue: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {(formData.discountType === 'timedollar' || formData.discountType === 'both') && (
-                  <div className="border-l-4 border-blue-500 pl-4 space-y-3">
-                    <h4 className="font-semibold text-sm text-blue-700">TimeDollar Discount</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="tdDiscountType">Type*</Label>
-                        <Select
-                          value={formData.tdDiscountType}
-                          onValueChange={(value: any) => setFormData({ ...formData, tdDiscountType: value })}
-                        >
-                          <SelectTrigger data-testid="select-td-discount-type">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="percentage">Percentage (%)</SelectItem>
-                            <SelectItem value="fixed">Fixed Amount (TD)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="tdDiscountValue">Value*</Label>
-                        <Input
-                          id="tdDiscountValue"
-                          data-testid="input-td-discount-value"
-                          type="number"
-                          step="0.01"
-                          placeholder={formData.tdDiscountType === "percentage" ? "10" : "5"}
-                          value={formData.tdDiscountValue}
-                          onChange={(e) => setFormData({ ...formData, tdDiscountValue: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="usageLimit">Usage Limit (Optional)</Label>
@@ -389,22 +359,13 @@ export default function UserCoupons() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    data-testid="switch-is-active"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                  />
-                  <Label htmlFor="isActive">Active (customers can use this coupon)</Label>
-                </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => { setIsCreateOpen(false); resetForm(); }}>
                   Cancel
                 </Button>
                 <Button type="submit" data-testid="button-submit-coupon" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Coupon"}
+                  {createMutation.isPending ? "Submitting..." : "Submit for Approval"}
                 </Button>
               </DialogFooter>
             </form>
@@ -437,14 +398,14 @@ export default function UserCoupons() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <CardTitle className="text-2xl font-mono" data-testid={`text-code-${coupon.id}`}>
                         {coupon.code}
                       </CardTitle>
-                      <Badge variant={coupon.isActive ? "default" : "secondary"} data-testid={`status-${coupon.id}`}>
-                        <Power className="w-3 h-3 mr-1" />
-                        {coupon.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      {getApprovalBadge(coupon)}
+                      {coupon.productId && (
+                        <Badge variant="outline">Product-Specific</Badge>
+                      )}
                     </div>
                     <CardTitle className="text-lg mb-1" data-testid={`text-title-${coupon.id}`}>
                       {coupon.title}
@@ -454,6 +415,13 @@ export default function UserCoupons() {
                     </CardDescription>
                     {coupon.description && (
                       <p className="text-sm text-gray-600 mt-2">{coupon.description}</p>
+                    )}
+                    {coupon.status === "rejected" && coupon.rejectionReason && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-sm text-red-700">
+                          <strong>Rejection reason:</strong> {coupon.rejectionReason}
+                        </p>
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -465,14 +433,16 @@ export default function UserCoupons() {
                     >
                       <BarChart3 className="w-4 h-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      data-testid={`button-edit-${coupon.id}`}
-                      onClick={() => loadEditForm(coupon)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    {coupon.status !== "approved" && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        data-testid={`button-edit-${coupon.id}`}
+                        onClick={() => loadEditForm(coupon)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="icon"
@@ -515,13 +485,13 @@ export default function UserCoupons() {
         </div>
       )}
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog - Similar structure to create but for editing */}
       <Dialog open={!!editingCoupon} onOpenChange={(open) => { if (!open) { setEditingCoupon(null); resetForm(); } }}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Coupon</DialogTitle>
             <DialogDescription>
-              Update your coupon details
+              Update your coupon details. Changes will require re-approval.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -562,92 +532,36 @@ export default function UserCoupons() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="edit-discountType">Discount Type*</Label>
-                <Select
-                  value={formData.discountType}
-                  onValueChange={(value: any) => setFormData({ ...formData, discountType: value })}
-                >
-                  <SelectTrigger data-testid="select-edit-discount-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash Only</SelectItem>
-                    <SelectItem value="timedollar">TimeDollar Only</SelectItem>
-                    <SelectItem value="both">Both Cash & TimeDollar</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-discountType">Discount Type*</Label>
+                  <Select
+                    value={formData.discountType}
+                    onValueChange={(value: any) => setFormData({ ...formData, discountType: value })}
+                  >
+                    <SelectTrigger data-testid="select-edit-discount-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage (%)</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount (HK$)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-discountValue">Discount Value*</Label>
+                  <Input
+                    id="edit-discountValue"
+                    data-testid="input-edit-discount-value"
+                    type="number"
+                    step="0.01"
+                    placeholder={formData.discountType === "percentage" ? "10" : "50"}
+                    value={formData.discountValue}
+                    onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
-
-              {(formData.discountType === 'cash' || formData.discountType === 'both') && (
-                <div className="border-l-4 border-green-500 pl-4 space-y-3">
-                  <h4 className="font-semibold text-sm text-green-700">Cash Discount</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="edit-cashDiscountType">Type*</Label>
-                      <Select
-                        value={formData.cashDiscountType}
-                        onValueChange={(value: any) => setFormData({ ...formData, cashDiscountType: value })}
-                      >
-                        <SelectTrigger data-testid="select-edit-cash-discount-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">Percentage (%)</SelectItem>
-                          <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="edit-cashDiscountValue">Value*</Label>
-                      <Input
-                        id="edit-cashDiscountValue"
-                        data-testid="input-edit-cash-discount-value"
-                        type="number"
-                        step="0.01"
-                        value={formData.cashDiscountValue}
-                        onChange={(e) => setFormData({ ...formData, cashDiscountValue: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {(formData.discountType === 'timedollar' || formData.discountType === 'both') && (
-                <div className="border-l-4 border-blue-500 pl-4 space-y-3">
-                  <h4 className="font-semibold text-sm text-blue-700">TimeDollar Discount</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="edit-tdDiscountType">Type*</Label>
-                      <Select
-                        value={formData.tdDiscountType}
-                        onValueChange={(value: any) => setFormData({ ...formData, tdDiscountType: value })}
-                      >
-                        <SelectTrigger data-testid="select-edit-td-discount-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">Percentage (%)</SelectItem>
-                          <SelectItem value="fixed">Fixed Amount (TD)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="edit-tdDiscountValue">Value*</Label>
-                      <Input
-                        id="edit-tdDiscountValue"
-                        data-testid="input-edit-td-discount-value"
-                        type="number"
-                        step="0.01"
-                        value={formData.tdDiscountValue}
-                        onChange={(e) => setFormData({ ...formData, tdDiscountValue: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="edit-usageLimit">Usage Limit (Optional)</Label>
@@ -684,15 +598,6 @@ export default function UserCoupons() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit-isActive"
-                  data-testid="switch-edit-is-active"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                />
-                <Label htmlFor="edit-isActive">Active (customers can use this coupon)</Label>
-              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => { setEditingCoupon(null); resetForm(); }}>
@@ -706,104 +611,77 @@ export default function UserCoupons() {
         </DialogContent>
       </Dialog>
 
-      {/* Analytics Dialog */}
-      <Dialog open={!!viewingAnalytics} onOpenChange={() => setViewingAnalytics(null)}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>Coupon Analytics: {viewingAnalytics?.code}</DialogTitle>
-            <DialogDescription>
-              View detailed usage statistics for this coupon
-            </DialogDescription>
-          </DialogHeader>
-          {analytics ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Total Uses</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold" data-testid="text-analytics-total-used">{analytics.totalUsed}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Total Cash Discount</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-green-600" data-testid="text-analytics-cash-discount">
-                      ${analytics.totalCashDiscount.toFixed(2)}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">Total TD Discount</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-blue-600" data-testid="text-analytics-td-discount">
-                      {analytics.totalTdDiscount} TD
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {analytics.users && analytics.users.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3">Usage History</h3>
-                  <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
-                    {analytics.users.map((usage: any) => (
-                      <div key={usage.id} className="p-3 flex justify-between items-center" data-testid={`usage-${usage.id}`}>
-                        <div>
-                          <p className="font-medium">{usage.userName}</p>
-                          <p className="text-sm text-gray-500">{usage.userEmail}</p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(usage.createdAt).toLocaleDateString()} {new Date(usage.createdAt).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          {Number(usage.cashDiscount) > 0 && (
-                            <p className="text-sm text-green-600">-${Number(usage.cashDiscount).toFixed(2)}</p>
-                          )}
-                          {Number(usage.tdDiscount) > 0 && (
-                            <p className="text-sm text-blue-600">-{usage.tdDiscount} TD</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <p>Loading analytics...</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deletingCoupon} onOpenChange={() => setDeletingCoupon(null)}>
+      <AlertDialog open={!!deletingCoupon} onOpenChange={(open) => !open && setDeletingCoupon(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Coupon</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete coupon "{deletingCoupon?.code}"? This action cannot be undone.
+              Are you sure you want to delete the coupon "{deletingCoupon?.code}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              data-testid="button-confirm-delete"
               onClick={() => deletingCoupon && deleteMutation.mutate(deletingCoupon.id)}
               className="bg-red-600 hover:bg-red-700"
-              data-testid="button-confirm-delete"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Analytics Dialog */}
+      <Dialog open={!!viewingAnalytics} onOpenChange={(open) => !open && setViewingAnalytics(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Coupon Analytics: {viewingAnalytics?.code}</DialogTitle>
+            <DialogDescription>
+              View usage statistics for this coupon
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Uses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold" data-testid="text-total-used">
+                    {analytics?.totalUsed || 0}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Discount</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold" data-testid="text-total-discount">
+                    HK${analytics?.totalDiscount?.toFixed(2) || "0.00"}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {analytics && analytics.users && analytics.users.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">Recent Users</h4>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {analytics.users.map((user: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm p-2 bg-gray-50 rounded">
+                      <span>{user.userName}</span>
+                      <span className="text-gray-600">HK${user.discount?.toFixed(2) || "0.00"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
