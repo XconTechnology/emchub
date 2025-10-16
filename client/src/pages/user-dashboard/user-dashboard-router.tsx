@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -62,8 +62,13 @@ export default function UserDashboardRouter() {
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => {
+    if (!user) {
+      setLocation("/auth");
+    }
+  }, [user, setLocation]);
+
   if (!user) {
-    setLocation("/auth");
     return null;
   }
 

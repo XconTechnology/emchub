@@ -12,7 +12,6 @@ import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import AddProductModal from "@/components/AddProductModal";
 import AddServiceModal from "@/components/AddServiceModal";
-import { BecomeVendorModal } from "@/components/BecomeVendorModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ProfilePictureUpload } from "@/components/ProfilePictureUpload";
 import type { Listing } from "@shared/schema";
@@ -34,7 +33,6 @@ export default function Profile() {
   const [isAddListingModalOpen, setIsAddListingModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
-  const [isBecomeVendorModalOpen, setIsBecomeVendorModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Listing | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Listing | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -54,14 +52,6 @@ export default function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('openVendor') === 'true') {
-      setIsBecomeVendorModalOpen(true);
-      window.history.replaceState({}, '', '/profile');
-    }
-  }, []);
 
   useEffect(() => {
     if (user) {
@@ -887,11 +877,6 @@ export default function Profile() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        <BecomeVendorModal 
-          isOpen={isBecomeVendorModalOpen}
-          onClose={() => setIsBecomeVendorModalOpen(false)}
-        />
       </div>
   );
 }
