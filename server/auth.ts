@@ -90,13 +90,27 @@ export function setupAuth(app: Express) {
       { usernameField: "username" },
       async (username, password, done) => {
         try {
+          console.log('LocalStrategy: Attempting login for username:', username);
           const user = await storage.getUserByUsername(username);
-          if (!user || !(await comparePasswords(password, user.password))) {
+          console.log('LocalStrategy: User found:', user ? 'YES' : 'NO');
+          
+          if (!user) {
+            console.log('LocalStrategy: User not found');
             return done(null, false);
-          } else {
-            return done(null, user);
           }
+          
+          const passwordMatch = await comparePasswords(password, user.password);
+          console.log('LocalStrategy: Password match:', passwordMatch);
+          
+          if (!passwordMatch) {
+            console.log('LocalStrategy: Password does not match');
+            return done(null, false);
+          }
+          
+          console.log('LocalStrategy: Authentication successful for user:', user.id);
+          return done(null, user);
         } catch (error) {
+          console.error('LocalStrategy: Error during authentication:', error);
           return done(error);
         }
       }
@@ -153,7 +167,16 @@ export function setupAuth(app: Express) {
       });
 
       // Regenerate session for security
-      req.session.regenerate((err) => {
+      // If session doesn't exist, create a new one
+      const regenerateSession = (callback: (err?: any) => void) => {
+        if (req.session) {
+          req.session.regenerate(callback);
+        } else {
+          callback();
+        }
+      };
+
+      regenerateSession((err) => {
         if (err) return next(err);
         req.login(user, (err) => {
           if (err) return next(err);
@@ -183,7 +206,17 @@ export function setupAuth(app: Express) {
       }
       
       // Regenerate session for security (prevent session fixation)
-      req.session.regenerate((err) => {
+      // If session doesn't exist (e.g., after logout), create a new one
+      const regenerateSession = (callback: (err?: any) => void) => {
+        if (req.session) {
+          req.session.regenerate(callback);
+        } else {
+          // Session doesn't exist, just call the callback
+          callback();
+        }
+      };
+
+      regenerateSession((err) => {
         if (err) return next(err);
         req.login(user, (err) => {
           if (err) return next(err);
