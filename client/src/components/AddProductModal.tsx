@@ -37,7 +37,23 @@ const productSchema = insertListingSchema.extend({
   status: z.enum(["draft", "published", "pending", "rejected"]),
   createCoupon: z.boolean().optional(),
   coupon: couponSchema.optional(),
-});
+}).refine(
+  (data) => {
+    // If createCoupon is true, validate coupon fields
+    if (data.createCoupon && data.coupon) {
+      return (
+        data.coupon.code?.trim().length >= 3 &&
+        data.coupon.title?.trim().length >= 1
+      );
+    }
+    // If createCoupon is false, no validation needed
+    return true;
+  },
+  {
+    message: "Coupon code and title are required when creating a coupon",
+    path: ["coupon"],
+  }
+);
 
 type ProductFormData = z.infer<typeof productSchema>;
 
@@ -148,7 +164,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const productData = {
+      const productData: any = {
         ...data,
         type: "product",
         userId: user?.id,
@@ -157,6 +173,13 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
+      
+      // Only include coupon data if createCoupon is true
+      if (!data.createCoupon) {
+        delete productData.coupon;
+        delete productData.createCoupon;
+      }
+      
       const res = await apiRequest(
         isEditing ? "PUT" : "POST",
         isEditing ? `/api/listings/${editProduct.id}` : "/api/listings",
