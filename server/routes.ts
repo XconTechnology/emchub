@@ -163,6 +163,34 @@ export function registerRoutes(app: Express): Server {
       });
       
       console.log('Created listing:', listing);
+
+      // Create coupon if requested (only for products)
+      if (req.body.createCoupon && req.body.coupon && listing.type === 'product') {
+        try {
+          const couponData = req.body.coupon;
+          const coupon = await storage.createCoupon({
+            vendorId: userId,
+            productId: listing.id,
+            code: couponData.code.toUpperCase(),
+            title: couponData.title,
+            description: couponData.description || null,
+            discountType: couponData.discountType,
+            cashDiscountType: couponData.cashDiscountType || null,
+            cashDiscountValue: couponData.cashDiscountValue ? parseFloat(couponData.cashDiscountValue) : null,
+            tdDiscountType: couponData.tdDiscountType || null,
+            tdDiscountValue: couponData.tdDiscountValue ? parseFloat(couponData.tdDiscountValue) : null,
+            usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
+            validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
+            status: 'active',
+            isActive: true,
+          });
+          console.log('Created coupon:', coupon);
+        } catch (couponError) {
+          console.error('Error creating coupon:', couponError);
+          // Don't fail the listing creation if coupon creation fails
+        }
+      }
+      
       res.json(listing);
     } catch (error: any) {
       console.error("Error creating listing:", error);
