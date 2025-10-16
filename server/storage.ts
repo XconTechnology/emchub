@@ -75,7 +75,7 @@ export interface IStorage {
   // Coupon operations
   getCoupon(code: string): Promise<Coupon | undefined>;
   getCouponById(id: string): Promise<Coupon | undefined>;
-  validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number): Promise<{ 
+  validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number, productIds?: string[]): Promise<{ 
     valid: boolean; 
     cashDiscount: number; 
     tdDiscount: number;
@@ -432,7 +432,7 @@ export class DatabaseStorage implements IStorage {
     return coupon;
   }
 
-  async validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number): Promise<{ 
+  async validateCoupon(code: string, vendorId: string, cashAmount: number, tdAmount: number, productIds?: string[]): Promise<{ 
     valid: boolean; 
     cashDiscount: number; 
     tdDiscount: number;
@@ -441,7 +441,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const coupon = await this.getCoupon(code);
     
-    console.log('Validating coupon:', { code, vendorId, coupon: coupon ? { id: coupon.id, vendorId: coupon.vendorId, isActive: coupon.isActive, status: coupon.status } : null });
+    console.log('Validating coupon:', { code, vendorId, productIds, coupon: coupon ? { id: coupon.id, vendorId: coupon.vendorId, productId: coupon.productId, isActive: coupon.isActive, status: coupon.status } : null });
     
     if (!coupon) {
       return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon not found' };
@@ -456,6 +456,19 @@ export class DatabaseStorage implements IStorage {
     if (coupon.vendorId !== vendorId) {
       console.log('Vendor mismatch:', { couponVendorId: coupon.vendorId, providedVendorId: vendorId });
       return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'Coupon is not valid for this vendor' };
+    }
+
+    // Check if coupon is product-specific
+    if (coupon.productId) {
+      if (!productIds || productIds.length === 0) {
+        console.log('Product-specific coupon but no products provided');
+        return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'This coupon requires specific products in your cart' };
+      }
+      
+      if (!productIds.includes(coupon.productId)) {
+        console.log('Product not in cart:', { requiredProductId: coupon.productId, cartProductIds: productIds });
+        return { valid: false, cashDiscount: 0, tdDiscount: 0, error: 'This coupon is only valid for a specific product not in your cart' };
+      }
     }
     
     const now = new Date();

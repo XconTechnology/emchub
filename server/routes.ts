@@ -1970,9 +1970,9 @@ export function registerRoutes(app: Express): Server {
   // Validate coupon
   app.post("/api/coupons/validate", async (req, res) => {
     try {
-      const { code, vendorId, cashAmount, tdAmount } = req.body;
-      console.log('🎫 Coupon validation request:', { code, vendorId, cashAmount, tdAmount });
-      const validation = await storage.validateCoupon(code, vendorId, cashAmount || 0, tdAmount || 0);
+      const { code, vendorId, cashAmount, tdAmount, productIds } = req.body;
+      console.log('🎫 Coupon validation request:', { code, vendorId, cashAmount, tdAmount, productIds });
+      const validation = await storage.validateCoupon(code, vendorId, cashAmount || 0, tdAmount || 0, productIds);
       console.log('🎫 Coupon validation result (full):', JSON.stringify(validation, null, 2));
       res.json(validation);
     } catch (error) {
