@@ -107,12 +107,26 @@ export default function UserCheckout() {
     onSuccess: (data: any) => {
       if (data.valid) {
         setAppliedCoupon(data.coupon);
-        // Apply discount to cash amount first
-        setCouponDiscounts({ cash: data.discount || 0, td: 0 });
-        toast({
-          title: "Coupon applied!",
-          description: `Coupon ${data.coupon.code} has been applied successfully. Discount: HK$${data.discount?.toFixed(2) || 0}`,
-        });
+        
+        // Apply discount based on coupon type
+        if (data.coupon.couponType === 'cash') {
+          // Cash coupon: provides fixed cash value as credit
+          setCouponDiscounts({ cash: data.discount || 0, td: 0 });
+          toast({
+            title: "Cash Coupon applied!",
+            description: `${data.coupon.code} - HK$${data.discount?.toFixed(2) || 0} cash credit applied`,
+          });
+        } else {
+          // Discount coupon: percentage or fixed amount off
+          setCouponDiscounts({ cash: data.discount || 0, td: 0 });
+          const discountDisplay = data.coupon.discountType === 'percentage' 
+            ? `${data.coupon.discountValue}% off (HK$${data.discount?.toFixed(2)})`
+            : `HK$${data.discount?.toFixed(2)} off`;
+          toast({
+            title: "Discount Coupon applied!",
+            description: `${data.coupon.code} - ${discountDisplay}`,
+          });
+        }
       } else {
         setAppliedCoupon(null);
         setCouponDiscounts({ cash: 0, td: 0 });

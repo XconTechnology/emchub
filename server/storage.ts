@@ -466,28 +466,31 @@ export class DatabaseStorage implements IStorage {
       return { valid: false, discount: 0, error: 'This coupon is not active' };
     }
 
-    // Check vendor scope
-    if (coupon.scope === 'vendor') {
-      // Vendor-specific coupon - must match the vendor
-      if (coupon.vendorId !== vendorId) {
-        console.log('Vendor mismatch:', { couponVendorId: coupon.vendorId, providedVendorId: vendorId });
-        return { valid: false, discount: 0, error: 'This coupon is not valid for this vendor' };
-      }
+    // Check vendor ownership for vendor-issued coupons
+    if (coupon.issuer === 'vendor' && coupon.vendorId !== vendorId) {
+      console.log('Vendor coupon not valid for this vendor:', { couponVendorId: coupon.vendorId, cartVendorId: vendorId });
+      return { valid: false, discount: 0, error: 'This coupon is only valid for products from its issuing vendor' };
     }
-    // Platform coupons (admin-issued) can be used with any vendor
 
-    // Check if coupon is product-specific
-    if (coupon.productId) {
+    // Check scope: platform-wide vs product-specific
+    if (coupon.scope === 'product') {
+      // Product-specific coupon - must have productId and it must be in cart
+      if (!coupon.productId) {
+        console.log('Product-specific coupon missing productId');
+        return { valid: false, discount: 0, error: 'Invalid coupon configuration' };
+      }
+      
       if (!productIds || productIds.length === 0) {
-        console.log('Product-specific coupon but no products provided');
+        console.log('Product-specific coupon but no products in cart');
         return { valid: false, discount: 0, error: 'This coupon requires specific products in your cart' };
       }
       
       if (!productIds.includes(coupon.productId)) {
-        console.log('Product not in cart:', { requiredProductId: coupon.productId, cartProductIds: productIds });
+        console.log('Required product not in cart:', { requiredProductId: coupon.productId, cartProductIds: productIds });
         return { valid: false, discount: 0, error: 'This coupon is only valid for a specific product not in your cart' };
       }
     }
+    // Platform-wide coupons (scope === 'platform') can be used with any products
     
     const now = new Date();
     if (coupon.validFrom && now < coupon.validFrom) {

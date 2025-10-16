@@ -37,15 +37,28 @@ Vite manages static assets with path aliases. The application incorporates custo
 - **Public Products Marketplace**: A dedicated `/products` page for browsing and purchasing approved products, featuring search, stock indicators, and product detail pages.
 - **Advanced Pricing System**: Flexible payment options for products, services, and events including Cash Only, TimeDollar Only, Both (Customer Choice), and Combo Split.
 - **Vendor-Specific Dashboard Sections**: Dedicated sections for verified vendors to manage products, services, events, inventory, coupons, and pricing settings.
-- **Coupon System**: Full-featured discount coupon system with:
-  - Vendor-created coupons with separate cash and TimeDollar discount support
-  - Flexible discount types (percentage or fixed amount) for both payment methods
-  - Usage limits and validity date ranges
-  - Real-time coupon validation at checkout
-  - Automatic discount application to cash and/or TimeDollar amounts
-  - Coupon usage tracking and analytics for vendors
-  - Admin dashboard for monitoring all platform coupons and usage statistics
-  - Integration with order system to save coupon data and record usage history
+- **Comprehensive Coupon System**: Two-tier coupon system with vendor and admin capabilities:
+  - **Coupon Types**:
+    - Discount Coupons: Percentage or fixed HK$ off (vendor or admin-issued)
+    - Cash Coupons: Fixed HK$ value (admin-only, via TimeDollar redemption)
+  - **Issuers & Approval Flow**:
+    - Vendor-issued coupons require admin approval (pending → approved/rejected)
+    - Admin-issued coupons are auto-approved
+  - **Scope & Applicability**:
+    - Platform-wide coupons: Apply to all eligible orders
+    - Product-specific coupons: Apply only to specific products
+  - **Liability & Cost Tracking**:
+    - Vendor coupons: Vendor pays the discount cost
+    - Admin coupons: Platform pays the discount cost
+  - **Features**:
+    - Usage limits and validity date ranges
+    - Real-time validation at checkout (stock, expiry, usage limits)
+    - Single discount field at checkout (supports both discount and cash coupons)
+    - Coupon analytics and redemption tracking for vendors and admins
+    - Integration with order system to record usage history
+  - **Management Pages**:
+    - Vendor dashboard: Create, edit, view status of vendor coupons
+    - Admin dashboard: Create admin coupons, approve/reject vendor coupons, view all coupons with filters
 - **Admin Vendors Tab**: Dedicated admin page (`/admin/vendors`) to view and manage all verified vendors with:
   - List of all users with vendor role
   - Vendor information display (username, email, phone, join date)

@@ -47,7 +47,7 @@ export default function UserCoupons() {
     description: "",
     discountType: "percentage" as "percentage" | "fixed",
     discountValue: "",
-    scope: "vendor" as "vendor" | "platform",
+    scope: "platform" as "platform" | "product",
     productId: null as string | null,
     usageLimit: "",
     validFrom: "",
@@ -56,6 +56,10 @@ export default function UserCoupons() {
 
   const { data: coupons = [], isLoading } = useQuery<Coupon[]>({
     queryKey: ["/api/coupons/vendor"],
+  });
+
+  const { data: vendorProducts = [] } = useQuery<any[]>({
+    queryKey: ["/api/listings/user"],
   });
 
   const { data: analytics } = useQuery<{
@@ -116,7 +120,7 @@ export default function UserCoupons() {
       description: "",
       discountType: "percentage",
       discountValue: "",
-      scope: "vendor",
+      scope: "platform",
       productId: null,
       usageLimit: "",
       validFrom: "",
@@ -131,7 +135,7 @@ export default function UserCoupons() {
       description: coupon.description || "",
       discountType: (coupon.discountType || "percentage") as any,
       discountValue: coupon.discountValue?.toString() || "",
-      scope: (coupon.scope || "vendor") as any,
+      scope: (coupon.scope || "platform") as any,
       productId: coupon.productId || null,
       usageLimit: coupon.usageLimit?.toString() || "",
       validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : "",
@@ -142,6 +146,16 @@ export default function UserCoupons() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate product selection when scope is product-specific
+    if (formData.scope === "product" && !formData.productId) {
+      toast({
+        title: "Product required",
+        description: "Please select a product for product-specific coupons.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const payload: any = {
       code: formData.code.toUpperCase(),
@@ -312,17 +326,38 @@ export default function UserCoupons() {
                   <Label htmlFor="scope">Coupon Scope*</Label>
                   <Select
                     value={formData.scope}
-                    onValueChange={(value: any) => setFormData({ ...formData, scope: value })}
+                    onValueChange={(value: any) => setFormData({ ...formData, scope: value, productId: value === "platform" ? null : formData.productId })}
                   >
                     <SelectTrigger data-testid="select-scope">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vendor">All My Products/Services</SelectItem>
-                      <SelectItem value="platform">Platform-Wide (Admin Only)</SelectItem>
+                      <SelectItem value="platform">Platform-Wide (All Products)</SelectItem>
+                      <SelectItem value="product">Specific Product Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.scope === "product" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="productId">Select Product*</Label>
+                    <Select
+                      value={formData.productId || ""}
+                      onValueChange={(value) => setFormData({ ...formData, productId: value })}
+                    >
+                      <SelectTrigger data-testid="select-product">
+                        <SelectValue placeholder="Choose a product..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vendorProducts.filter(p => p.type === "product").map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="grid gap-2">
                   <Label htmlFor="usageLimit">Usage Limit (Optional)</Label>

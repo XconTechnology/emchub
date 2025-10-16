@@ -190,8 +190,8 @@ export const coupons = pgTable("coupons", {
   vendorId: varchar("vendor_id").references(() => users.id), // Vendor who created (null for admin coupons)
   
   // Applicability
-  scope: varchar("scope").notNull().default("vendor"), // 'vendor' (vendor's products only) | 'platform' (all products)
-  productId: varchar("product_id").references(() => listings.id), // Optional: specific product this coupon applies to
+  scope: varchar("scope").notNull().default("platform"), // 'platform' (all products) | 'product' (specific product only)
+  productId: varchar("product_id").references(() => listings.id), // Required when scope='product': specific product this coupon applies to
   
   code: varchar("code").notNull().unique(),
   title: varchar("title").notNull(),

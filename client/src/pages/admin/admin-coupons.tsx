@@ -59,7 +59,8 @@ export default function AdminCoupons() {
     discountType: "percentage" as "percentage" | "fixed",
     discountValue: "",
     cashValue: "",
-    scope: "platform" as "vendor" | "platform",
+    scope: "platform" as "platform" | "product",
+    productId: null as string | null,
     usageLimit: "",
     validFrom: "",
     validUntil: "",
@@ -74,6 +75,15 @@ export default function AdminCoupons() {
       const url = `/api/admin/coupons${params.toString() ? `?${params}` : ''}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch coupons");
+      return response.json();
+    },
+  });
+
+  const { data: allProducts = [] } = useQuery<any[]>({
+    queryKey: ["/api/listings"],
+    queryFn: async () => {
+      const response = await fetch("/api/listings?status=published");
+      if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
   });
@@ -136,6 +146,7 @@ export default function AdminCoupons() {
       discountValue: "",
       cashValue: "",
       scope: "platform",
+      productId: null,
       usageLimit: "",
       validFrom: "",
       validUntil: "",
@@ -145,12 +156,23 @@ export default function AdminCoupons() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate product selection when scope is product-specific
+    if (formData.scope === "product" && !formData.productId) {
+      toast({
+        title: "Product required",
+        description: "Please select a product for product-specific coupons.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const payload: any = {
       code: formData.code.toUpperCase(),
       title: formData.title,
       description: formData.description,
       couponType: formData.couponType,
       scope: formData.scope,
+      productId: formData.scope === "platform" ? null : formData.productId,
       usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
       validFrom: formData.validFrom || undefined,
       validUntil: formData.validUntil || undefined,
@@ -306,6 +328,43 @@ export default function AdminCoupons() {
                       rows={2}
                     />
                   </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="scope">Coupon Scope*</Label>
+                    <Select
+                      value={formData.scope}
+                      onValueChange={(value: any) => setFormData({ ...formData, scope: value, productId: value === "platform" ? null : formData.productId })}
+                    >
+                      <SelectTrigger data-testid="select-scope">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="platform">Platform-Wide (All Products)</SelectItem>
+                        <SelectItem value="product">Specific Product Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.scope === "product" && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="productId">Select Product*</Label>
+                      <Select
+                        value={formData.productId || ""}
+                        onValueChange={(value) => setFormData({ ...formData, productId: value })}
+                      >
+                        <SelectTrigger data-testid="select-product">
+                          <SelectValue placeholder="Choose a product..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allProducts.filter(p => p.type === "product").map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {formData.couponType === "discount" ? (
                     <div className="grid grid-cols-2 gap-4">
