@@ -91,14 +91,15 @@ export default function UserCheckout() {
   const validateCouponMutation = useMutation({
     mutationFn: async (code: string) => {
       // Get vendor ID from cart items (product.userId is the vendor)
-      const vendorId = cartItems?.[0]?.product?.userId || "";
+      const vendorId = cartItems?.[0]?.product?.userId || null;
       // Get product IDs from cart items for product-specific coupon validation
       const productIds = cartItems?.map(item => item.productId) || [];
+      // Calculate total amount before any discounts
+      const totalAmount = calculateTotal();
       const response = await apiRequest("POST", "/api/coupons/validate", {
         code,
         vendorId,
-        cashAmount: cashAmountBeforeDiscount,
-        tdAmount: tdAmountBeforeDiscount,
+        totalAmount,
         productIds,
       });
       return response.json();
@@ -106,10 +107,11 @@ export default function UserCheckout() {
     onSuccess: (data: any) => {
       if (data.valid) {
         setAppliedCoupon(data.coupon);
-        setCouponDiscounts({ cash: data.cashDiscount || 0, td: data.tdDiscount || 0 });
+        // Apply discount to cash amount first
+        setCouponDiscounts({ cash: data.discount || 0, td: 0 });
         toast({
           title: "Coupon applied!",
-          description: `Coupon ${data.coupon.code} has been applied successfully.`,
+          description: `Coupon ${data.coupon.code} has been applied successfully. Discount: HK$${data.discount?.toFixed(2) || 0}`,
         });
       } else {
         setAppliedCoupon(null);

@@ -1959,7 +1959,8 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/admin/coupons", isAdminAuthenticated, async (req, res) => {
     try {
       const status = req.query.status as string | undefined;
-      const coupons = await storage.getAllCoupons(status);
+      const issuer = req.query.issuer as string | undefined;
+      const coupons = await storage.getAllCoupons({ status, issuer });
       res.json(coupons);
     } catch (error) {
       console.error("Error getting all coupons:", error);
@@ -1970,9 +1971,9 @@ export function registerRoutes(app: Express): Server {
   // Validate coupon
   app.post("/api/coupons/validate", async (req, res) => {
     try {
-      const { code, vendorId, cashAmount, tdAmount, productIds } = req.body;
-      console.log('🎫 Coupon validation request:', { code, vendorId, cashAmount, tdAmount, productIds });
-      const validation = await storage.validateCoupon(code, vendorId, cashAmount || 0, tdAmount || 0, productIds);
+      const { code, vendorId, totalAmount, productIds } = req.body;
+      console.log('🎫 Coupon validation request:', { code, vendorId, totalAmount, productIds });
+      const validation = await storage.validateCoupon(code, vendorId, totalAmount || 0, productIds);
       console.log('🎫 Coupon validation result (full):', JSON.stringify(validation, null, 2));
       res.json(validation);
     } catch (error) {
@@ -2038,6 +2039,29 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Approve coupon (admin only)
+  app.post("/api/admin/coupons/:id/approve", isAdminAuthenticated, async (req, res) => {
+    try {
+      const coupon = await storage.approveCoupon(req.params.id, req.user.id);
+      res.json(coupon);
+    } catch (error) {
+      console.error("Error approving coupon:", error);
+      res.status(500).json({ error: "Failed to approve coupon" });
+    }
+  });
+
+  // Reject coupon (admin only)
+  app.post("/api/admin/coupons/:id/reject", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { reason } = req.body;
+      const coupon = await storage.rejectCoupon(req.params.id, req.user.id, reason);
+      res.json(coupon);
+    } catch (error) {
+      console.error("Error rejecting coupon:", error);
+      res.status(500).json({ error: "Failed to reject coupon" });
+    }
+  });
+
   // Delete coupon
   app.delete("/api/coupons/:id", isAuthenticated, async (req, res) => {
     try {
