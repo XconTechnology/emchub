@@ -368,7 +368,68 @@ export function registerRoutes(app: Express): Server {
       
       const updatedListing = await storage.updateListing(id, listingData);
       
-      res.json(updatedListing);
+      // Handle coupon update/creation if requested
+      let couponUpdated = false;
+      if (req.body.createCoupon && req.body.coupon && existingListing.type === 'product') {
+        // Check if user is vendor or admin
+        const user = await storage.getUser(userId);
+        if (user && (user.role === 'vendor' || user.role === 'admin')) {
+          try {
+            const couponData = req.body.coupon;
+            
+            // Check if coupon already exists for this product
+            const existingCoupons = await db
+              .select()
+              .from(couponsTable)
+              .where(eq(couponsTable.productId, id))
+              .limit(1);
+            
+            if (existingCoupons.length > 0) {
+              // Update existing coupon
+              const existingCoupon = existingCoupons[0];
+              await db
+                .update(couponsTable)
+                .set({
+                  code: couponData.code.toUpperCase(),
+                  title: couponData.title,
+                  description: couponData.description || `${couponData.title} for ${updatedListing.title}`,
+                  discountType: couponData.discountType,
+                  discountValue: parseFloat(couponData.discountValue),
+                  usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
+                  validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
+                  status: 'pending', // Re-submit for approval when updated
+                })
+                .where(eq(couponsTable.id, existingCoupon.id));
+              couponUpdated = true;
+              console.log('Updated existing coupon:', existingCoupon.id);
+            } else {
+              // Create new coupon
+              const coupon = await storage.createCoupon({
+                vendorId: userId,
+                productId: id,
+                code: couponData.code.toUpperCase(),
+                title: couponData.title,
+                description: couponData.description || `${couponData.title} for ${updatedListing.title}`,
+                couponType: 'discount',
+                issuer: 'vendor',
+                scope: 'product',
+                discountType: couponData.discountType,
+                discountValue: parseFloat(couponData.discountValue),
+                usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
+                validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
+                status: 'pending',
+                isActive: true,
+              });
+              couponUpdated = true;
+              console.log('Created new coupon:', coupon);
+            }
+          } catch (couponError) {
+            console.error('Error updating/creating coupon:', couponError);
+          }
+        }
+      }
+      
+      res.json({ ...updatedListing, couponUpdated });
     } catch (error: any) {
       console.error("Error updating listing:", error);
       if (error.name === 'ZodError') {
@@ -2017,6 +2078,27 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error getting vendor coupons:", error);
       res.status(500).json({ error: "Failed to get coupons" });
+    }
+  });
+  
+  // Get coupon for a specific product
+  app.get("/api/coupons/product/:productId", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const coupons = await db
+        .select()
+        .from(couponsTable)
+        .where(eq(couponsTable.productId, productId))
+        .limit(1);
+      
+      if (coupons.length > 0) {
+        res.json(coupons[0]);
+      } else {
+        res.json(null);
+      }
+    } catch (error) {
+      console.error("Error getting product coupon:", error);
+      res.status(500).json({ error: "Failed to get product coupon" });
     }
   });
   

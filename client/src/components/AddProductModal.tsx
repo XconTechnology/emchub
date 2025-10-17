@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
@@ -66,6 +66,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       customCategory: "",
       price: "",
       inventory: "",
+      tdPrice: "",
       status: "pending",
       createCoupon: false,
       couponCode: "",
@@ -79,8 +80,15 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
   const createCoupon = form.watch("createCoupon");
 
+  // Fetch existing coupon for this product when editing
+  const { data: productCoupon } = useQuery<any>({
+    queryKey: ['/api/coupons/product', editProduct?.id],
+    enabled: isOpen && isEditing && !!editProduct?.id,
+  });
+
   useEffect(() => {
     if (isOpen && editProduct) {
+      // Load product data
       form.reset({
         type: "product",
         title: editProduct.title || "",
@@ -88,7 +96,15 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: editProduct.customCategory || "",
         price: editProduct.price?.toString() || "",
         inventory: editProduct.inventory?.toString() || "",
+        tdPrice: editProduct.tdPrice?.toString() || "",
         status: editProduct.status || "pending",
+        createCoupon: !!productCoupon,
+        couponCode: productCoupon?.code || "",
+        couponTitle: productCoupon?.title || "",
+        couponDiscountType: productCoupon?.discountType || "percentage",
+        couponDiscountValue: productCoupon?.discountValue?.toString() || "",
+        couponValidUntil: productCoupon?.validUntil ? new Date(productCoupon.validUntil).toISOString().split('T')[0] : "",
+        couponUsageLimit: productCoupon?.usageLimit?.toString() || "",
       });
       setImageUrl(editProduct.images?.[0] || "");
     } else if (isOpen && !editProduct) {
@@ -99,11 +115,19 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: "",
         price: "",
         inventory: "",
+        tdPrice: "",
         status: "pending",
+        createCoupon: false,
+        couponCode: "",
+        couponTitle: "",
+        couponDiscountType: "percentage",
+        couponDiscountValue: "",
+        couponValidUntil: "",
+        couponUsageLimit: "",
       });
       setImageUrl("");
     }
-  }, [isOpen, editProduct, form]);
+  }, [isOpen, editProduct, form, productCoupon]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
