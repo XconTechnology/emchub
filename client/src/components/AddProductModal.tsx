@@ -23,6 +23,7 @@ const productSchema = insertListingSchema.extend({
   inventory: z.string().min(1, "Stock quantity is required"),
   customCategory: z.string().optional(),
   status: z.enum(["draft", "published", "pending", "rejected"]),
+  tdPrice: z.string().optional(), // Fixed TD price for "both" payment option
   // Optional coupon fields
   createCoupon: z.boolean().optional(),
   couponCode: z.string().optional(),
@@ -138,6 +139,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         userId: user?.id,
         price: data.price,
         inventory: parseInt(data.inventory),
+        tdPrice: data.tdPrice ? parseFloat(data.tdPrice) : null,
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
@@ -239,7 +241,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="price">Price *</Label>
+              <Label htmlFor="price">Price (HK$) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -266,6 +268,21 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
                 <p className="text-sm text-red-500">{form.formState.errors.inventory.message}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tdPrice">TimeDollar Price (Optional)</Label>
+            <Input
+              id="tdPrice"
+              type="number"
+              step="0.01"
+              {...form.register("tdPrice")}
+              placeholder="e.g., 20 (if total price is 100, customer pays 20 TD + 80 HK$)"
+              data-testid="input-td-price"
+            />
+            <p className="text-xs text-muted-foreground">
+              If set, customers paying with both TD and cash will pay this fixed TD amount, with the remainder in cash. Leave blank for cash-only.
+            </p>
           </div>
 
           <div className="space-y-2">

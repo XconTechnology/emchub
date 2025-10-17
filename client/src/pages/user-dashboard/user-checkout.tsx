@@ -45,6 +45,7 @@ interface CartItem {
     userId: string; // This is the vendor/creator ID
     title: string;
     price: string;
+    tdPrice?: string;
     imageUrl?: string;
   };
 }
@@ -69,15 +70,8 @@ export default function UserCheckout() {
     queryKey: ['/api/timedollars/balance'],
   });
 
-  // Fetch vendor's TD/cash split percentage
-  const vendorId = cartItems?.[0]?.product?.userId;
-  const { data: vendorData } = useQuery<any>({
-    queryKey: ['/api/users', vendorId],
-    enabled: !!vendorId,
-  });
-
-  // Use vendor's split percentage, default to 50% if not set
-  const comboSplitPercentage = vendorData?.tdCashSplitPercentage ?? 50;
+  // Get product's fixed TD price (if set)
+  const productTdPrice = cartItems?.[0]?.product?.tdPrice ? parseFloat(cartItems[0].product.tdPrice) : null;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -190,9 +184,25 @@ export default function UserCheckout() {
 
   const total = calculateTotal();
   
-  // Calculate amounts before discounts
-  const cashAmountBeforeDiscount = paymentMethod === "cash" ? total : paymentMethod === "both" ? (total * comboSplitPercentage) / 100 : 0;
-  const tdAmountBeforeDiscount = paymentMethod === "timedollar" ? total : paymentMethod === "both" ? (total * (100 - comboSplitPercentage)) / 100 : 0;
+  // Calculate amounts before discounts based on product's fixed TD price
+  let cashAmountBeforeDiscount = 0;
+  let tdAmountBeforeDiscount = 0;
+  
+  if (paymentMethod === "cash") {
+    cashAmountBeforeDiscount = total;
+  } else if (paymentMethod === "timedollar") {
+    tdAmountBeforeDiscount = total;
+  } else if (paymentMethod === "both") {
+    if (productTdPrice !== null && productTdPrice > 0) {
+      // Use fixed TD price set by vendor
+      tdAmountBeforeDiscount = productTdPrice;
+      cashAmountBeforeDiscount = Math.max(0, total - productTdPrice);
+    } else {
+      // If no TD price set, default to cash only
+      cashAmountBeforeDiscount = total;
+      tdAmountBeforeDiscount = 0;
+    }
+  }
   
   // Apply discounts
   const cashAmount = Math.max(0, cashAmountBeforeDiscount - couponDiscounts.cash);
@@ -386,17 +396,31 @@ export default function UserCheckout() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="p-4 border rounded-lg bg-muted">
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="text-sm font-medium">Vendor Payment Split</label>
-                          <Badge variant="outline" data-testid="badge-vendor-split">
-                            {comboSplitPercentage}% Cash / {100 - comboSplitPercentage}% TD
-                          </Badge>
+                      {productTdPrice !== null && productTdPrice > 0 ? (
+                        <div className="p-4 border rounded-lg bg-muted">
+                          <div className="flex justify-between items-center mb-2">
+                            <label className="text-sm font-medium">Fixed Payment Split</label>
+                            <Badge variant="outline" data-testid="badge-vendor-split">
+                              HK${(total - productTdPrice).toFixed(2)} Cash / {productTdPrice.toFixed(0)} TD
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            This vendor requires {productTdPrice.toFixed(0)} TimeDollars with the remainder in cash
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          This split is set by the vendor and will be applied to your payment
-                        </p>
-                      </div>
+                      ) : (
+                        <div className="p-4 border rounded-lg bg-muted">
+                          <div className="flex justify-between items-center mb-2">
+                            <label className="text-sm font-medium">Payment</label>
+                            <Badge variant="outline" data-testid="badge-vendor-split">
+                              Cash Only
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            This product doesn't accept TimeDollar payment
+                          </p>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div className="p-3 border rounded-lg">
