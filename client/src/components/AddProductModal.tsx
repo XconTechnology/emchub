@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { useMutation } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Ticket } from "lucide-react";
 
 const productSchema = insertListingSchema.extend({
   title: z.string().min(1, "Product name is required"),
@@ -21,6 +23,14 @@ const productSchema = insertListingSchema.extend({
   inventory: z.string().min(1, "Stock quantity is required"),
   customCategory: z.string().optional(),
   status: z.enum(["draft", "published", "pending", "rejected"]),
+  // Optional coupon fields
+  createCoupon: z.boolean().optional(),
+  couponCode: z.string().optional(),
+  couponTitle: z.string().optional(),
+  couponDiscountType: z.enum(["percentage", "fixed"]).optional(),
+  couponDiscountValue: z.string().optional(),
+  couponValidUntil: z.string().optional(),
+  couponUsageLimit: z.string().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -47,8 +57,17 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       price: "",
       inventory: "",
       status: "pending",
+      createCoupon: false,
+      couponCode: "",
+      couponTitle: "",
+      couponDiscountType: "percentage",
+      couponDiscountValue: "",
+      couponValidUntil: "",
+      couponUsageLimit: "",
     },
   });
+
+  const createCoupon = form.watch("createCoupon");
 
   useEffect(() => {
     if (isOpen && editProduct) {
@@ -113,6 +132,18 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
+
+      // Add coupon data if creating a coupon
+      if (data.createCoupon) {
+        productData.coupon = {
+          code: data.couponCode?.toUpperCase(),
+          title: data.couponTitle,
+          discountType: data.couponDiscountType,
+          discountValue: parseFloat(data.couponDiscountValue || "0"),
+          validUntil: data.couponValidUntil || null,
+          usageLimit: data.couponUsageLimit ? parseInt(data.couponUsageLimit) : null,
+        };
+      }
       
       const res = await apiRequest(
         isEditing ? "PUT" : "POST",
@@ -121,12 +152,17 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       );
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
       queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/coupons/vendor'] });
+      
+      const productMsg = isEditing ? "Your changes have been saved and will be reviewed." : "Your product has been submitted for review.";
+      const couponMsg = response.couponCreated ? " Product coupon created and submitted for approval." : "";
+      
       toast({ 
         title: isEditing ? "Product updated successfully!" : "Product added successfully!",
-        description: isEditing ? "Your changes have been saved and will be reviewed." : "Your product has been submitted for review.",
+        description: productMsg + couponMsg,
       });
       form.reset();
       setImageUrl("");
@@ -264,6 +300,112 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
                   disabled={uploadImageMutation.isPending}
                   data-testid="input-image"
                 />
+              </div>
+            )}
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Coupon Creation Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-primary" />
+                <Label htmlFor="createCoupon" className="text-base font-semibold">
+                  Create Product Coupon
+                </Label>
+              </div>
+              <Switch
+                id="createCoupon"
+                checked={createCoupon || false}
+                onCheckedChange={(checked) => form.setValue("createCoupon", checked)}
+                data-testid="switch-create-coupon"
+              />
+            </div>
+
+            {createCoupon && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground">
+                  Create a unique coupon for this product. Customers can apply this coupon at checkout to receive a discount on this item.
+                </p>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="couponCode">Coupon Code *</Label>
+                    <Input
+                      id="couponCode"
+                      {...form.register("couponCode")}
+                      placeholder="e.g., SAVE20"
+                      className="uppercase"
+                      data-testid="input-coupon-code"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="couponTitle">Coupon Title *</Label>
+                    <Input
+                      id="couponTitle"
+                      {...form.register("couponTitle")}
+                      placeholder="e.g., 20% Off"
+                      data-testid="input-coupon-title"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="couponDiscountType">Discount Type *</Label>
+                    <Select
+                      value={form.watch("couponDiscountType")}
+                      onValueChange={(value) => form.setValue("couponDiscountType", value as "percentage" | "fixed")}
+                    >
+                      <SelectTrigger data-testid="select-discount-type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount (HK$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="couponDiscountValue">
+                      Discount Value * {form.watch("couponDiscountType") === "percentage" ? "(%)" : "(HK$)"}
+                    </Label>
+                    <Input
+                      id="couponDiscountValue"
+                      type="number"
+                      step={form.watch("couponDiscountType") === "percentage" ? "1" : "0.01"}
+                      {...form.register("couponDiscountValue")}
+                      placeholder={form.watch("couponDiscountType") === "percentage" ? "e.g., 20" : "e.g., 50.00"}
+                      data-testid="input-discount-value"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="couponValidUntil">Valid Until (Optional)</Label>
+                    <Input
+                      id="couponValidUntil"
+                      type="date"
+                      {...form.register("couponValidUntil")}
+                      data-testid="input-valid-until"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="couponUsageLimit">Usage Limit (Optional)</Label>
+                    <Input
+                      id="couponUsageLimit"
+                      type="number"
+                      {...form.register("couponUsageLimit")}
+                      placeholder="e.g., 100"
+                      data-testid="input-usage-limit"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
