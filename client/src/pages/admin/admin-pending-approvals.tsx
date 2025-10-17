@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Eye, Package, Store, Briefcase } from "lucide-rea
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Listing } from "@shared/schema";
+import type { Listing, Coupon } from "@shared/schema";
 
 interface ListingWithUser extends Listing {
   user?: {
@@ -26,6 +26,12 @@ export default function AdminPendingApprovals() {
 
   const { data: pendingItems = [], isLoading } = useQuery<ListingWithUser[]>({
     queryKey: ['/api/admin/pending-approvals'],
+  });
+
+  // Fetch coupon data for the selected product
+  const { data: productCoupon } = useQuery<Coupon | null>({
+    queryKey: ['/api/coupons/product', selectedItem?.id],
+    enabled: !!selectedItem && selectedItem.type === 'product',
   });
 
   const acceptMutation = useMutation({
@@ -274,6 +280,64 @@ export default function AdminPendingApprovals() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Stock</p>
                     <p className="mt-1">{selectedItem.inventory || 0} units</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Display coupon information if available */}
+              {selectedItem.type === 'product' && productCoupon && (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">📣 Product Coupon</p>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Coupon Code</p>
+                        <p className="mt-1 font-mono font-bold text-blue-700 dark:text-blue-400">{productCoupon.code}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Status</p>
+                        <Badge variant="secondary" className="mt-1 capitalize">
+                          {productCoupon.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Title</p>
+                      <p className="mt-1">{productCoupon.title}</p>
+                    </div>
+                    {productCoupon.description && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Description</p>
+                        <p className="mt-1 text-sm">{productCoupon.description}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Discount Type</p>
+                        <p className="mt-1 capitalize">{productCoupon.discountType}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Discount Value</p>
+                        <p className="mt-1 font-semibold">
+                          {productCoupon.discountType === 'percentage' ? `${productCoupon.discountValue}%` : `$${productCoupon.discountValue}`}
+                        </p>
+                      </div>
+                    </div>
+                    {productCoupon.usageLimit && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Usage Limit</p>
+                        <p className="mt-1">{productCoupon.usageLimit} times</p>
+                      </div>
+                    )}
+                    {productCoupon.validUntil && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Valid Until</p>
+                        <p className="mt-1">{formatDate(productCoupon.validUntil)}</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      ℹ️ This coupon will be automatically approved when you approve the product
+                    </p>
                   </div>
                 </div>
               )}

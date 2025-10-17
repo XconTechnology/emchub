@@ -44,6 +44,8 @@ Vite manages static assets with path aliases. The application incorporates custo
   - **Issuers & Approval Flow**:
     - Vendor-issued coupons require admin approval (pending → approved/rejected)
     - Admin-issued coupons are auto-approved
+    - **Product-Coupon Auto-Approval**: When admin approves a product, any pending coupons linked to that product are automatically approved
+    - **Coupon Lock Mechanism**: Once approved, coupons become locked and vendors cannot edit them (admins retain full control)
   - **Scope & Applicability**:
     - Platform-wide coupons: Apply to all eligible orders
     - Product-specific coupons: Apply only to specific products
@@ -56,8 +58,9 @@ Vite manages static assets with path aliases. The application incorporates custo
     - Single discount field at checkout (supports both discount and cash coupons)
     - Coupon analytics and redemption tracking for vendors and admins
     - Integration with order system to record usage history
+    - Admin can view coupon details in product approval modal for informed decision-making
   - **Management Pages**:
-    - Vendor dashboard: Create, edit, view status of vendor coupons
+    - Vendor dashboard: Create, edit, view status of vendor coupons (locked after approval)
     - Admin dashboard: Create admin coupons, approve/reject vendor coupons, view all coupons with filters
 - **Admin Vendors Tab**: Dedicated admin page (`/admin/vendors`) to view and manage all verified vendors with:
   - List of all users with vendor role
