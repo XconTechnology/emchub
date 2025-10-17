@@ -98,13 +98,13 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         inventory: editProduct.inventory?.toString() || "",
         tdPrice: editProduct.tdPrice?.toString() || "",
         status: editProduct.status || "pending",
-        createCoupon: !!productCoupon,
-        couponCode: productCoupon?.code || "",
-        couponTitle: productCoupon?.title || "",
-        couponDiscountType: productCoupon?.discountType || "percentage",
-        couponDiscountValue: productCoupon?.discountValue?.toString() || "",
-        couponValidUntil: productCoupon?.validUntil ? new Date(productCoupon.validUntil).toISOString().split('T')[0] : "",
-        couponUsageLimit: productCoupon?.usageLimit?.toString() || "",
+        createCoupon: false, // Will be updated when coupon data loads
+        couponCode: "",
+        couponTitle: "",
+        couponDiscountType: "percentage",
+        couponDiscountValue: "",
+        couponValidUntil: "",
+        couponUsageLimit: "",
       });
       setImageUrl(editProduct.images?.[0] || "");
     } else if (isOpen && !editProduct) {
@@ -127,7 +127,20 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       });
       setImageUrl("");
     }
-  }, [isOpen, editProduct, form, productCoupon]);
+  }, [isOpen, editProduct, form]);
+
+  // Separate effect to update form when coupon data loads
+  useEffect(() => {
+    if (isEditing && productCoupon) {
+      form.setValue("createCoupon", true);
+      form.setValue("couponCode", productCoupon.code || "");
+      form.setValue("couponTitle", productCoupon.title || "");
+      form.setValue("couponDiscountType", productCoupon.discountType || "percentage");
+      form.setValue("couponDiscountValue", productCoupon.discountValue?.toString() || "");
+      form.setValue("couponValidUntil", productCoupon.validUntil ? new Date(productCoupon.validUntil).toISOString().split('T')[0] : "");
+      form.setValue("couponUsageLimit", productCoupon.usageLimit?.toString() || "");
+    }
+  }, [productCoupon, isEditing, form]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
