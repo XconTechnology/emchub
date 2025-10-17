@@ -376,6 +376,7 @@ export function registerRoutes(app: Express): Server {
         if (user && (user.role === 'vendor' || user.role === 'admin')) {
           try {
             const couponData = req.body.coupon;
+            const { coupons: couponsTable } = await import("@shared/schema");
             
             // Check if coupon already exists for this product
             const existingCoupons = await db
@@ -385,23 +386,29 @@ export function registerRoutes(app: Express): Server {
               .limit(1);
             
             if (existingCoupons.length > 0) {
-              // Update existing coupon
+              // Check if existing coupon is approved and user is not admin
               const existingCoupon = existingCoupons[0];
-              await db
-                .update(couponsTable)
-                .set({
-                  code: couponData.code.toUpperCase(),
-                  title: couponData.title,
-                  description: couponData.description || `${couponData.title} for ${updatedListing.title}`,
-                  discountType: couponData.discountType,
-                  discountValue: parseFloat(couponData.discountValue),
-                  usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
-                  validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
-                  status: 'pending', // Re-submit for approval when updated
-                })
-                .where(eq(couponsTable.id, existingCoupon.id));
-              couponUpdated = true;
-              console.log('Updated existing coupon:', existingCoupon.id);
+              if (existingCoupon.status === 'approved' && user.role !== 'admin') {
+                console.log('Cannot update approved coupon - it is locked');
+                // Skip coupon update for approved coupons
+              } else {
+                // Update existing coupon
+                await db
+                  .update(couponsTable)
+                  .set({
+                    code: couponData.code.toUpperCase(),
+                    title: couponData.title,
+                    description: couponData.description || `${couponData.title} for ${updatedListing.title}`,
+                    discountType: couponData.discountType,
+                    discountValue: parseFloat(couponData.discountValue),
+                    usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
+                    validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
+                    status: 'pending', // Re-submit for approval when updated
+                  })
+                  .where(eq(couponsTable.id, existingCoupon.id));
+                couponUpdated = true;
+                console.log('Updated existing coupon:', existingCoupon.id);
+              }
             } else {
               // Create new coupon
               const coupon = await storage.createCoupon({
@@ -778,7 +785,20 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/admin/listings/:id/approve', isAdminAuthenticated, async (req: any, res) => {
     try {
       const listingId = req.params.id;
-      const { listings } = await import("@shared/schema");
+      const { listings, coupons: couponsTable, users: usersTable } = await import("@shared/schema");
+      
+      // Get admin user ID (handle session-based auth where req.user might be undefined)
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+        } else {
+          return res.status(401).json({ message: "Admin user not found" });
+        }
+      }
+      
+      // Approve the listing
       await db
         .update(listings)
         .set({ 
@@ -786,7 +806,24 @@ export function registerRoutes(app: Express): Server {
           updatedAt: new Date()
         })
         .where(eq(listings.id, listingId));
-      res.json({ message: "Listing approved and published successfully" });
+      
+      // Auto-approve any pending coupons linked to this product
+      const linkedCoupons = await db
+        .select()
+        .from(couponsTable)
+        .where(
+          sql`${couponsTable.productId} = ${listingId} AND ${couponsTable.status} = 'pending'`
+        );
+      
+      // Approve each linked coupon
+      for (const coupon of linkedCoupons) {
+        await storage.approveCoupon(coupon.id, adminId);
+      }
+      
+      res.json({ 
+        message: "Listing approved and published successfully",
+        couponsApproved: linkedCoupons.length
+      });
     } catch (error) {
       console.error("Error approving listing:", error);
       res.status(500).json({ message: "Failed to approve listing" });
@@ -2085,6 +2122,7 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/coupons/product/:productId", async (req, res) => {
     try {
       const { productId } = req.params;
+      const { coupons: couponsTable } = await import("@shared/schema");
       const coupons = await db
         .select()
         .from(couponsTable)
@@ -2163,6 +2201,13 @@ export function registerRoutes(app: Express): Server {
       // Check if user owns this coupon
       if (coupon.vendorId !== req.user.id) {
         return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // 🔒 COUPON LOCK: Prevent vendors from editing approved coupons
+      if (coupon.status === 'approved' && req.user.role !== 'admin') {
+        return res.status(403).json({ 
+          error: "Approved coupons cannot be edited. Please contact support if you need to make changes." 
+        });
       }
       
       const updatedCoupon = await storage.updateCoupon(req.params.id, req.body);
