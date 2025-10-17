@@ -12,7 +12,7 @@ import {
   users as usersTable
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
 
