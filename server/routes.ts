@@ -457,6 +457,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Listing not found or access denied" });
       }
       
+      // Delete associated coupons first (if product type)
+      if (existingListing.type === 'product') {
+        const { coupons: couponsTable } = await import("@shared/schema");
+        await db.delete(couponsTable).where(eq(couponsTable.productId, id));
+      }
+      
       await storage.deleteListing(id);
       res.json({ message: "Listing deleted successfully" });
     } catch (error) {
