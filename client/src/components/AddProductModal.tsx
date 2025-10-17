@@ -31,6 +31,15 @@ const productSchema = insertListingSchema.extend({
   couponDiscountValue: z.string().optional(),
   couponValidUntil: z.string().optional(),
   couponUsageLimit: z.string().optional(),
+}).refine((data) => {
+  // If creating a coupon, coupon fields are required
+  if (data.createCoupon) {
+    return data.couponCode && data.couponTitle && data.couponDiscountType && data.couponDiscountValue;
+  }
+  return true;
+}, {
+  message: "All coupon fields are required when creating a coupon",
+  path: ["createCoupon"],
 });
 
 type ProductFormData = z.infer<typeof productSchema>;

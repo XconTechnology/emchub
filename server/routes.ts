@@ -164,32 +164,44 @@ export function registerRoutes(app: Express): Server {
       
       console.log('Created listing:', listing);
 
-      // Create coupon if requested (only for products)
+      // Create coupon if requested (only for products and vendors)
       let couponCreated = false;
       if (req.body.createCoupon && req.body.coupon && listing.type === 'product') {
-        try {
-          const couponData = req.body.coupon;
-          const coupon = await storage.createCoupon({
-            vendorId: userId,
-            productId: listing.id,
-            code: couponData.code.toUpperCase(),
-            title: couponData.title,
-            description: couponData.description || `${couponData.title} for ${listing.title}`,
-            couponType: 'discount', // Product coupons are always discount type
-            issuer: 'vendor', // Product coupons are vendor-issued
-            scope: 'product', // Automatically product-specific
-            discountType: couponData.discountType,
-            discountValue: parseFloat(couponData.discountValue),
-            usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
-            validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
-            status: 'pending', // Vendor coupons require admin approval
-            isActive: true,
-          });
-          couponCreated = true;
-          console.log('Created coupon:', coupon);
-        } catch (couponError) {
-          console.error('Error creating coupon:', couponError);
-          // Don't fail the listing creation if coupon creation fails
+        // Check if user is vendor or admin
+        const user = await storage.getUser(userId);
+        if (user && (user.role === 'vendor' || user.role === 'admin')) {
+          try {
+            const couponData = req.body.coupon;
+            
+            // Validate coupon fields
+            if (!couponData.code || !couponData.title || !couponData.discountType || !couponData.discountValue) {
+              console.error('Invalid coupon data: missing required fields');
+            } else {
+              const coupon = await storage.createCoupon({
+                vendorId: userId,
+                productId: listing.id,
+                code: couponData.code.toUpperCase(),
+                title: couponData.title,
+                description: couponData.description || `${couponData.title} for ${listing.title}`,
+                couponType: 'discount', // Product coupons are always discount type
+                issuer: 'vendor', // Product coupons are vendor-issued
+                scope: 'product', // Automatically product-specific
+                discountType: couponData.discountType,
+                discountValue: parseFloat(couponData.discountValue),
+                usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
+                validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
+                status: 'pending', // Vendor coupons require admin approval
+                isActive: true,
+              });
+              couponCreated = true;
+              console.log('Created coupon:', coupon);
+            }
+          } catch (couponError) {
+            console.error('Error creating coupon:', couponError);
+            // Don't fail the listing creation if coupon creation fails
+          }
+        } else {
+          console.error('Only vendors and admins can create product coupons');
         }
       }
       
