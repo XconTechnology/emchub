@@ -163,7 +163,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         userId: user?.id,
         price: data.price,
         inventory: parseInt(data.inventory),
-        tdPrice: data.tdPrice ? parseFloat(data.tdPrice) : null,
+        tdPrice: data.tdPrice || null,
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
