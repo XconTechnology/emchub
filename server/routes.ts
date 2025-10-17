@@ -1832,6 +1832,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update vendor TD/cash split percentage
+  app.patch("/api/vendor/td-cash-split", isAuthenticated, async (req: any, res) => {
+    try {
+      const { tdCashSplitPercentage } = req.body;
+      
+      if (req.user?.role !== 'vendor') {
+        return res.status(403).json({ error: "Only vendors can update payment split settings" });
+      }
+
+      if (typeof tdCashSplitPercentage !== 'number' || tdCashSplitPercentage < 0 || tdCashSplitPercentage > 100) {
+        return res.status(400).json({ error: "TD/Cash split percentage must be between 0 and 100" });
+      }
+
+      await db.update(usersTable)
+        .set({ tdCashSplitPercentage })
+        .where(eq(usersTable.id, req.user.id));
+
+      res.json({ message: "Payment split updated successfully", tdCashSplitPercentage });
+    } catch (error) {
+      console.error("Error updating TD/cash split:", error);
+      res.status(500).json({ error: "Failed to update payment split" });
+    }
+  });
+
   // Object storage upload URL for user listings - accessible to all authenticated users
   app.post("/api/object-storage/upload-url", isAuthenticated, async (req, res) => {
     try {

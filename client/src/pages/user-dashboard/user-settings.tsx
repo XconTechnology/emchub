@@ -6,7 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Lock, Eye, EyeOff, Globe, Moon, Sun } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Bell, Lock, Eye, EyeOff, Globe, Moon, Sun, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -27,6 +28,7 @@ export default function UserSettings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [tdCashSplit, setTdCashSplit] = useState<number>(user?.tdCashSplitPercentage || 50);
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
@@ -53,6 +55,30 @@ export default function UserSettings() {
     },
   });
 
+  const updateTdCashSplitMutation = useMutation({
+    mutationFn: async (tdCashSplitPercentage: number) => {
+      return apiRequest("PATCH", "/api/vendor/td-cash-split", { tdCashSplitPercentage });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Payment split updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/me'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update payment split",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateTdCashSplit = () => {
+    updateTdCashSplitMutation.mutate(tdCashSplit);
+  };
+
   const handlePasswordChange = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
@@ -78,6 +104,69 @@ export default function UserSettings() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Vendor Payment Split Settings - Only for vendors */}
+      {user?.role === 'vendor' && user?.vendorStatus === 'verified' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              <CardTitle>Payment Split Settings</CardTitle>
+            </div>
+            <CardDescription>Set your preferred TimeDollar and Cash payment split ratio</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Cash Payment Percentage</Label>
+                  <span className="text-2xl font-bold">{tdCashSplit}%</span>
+                </div>
+                <Slider
+                  value={[tdCashSplit]}
+                  onValueChange={(value) => setTdCashSplit(value[0])}
+                  max={100}
+                  step={5}
+                  className="w-full"
+                  data-testid="slider-td-cash-split"
+                />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>0% Cash</span>
+                  <span>100% Cash</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="bg-muted p-4 rounded-lg space-y-2">
+                <p className="text-sm font-medium">Payment Breakdown</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cash</p>
+                    <p className="text-lg font-semibold" data-testid="text-cash-percentage">{tdCashSplit}%</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">TimeDollar</p>
+                    <p className="text-lg font-semibold" data-testid="text-td-percentage">{100 - tdCashSplit}%</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This split will be applied to all customer payments at checkout
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleUpdateTdCashSplit}
+                disabled={updateTdCashSplitMutation.isPending || tdCashSplit === (user?.tdCashSplitPercentage || 50)}
+                className="w-full"
+                data-testid="button-update-split"
+              >
+                {updateTdCashSplitMutation.isPending ? 'Updating...' : 'Update Payment Split'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Security Settings */}
       <Card>
         <CardHeader>
