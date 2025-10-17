@@ -492,9 +492,36 @@ export function registerRoutes(app: Express): Server {
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phone,
+        role: user.role,
         isAdmin: user.role === 'admin',
         vendorStatus: user.vendorStatus,
-        profileImageUrl: user.profileImageUrl
+        profileImageUrl: user.profileImageUrl,
+        tdCashSplitPercentage: user.tdCashSplitPercentage
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Get user by ID (for fetching vendor info at checkout)
+  app.get('/api/users/:userId', async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return only public user information
+      res.json({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        vendorStatus: user.vendorStatus,
+        profileImageUrl: user.profileImageUrl,
+        tdCashSplitPercentage: user.tdCashSplitPercentage
       });
     } catch (error) {
       console.error("Error fetching user:", error);

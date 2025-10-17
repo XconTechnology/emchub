@@ -57,7 +57,6 @@ export default function UserCheckout() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [orderCompleted, setOrderCompleted] = useState(false);
-  const [comboSplitPercentage, setComboSplitPercentage] = useState(50);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscounts, setCouponDiscounts] = useState({ cash: 0, td: 0 });
@@ -69,6 +68,16 @@ export default function UserCheckout() {
   const { data: tdBalance } = useQuery<TimeDollarBalance>({
     queryKey: ['/api/timedollars/balance'],
   });
+
+  // Fetch vendor's TD/cash split percentage
+  const vendorId = cartItems?.[0]?.product?.userId;
+  const { data: vendorData } = useQuery<any>({
+    queryKey: ['/api/users', vendorId],
+    enabled: !!vendorId,
+  });
+
+  // Use vendor's split percentage, default to 50% if not set
+  const comboSplitPercentage = vendorData?.tdCashSplitPercentage ?? 50;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -377,20 +386,18 @@ export default function UserCheckout() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium">Split Payment</label>
-                        <span className="text-sm text-gray-600">
-                          {comboSplitPercentage}% Cash / {100 - comboSplitPercentage}% TD
-                        </span>
+                      <div className="p-4 border rounded-lg bg-muted">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-medium">Vendor Payment Split</label>
+                          <Badge variant="outline" data-testid="badge-vendor-split">
+                            {comboSplitPercentage}% Cash / {100 - comboSplitPercentage}% TD
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          This split is set by the vendor and will be applied to your payment
+                        </p>
                       </div>
-                      <Slider
-                        value={[comboSplitPercentage]}
-                        onValueChange={(value) => setComboSplitPercentage(value[0])}
-                        max={100}
-                        step={5}
-                        className="w-full"
-                        data-testid="slider-payment-split"
-                      />
+
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div className="p-3 border rounded-lg">
                           <p className="text-sm text-gray-600 dark:text-gray-400">Cash Amount</p>
