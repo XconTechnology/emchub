@@ -165,6 +165,7 @@ export function registerRoutes(app: Express): Server {
       console.log('Created listing:', listing);
 
       // Create coupon if requested (only for products)
+      let couponCreated = false;
       if (req.body.createCoupon && req.body.coupon && listing.type === 'product') {
         try {
           const couponData = req.body.coupon;
@@ -173,17 +174,18 @@ export function registerRoutes(app: Express): Server {
             productId: listing.id,
             code: couponData.code.toUpperCase(),
             title: couponData.title,
-            description: couponData.description || null,
+            description: couponData.description || `${couponData.title} for ${listing.title}`,
+            couponType: 'discount', // Product coupons are always discount type
+            issuer: 'vendor', // Product coupons are vendor-issued
+            scope: 'product', // Automatically product-specific
             discountType: couponData.discountType,
-            cashDiscountType: couponData.cashDiscountType || null,
-            cashDiscountValue: couponData.cashDiscountValue ? parseFloat(couponData.cashDiscountValue) : null,
-            tdDiscountType: couponData.tdDiscountType || null,
-            tdDiscountValue: couponData.tdDiscountValue ? parseFloat(couponData.tdDiscountValue) : null,
+            discountValue: parseFloat(couponData.discountValue),
             usageLimit: couponData.usageLimit ? parseInt(couponData.usageLimit) : null,
             validUntil: couponData.validUntil ? new Date(couponData.validUntil) : null,
-            status: 'active',
+            status: 'pending', // Vendor coupons require admin approval
             isActive: true,
           });
+          couponCreated = true;
           console.log('Created coupon:', coupon);
         } catch (couponError) {
           console.error('Error creating coupon:', couponError);
@@ -191,7 +193,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      res.json(listing);
+      res.json({ ...listing, couponCreated });
     } catch (error: any) {
       console.error("Error creating listing:", error);
       if (error.name === 'ZodError') {
