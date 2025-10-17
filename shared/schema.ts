@@ -137,6 +137,7 @@ export const listings = pgTable("listings", {
   paymentType: varchar("payment_type").default("cash_only"), // 'cash_only' | 'timedollar_only' | 'both_choice' | 'combo'
   cashPercentage: integer("cash_percentage"), // For 'combo' type: 0-100
   timedollarPercentage: integer("timedollar_percentage"), // For 'combo' type: 0-100
+  tdPrice: decimal("td_price", { precision: 10, scale: 2 }), // Fixed TimeDollar price for products with 'both' payment option
   
   // Service-specific fields
   duration: integer("duration_minutes"), // Duration in minutes
