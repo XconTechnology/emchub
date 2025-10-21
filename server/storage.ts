@@ -4,6 +4,7 @@ import {
   categories,
   listings,
   bookings,
+  orders,
   coupons,
   couponUsage,
   vendorRequests,
