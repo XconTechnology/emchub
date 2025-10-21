@@ -113,6 +113,15 @@ export interface IStorage {
     draftListings: number;
     deletedListings: number;
     totalUsers: number;
+    activeUsersDaily: number;
+    activeUsersWeekly: number;
+    activeUsersMonthly: number;
+    totalSales: string;
+    commission: string;
+    timeBankTotal: string;
+    recentSignups: Array<{ id: string; username: string; email: string; role: string; createdAt: Date | null }>;
+    recentOrders: Array<any>;
+    recentCouponRedemptions: Array<any>;
   }>;
   
   // Vendor request operations
@@ -732,6 +741,15 @@ export class DatabaseStorage implements IStorage {
     draftListings: number;
     deletedListings: number;
     totalUsers: number;
+    activeUsersDaily: number;
+    activeUsersWeekly: number;
+    activeUsersMonthly: number;
+    totalSales: string;
+    commission: string;
+    timeBankTotal: string;
+    recentSignups: Array<{ id: string; username: string; email: string; role: string; createdAt: Date | null }>;
+    recentOrders: Array<any>;
+    recentCouponRedemptions: Array<any>;
   }> {
     // Count total listings (excluding deleted)
     const totalListingsResult = await db.select({ count: sql<number>`count(*)` })
@@ -763,12 +781,105 @@ export class DatabaseStorage implements IStorage {
     const totalUsersResult = await db.select({ count: sql<number>`count(*)` })
       .from(users);
     
+    // Active users (based on updatedAt as a proxy for activity)
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const activeUsersDailyResult = await db.select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(sql`${users.updatedAt} >= ${oneDayAgo}`);
+    
+    const activeUsersWeeklyResult = await db.select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(sql`${users.updatedAt} >= ${oneWeekAgo}`);
+    
+    const activeUsersMonthlyResult = await db.select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(sql`${users.updatedAt} >= ${oneMonthAgo}`);
+    
+    // Total sales from orders
+    const totalSalesResult = await db.select({ 
+      total: sql<string>`COALESCE(SUM(CAST(${orders.totalAmount} AS NUMERIC)), 0)` 
+    }).from(orders);
+    
+    const totalSales = totalSalesResult[0]?.total || '0';
+    const commission = (parseFloat(totalSales) * 0.05).toFixed(2); // 5% platform commission
+    
+    // TimeBank total (sum of all user balances)
+    const timeBankTotalResult = await db.select({ 
+      total: sql<string>`COALESCE(SUM(${users.timeDollarBalance}), 0)` 
+    }).from(users);
+    
+    const timeBankTotal = timeBankTotalResult[0]?.total || '0';
+    
+    // Recent signups (last 10 users)
+    const recentSignups = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(sql`${users.createdAt} DESC`)
+    .limit(10);
+    
+    // Recent orders (last 10 orders with user info)
+    const recentOrders = await db.select({
+      id: orders.id,
+      userId: orders.userId,
+      username: users.username,
+      totalAmount: orders.totalAmount,
+      cashAmount: orders.cashAmount,
+      tdAmount: orders.tdAmount,
+      status: orders.status,
+      createdAt: orders.createdAt,
+    })
+    .from(orders)
+    .leftJoin(users, eq(orders.userId, users.id))
+    .orderBy(sql`${orders.createdAt} DESC`)
+    .limit(10);
+    
+    // Recent coupon redemptions (last 10 orders with coupons)
+    const recentCouponRedemptions = await db.select({
+      id: orders.id,
+      userId: orders.userId,
+      username: users.username,
+      couponCode: orders.couponCode,
+      couponCashDiscount: orders.couponCashDiscount,
+      couponTdDiscount: orders.couponTdDiscount,
+      totalAmount: orders.totalAmount,
+      createdAt: orders.createdAt,
+    })
+    .from(orders)
+    .leftJoin(users, eq(orders.userId, users.id))
+    .where(sql`${orders.couponId} IS NOT NULL`)
+    .orderBy(sql`${orders.createdAt} DESC`)
+    .limit(10);
+    
     return {
       totalListings: Number(totalListingsResult[0]?.count || 0),
       publishedListings: Number(publishedListingsResult[0]?.count || 0),
       draftListings: Number(draftListingsResult[0]?.count || 0),
       deletedListings: Number(deletedListingsResult[0]?.count || 0),
       totalUsers: Number(totalUsersResult[0]?.count || 0),
+      activeUsersDaily: Number(activeUsersDailyResult[0]?.count || 0),
+      activeUsersWeekly: Number(activeUsersWeeklyResult[0]?.count || 0),
+      activeUsersMonthly: Number(activeUsersMonthlyResult[0]?.count || 0),
+      totalSales,
+      commission,
+      timeBankTotal,
+      recentSignups: recentSignups.map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        role: u.role || 'consumer',
+        createdAt: u.createdAt,
+      })),
+      recentOrders,
+      recentCouponRedemptions,
     };
   }
 
