@@ -73,6 +73,7 @@ function Router() {
       <Route path="/dashboard/coupons" component={UserDashboardRouter} />
       <Route path="/dashboard/pricing" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
+      <Route path="/admin/analytics" component={AdminRouter} />
       <Route path="/admin/pending-approvals" component={AdminRouter} />
       <Route path="/admin/vendor-requests" component={AdminRouter} />
       <Route path="/admin/vendors" component={AdminRouter} />

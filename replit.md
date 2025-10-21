@@ -73,6 +73,23 @@ Vite manages static assets with path aliases. The application incorporates custo
   - Secure download from private Google Cloud Storage
   - Base64 data URL conversion for authenticated access
   - Admin authentication supports both session-based and OIDC users
+- **Admin Dashboard & Analytics**: Comprehensive admin dashboard at `/admin` with:
+  - **Dashboard Overview** (`/admin`): Real-time platform metrics including:
+    - Business metrics: Total/active users (daily/weekly/monthly), total sales, 5% platform commission, TimeBank total
+    - Listing statistics: Total, published, draft, and deleted listings
+    - Recent activity: Latest signups, orders, and coupon redemptions
+  - **Platform Analytics** (`/admin/analytics`): In-depth analytics with charts and tables:
+    - User growth: 30-day line chart showing new user signups
+    - Top users by activity: Table of most active users based on activity logs
+    - Top users by spend: Table of highest-spending customers
+    - Sales analytics: Total volume, average order value
+    - Top categories: Bar chart of best-performing product categories by orders
+    - Top products: Table of best-selling products by revenue
+    - TimeBank statistics: TD earned, TD spent, net balance, top contributors
+    - Coupon redemption rate: Percentage of orders using coupons
+  - Uses Recharts library for data visualization (line charts, bar charts)
+  - All analytics use server-side aggregation via `getAnalytics()` method in storage layer
+  - API endpoints: `/api/admin/stats` for dashboard metrics, `/api/admin/analytics` for detailed analytics
 
 ## External Dependencies
 
@@ -93,6 +110,7 @@ Vite manages static assets with path aliases. The application incorporates custo
 - **React Hook Form**: Form handling.
 - **Zod**: Schema validation.
 - **Date-fns**: Date manipulation.
+- **Recharts**: Data visualization library for charts (line charts, bar charts, etc.).
 
 ### Development and Build Tools
 - **Vite**: Build tool and development server.

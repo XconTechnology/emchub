@@ -5,6 +5,7 @@ import {
   listings,
   bookings,
   orders,
+  orderItems,
   coupons,
   couponUsage,
   vendorRequests,
@@ -154,6 +155,21 @@ export interface IStorage {
   }): Promise<ActivityLog>;
   getAllActivityLogs(limit?: number): Promise<ActivityLog[]>;
   getUserActivityLogs(userId: string, limit?: number): Promise<ActivityLog[]>;
+  
+  // Analytics operations
+  getAnalytics(): Promise<{
+    userGrowth: Array<{ date: string; count: number }>;
+    topUsersByActivity: Array<{ id: string; username: string; email: string; activityCount: number }>;
+    topUsersBySpend: Array<{ id: string; username: string; email: string; totalSpent: string }>;
+    salesVolume: string;
+    averageOrderValue: string;
+    topCategories: Array<{ category: string; count: number; revenue: string }>;
+    topProducts: Array<{ id: string; title: string; orderCount: number; revenue: string }>;
+    tdEarned: string;
+    tdSpent: string;
+    topTdContributors: Array<{ id: string; username: string; balance: number }>;
+    couponRedemptionRate: string;
+  }>;
   
   // TimeDollar operations
   updateTimeDollarBalance(userId: string, amount: number): Promise<User>;
@@ -881,6 +897,191 @@ export class DatabaseStorage implements IStorage {
       })),
       recentOrders,
       recentCouponRedemptions,
+    };
+  }
+
+  // Analytics
+  async getAnalytics(): Promise<{
+    userGrowth: Array<{ date: string; count: number }>;
+    topUsersByActivity: Array<{ id: string; username: string; email: string; activityCount: number }>;
+    topUsersBySpend: Array<{ id: string; username: string; email: string; totalSpent: string }>;
+    salesVolume: string;
+    averageOrderValue: string;
+    topCategories: Array<{ category: string; count: number; revenue: string }>;
+    topProducts: Array<{ id: string; title: string; orderCount: number; revenue: string }>;
+    tdEarned: string;
+    tdSpent: string;
+    topTdContributors: Array<{ id: string; username: string; balance: number }>;
+    couponRedemptionRate: string;
+  }> {
+    
+    // User growth (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const userGrowthData = await db.select({
+      date: sql<string>`DATE(${users.createdAt})`,
+      count: sql<number>`count(*)`,
+    })
+    .from(users)
+    .where(sql`${users.createdAt} >= ${thirtyDaysAgo}`)
+    .groupBy(sql`DATE(${users.createdAt})`)
+    .orderBy(sql`DATE(${users.createdAt})`);
+    
+    const userGrowth = userGrowthData.map(row => ({
+      date: row.date || '',
+      count: Number(row.count || 0),
+    }));
+    
+    // Top users by activity
+    const topActivityUsers = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      activityCount: sql<number>`count(${activityLogs.id})`,
+    })
+    .from(users)
+    .leftJoin(activityLogs, eq(users.id, activityLogs.userId))
+    .groupBy(users.id, users.username, users.email)
+    .orderBy(sql`count(${activityLogs.id}) DESC`)
+    .limit(10);
+    
+    const topUsersByActivity = topActivityUsers.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      activityCount: Number(u.activityCount || 0),
+    }));
+    
+    // Top users by spend
+    const topSpendUsers = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      totalSpent: sql<string>`COALESCE(SUM(CAST(${orders.totalAmount} AS NUMERIC)), 0)`,
+    })
+    .from(users)
+    .leftJoin(orders, eq(users.id, orders.userId))
+    .groupBy(users.id, users.username, users.email)
+    .orderBy(sql`SUM(CAST(${orders.totalAmount} AS NUMERIC)) DESC`)
+    .limit(10);
+    
+    const topUsersBySpend = topSpendUsers.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      totalSpent: u.totalSpent || '0',
+    }));
+    
+    // Sales volume and average order value
+    const salesStats = await db.select({
+      totalVolume: sql<string>`COALESCE(SUM(CAST(${orders.totalAmount} AS NUMERIC)), 0)`,
+      orderCount: sql<number>`count(*)`,
+    }).from(orders);
+    
+    const salesVolume = salesStats[0]?.totalVolume || '0';
+    const orderCount = Number(salesStats[0]?.orderCount || 0);
+    const averageOrderValue = orderCount > 0 
+      ? (parseFloat(salesVolume) / orderCount).toFixed(2) 
+      : '0';
+    
+    // Top categories
+    const topCategoriesData = await db.select({
+      category: listings.category,
+      count: sql<number>`count(DISTINCT ${orderItems.orderId})`,
+      revenue: sql<string>`COALESCE(SUM(CAST(${orderItems.subtotal} AS NUMERIC)), 0)`,
+    })
+    .from(orderItems)
+    .leftJoin(listings, eq(orderItems.productId, listings.id))
+    .where(sql`${listings.category} IS NOT NULL`)
+    .groupBy(listings.category)
+    .orderBy(sql`SUM(CAST(${orderItems.subtotal} AS NUMERIC)) DESC`)
+    .limit(10);
+    
+    const topCategories = topCategoriesData.map(c => ({
+      category: c.category || 'Uncategorized',
+      count: Number(c.count || 0),
+      revenue: c.revenue || '0',
+    }));
+    
+    // Top products
+    const topProductsData = await db.select({
+      id: listings.id,
+      title: listings.title,
+      orderCount: sql<number>`count(${orderItems.id})`,
+      revenue: sql<string>`COALESCE(SUM(CAST(${orderItems.subtotal} AS NUMERIC)), 0)`,
+    })
+    .from(orderItems)
+    .leftJoin(listings, eq(orderItems.productId, listings.id))
+    .groupBy(listings.id, listings.title)
+    .orderBy(sql`SUM(CAST(${orderItems.subtotal} AS NUMERIC)) DESC`)
+    .limit(10);
+    
+    const topProducts = topProductsData.map(p => ({
+      id: p.id || '',
+      title: p.title || 'Unknown Product',
+      orderCount: Number(p.orderCount || 0),
+      revenue: p.revenue || '0',
+    }));
+    
+    // TimeDollar earned (sum of all user balances)
+    const tdEarnedResult = await db.select({
+      total: sql<string>`COALESCE(SUM(${users.timeDollarBalance}), 0)`,
+    }).from(users);
+    
+    const tdEarned = tdEarnedResult[0]?.total || '0';
+    
+    // TimeDollar spent (sum of tdAmount from orders)
+    const tdSpentResult = await db.select({
+      total: sql<string>`COALESCE(SUM(CAST(${orders.tdAmount} AS NUMERIC)), 0)`,
+    }).from(orders);
+    
+    const tdSpent = tdSpentResult[0]?.total || '0';
+    
+    // Top TD contributors (users with highest balances)
+    const topTdData = await db.select({
+      id: users.id,
+      username: users.username,
+      balance: users.timeDollarBalance,
+    })
+    .from(users)
+    .orderBy(sql`${users.timeDollarBalance} DESC`)
+    .limit(10);
+    
+    const topTdContributors = topTdData.map(u => ({
+      id: u.id,
+      username: u.username,
+      balance: u.balance || 0,
+    }));
+    
+    // Coupon redemption rate
+    const totalOrdersResult = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(orders);
+    
+    const ordersWithCouponsResult = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(orders).where(sql`${orders.couponId} IS NOT NULL`);
+    
+    const totalOrdersCount = Number(totalOrdersResult[0]?.count || 0);
+    const ordersWithCouponsCount = Number(ordersWithCouponsResult[0]?.count || 0);
+    
+    const couponRedemptionRate = totalOrdersCount > 0
+      ? ((ordersWithCouponsCount / totalOrdersCount) * 100).toFixed(2)
+      : '0';
+    
+    return {
+      userGrowth,
+      topUsersByActivity,
+      topUsersBySpend,
+      salesVolume,
+      averageOrderValue,
+      topCategories,
+      topProducts,
+      tdEarned,
+      tdSpent,
+      topTdContributors,
+      couponRedemptionRate,
     };
   }
 

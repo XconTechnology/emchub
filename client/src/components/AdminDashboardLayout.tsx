@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Activity,
   Store,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -55,6 +56,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Dashboard",
       url: "/admin",
       icon: LayoutDashboard,
+    },
+    {
+      title: "Analytics",
+      url: "/admin/analytics",
+      icon: BarChart3,
     },
     {
       title: "Pending Approvals",
@@ -165,6 +171,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold">
                 {location === "/admin" && "Dashboard Overview"}
+                {location === "/admin/analytics" && "Platform Analytics"}
                 {location === "/admin/pending-approvals" && "Pending Approvals"}
                 {location === "/admin/vendor-requests" && "Vendor Requests"}
                 {location === "/admin/vendors" && "Verified Vendors"}

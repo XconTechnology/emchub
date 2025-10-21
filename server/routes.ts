@@ -691,6 +691,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin analytics endpoint
+  app.get('/api/admin/analytics', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const analytics = await storage.getAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics data" });
+    }
+  });
+
   // Admin routes for listing moderation
   app.get('/api/admin/listings', isAdminAuthenticated, async (req: any, res) => {
     try {
