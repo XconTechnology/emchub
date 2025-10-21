@@ -90,6 +90,22 @@ Vite manages static assets with path aliases. The application incorporates custo
   - Uses Recharts library for data visualization (line charts, bar charts)
   - All analytics use server-side aggregation via `getAnalytics()` method in storage layer
   - API endpoints: `/api/admin/stats` for dashboard metrics, `/api/admin/analytics` for detailed analytics
+- **User Management System**: Comprehensive admin user management at `/admin/users` with:
+  - **User Search & Filtering**: Real-time search by name/email/phone and filters by role and account status
+  - **User Status Management**: Suspend and reactivate user accounts (status: 'active' | 'suspended')
+  - **User Editing**: Admin can edit non-PII user fields (username, role, timeDollars, etc.)
+  - **Password Reset**: Admin can reset any user's password
+  - **PII Access Control**: Email, phone, firstName, and lastName fields are:
+    - Visible and editable only by super-admins
+    - Masked/hidden for regular admins
+    - Enforced at both API response level and UI display level
+  - **User Roles**: 'consumer', 'vendor', 'admin', 'super-admin'
+  - **Technical Implementation**:
+    - Storage methods: `getUsersWithFilters()` with SQL LIKE search across multiple fields
+    - API endpoints: GET `/api/admin/users` with query params, PUT `/api/admin/users/:id`, POST `/api/admin/users/:id/suspend|reactivate|reset-password`
+    - Custom TanStack Query queryFn that serializes filters into URL query parameters
+    - PII masking logic based on `req.user.role` in backend
+    - All admin endpoints protected by `isAdminAuthenticated` middleware
 
 ## External Dependencies
 
