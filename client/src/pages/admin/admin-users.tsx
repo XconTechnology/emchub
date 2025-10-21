@@ -37,8 +37,8 @@ import type { User as UserType } from "@shared/schema";
 export default function AdminUsers() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<UserType | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -48,8 +48,8 @@ export default function AdminUsers() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (roleFilter) params.append('role', roleFilter);
-      if (statusFilter) params.append('status', statusFilter);
+      if (roleFilter && roleFilter !== 'all') params.append('role', roleFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       
       const url = `/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await fetch(url, {
@@ -253,7 +253,7 @@ export default function AdminUsers() {
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="consumer">Consumer</SelectItem>
                   <SelectItem value="vendor">Vendor</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
@@ -269,7 +269,7 @@ export default function AdminUsers() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
                 </SelectContent>
