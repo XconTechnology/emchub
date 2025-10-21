@@ -45,6 +45,23 @@ export default function AdminUsers() {
   
   const { data: users = [], isLoading } = useQuery<UserType[]>({
     queryKey: ['/api/admin/users', { search: searchQuery, role: roleFilter, status: statusFilter }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (roleFilter) params.append('role', roleFilter);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const url = `/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      return response.json();
+    },
   });
 
   const updateUserMutation = useMutation({
