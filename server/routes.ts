@@ -714,14 +714,150 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin route to get all users
+  // Admin route to get all users with filters
   app.get('/api/admin/users', isAdminAuthenticated, async (req: any, res) => {
     try {
-      const users = await storage.getAllUsers();
-      res.json(users);
+      const filters = {
+        search: req.query.search as string,
+        role: req.query.role as string,
+        status: req.query.status as string,
+        vendorStatus: req.query.vendorStatus as string,
+      };
+      
+      const users = await storage.getUsersWithFilters(filters);
+      
+      // If user is not super-admin, remove PII fields
+      const isSuperAdmin = req.user?.role === 'super-admin' || req.session?.adminAuth?.role === 'super-admin';
+      
+      if (!isSuperAdmin) {
+        const sanitizedUsers = users.map(user => ({
+          ...user,
+          email: undefined,
+          phone: undefined,
+          password: undefined,
+          firstName: undefined,
+          lastName: undefined,
+        }));
+        return res.json(sanitizedUsers);
+      }
+      
+      // Super-admins get full data (but still hide password)
+      const sanitizedUsers = users.map(user => ({
+        ...user,
+        password: undefined,
+      }));
+      res.json(sanitizedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  // Admin route to update user
+  app.put('/api/admin/users/:id', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const updates = req.body;
+      
+      // Check if trying to update PII fields
+      const piiFields = ['email', 'phone', 'firstName', 'lastName'];
+      const hasPiiUpdate = piiFields.some(field => updates.hasOwnProperty(field));
+      
+      // Only super-admins can update PII fields
+      const isSuperAdmin = req.user?.role === 'super-admin' || req.session?.adminAuth?.role === 'super-admin';
+      
+      if (hasPiiUpdate && !isSuperAdmin) {
+        return res.status(403).json({ message: "Only super-admins can update PII fields (email, phone, firstName, lastName)" });
+      }
+      
+      // Don't allow updating password through this endpoint
+      delete updates.password;
+      delete updates.resetPasswordToken;
+      delete updates.resetPasswordExpires;
+      delete updates.createdAt;
+      delete updates.id;
+      
+      const updatedUser = await storage.updateUser(userId, updates);
+      
+      // Log the activity
+      await storage.createActivityLog({
+        userId: req.user?.id || req.session?.adminAuth?.id,
+        userName: req.user?.username || req.session?.adminAuth?.username,
+        actionType: 'update',
+        entityType: 'user',
+        entityId: userId,
+        entityTitle: updatedUser.username,
+        description: `Updated user: ${updatedUser.username}`,
+        metadata: { updates }
+      });
+      
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+  
+  // Admin route to suspend user
+  app.post('/api/admin/users/:id/suspend', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const adminId = req.user?.id || req.session?.adminAuth?.id;
+      
+      const updatedUser = await storage.suspendUser(userId, adminId);
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error) {
+      console.error("Error suspending user:", error);
+      res.status(500).json({ message: "Failed to suspend user" });
+    }
+  });
+  
+  // Admin route to reactivate user
+  app.post('/api/admin/users/:id/reactivate', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const adminId = req.user?.id || req.session?.adminAuth?.id;
+      
+      const updatedUser = await storage.reactivateUser(userId, adminId);
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error) {
+      console.error("Error reactivating user:", error);
+      res.status(500).json({ message: "Failed to reactivate user" });
+    }
+  });
+  
+  // Admin route to reset user password
+  app.post('/api/admin/users/:id/reset-password', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const { newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      // Hash the new password
+      const bcrypt = await import("bcrypt");
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      const updatedUser = await storage.adminResetUserPassword(userId, hashedPassword);
+      
+      // Log the activity
+      await storage.createActivityLog({
+        userId: req.user?.id || req.session?.adminAuth?.id,
+        userName: req.user?.username || req.session?.adminAuth?.username,
+        actionType: 'reset_password',
+        entityType: 'user',
+        entityId: userId,
+        entityTitle: updatedUser.username,
+        description: `Reset password for user: ${updatedUser.username}`,
+        metadata: { userId }
+      });
+      
+      res.json({ message: "Password reset successfully", user: { ...updatedUser, password: undefined } });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
