@@ -100,6 +100,18 @@ export interface IStorage {
   adminRejectListing(id: string, adminId: string, reason: string): Promise<Listing>;
   getAllUsers(): Promise<User[]>;
   
+  // User management operations
+  getUsersWithFilters(filters?: {
+    search?: string;
+    role?: string;
+    status?: string;
+    vendorStatus?: string;
+  }): Promise<User[]>;
+  updateUser(id: string, data: Partial<Pick<User, 'username' | 'firstName' | 'lastName' | 'email' | 'phone' | 'bio' | 'profileImageUrl' | 'role' | 'vendorStatus' | 'status' | 'timeDollarBalance' | 'tdCashSplitPercentage'>>): Promise<User>;
+  suspendUser(id: string, adminId: string): Promise<User>;
+  reactivateUser(id: string, adminId: string): Promise<User>;
+  adminResetUserPassword(id: string, newPassword: string): Promise<User>;
+  
   // Soft delete and restore operations
   softDeleteListing(id: string): Promise<Listing>;
   restoreListing(id: string): Promise<Listing>;
@@ -205,6 +217,125 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).orderBy(users.createdAt);
+  }
+  
+  async getUsersWithFilters(filters?: {
+    search?: string;
+    role?: string;
+    status?: string;
+    vendorStatus?: string;
+  }): Promise<User[]> {
+    const conditions = [];
+    
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(users.username, searchTerm),
+          ilike(users.email, searchTerm),
+          ilike(users.firstName, searchTerm),
+          ilike(users.lastName, searchTerm),
+          ilike(users.phone, searchTerm)
+        )
+      );
+    }
+    
+    if (filters?.role) {
+      conditions.push(eq(users.role, filters.role));
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(users.status, filters.status));
+    }
+    
+    if (filters?.vendorStatus) {
+      conditions.push(eq(users.vendorStatus, filters.vendorStatus));
+    }
+    
+    const query = db.select().from(users);
+    
+    if (conditions.length > 0) {
+      return query.where(and(...conditions)).orderBy(users.createdAt);
+    }
+    
+    return query.orderBy(users.createdAt);
+  }
+  
+  async updateUser(id: string, data: Partial<Pick<User, 'username' | 'firstName' | 'lastName' | 'email' | 'phone' | 'bio' | 'profileImageUrl' | 'role' | 'vendorStatus' | 'status' | 'timeDollarBalance' | 'tdCashSplitPercentage'>>): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async suspendUser(id: string, adminId: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ status: 'suspended', updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    
+    // Log the activity
+    const user = await this.getUser(id);
+    const admin = await this.getUser(adminId);
+    
+    if (user && admin) {
+      await this.createActivityLog({
+        userId: adminId,
+        userName: admin.username,
+        actionType: 'suspend',
+        entityType: 'user',
+        entityId: id,
+        entityTitle: user.username,
+        description: `Suspended user: ${user.username}`,
+        metadata: { adminId, userId: id }
+      });
+    }
+    
+    return updated;
+  }
+  
+  async reactivateUser(id: string, adminId: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ status: 'active', updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    
+    // Log the activity
+    const user = await this.getUser(id);
+    const admin = await this.getUser(adminId);
+    
+    if (user && admin) {
+      await this.createActivityLog({
+        userId: adminId,
+        userName: admin.username,
+        actionType: 'reactivate',
+        entityType: 'user',
+        entityId: id,
+        entityTitle: user.username,
+        description: `Reactivated user: ${user.username}`,
+        metadata: { adminId, userId: id }
+      });
+    }
+    
+    return updated;
+  }
+  
+  async adminResetUserPassword(id: string, newPassword: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ 
+        password: newPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
