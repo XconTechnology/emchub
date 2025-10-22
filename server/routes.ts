@@ -2740,6 +2740,34 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to get order details" });
     }
   });
+  
+  // Get vendor's orders (orders for products owned by the vendor)
+  app.get("/api/vendor/orders", isAuthenticated, async (req, res) => {
+    try {
+      const orders = await storage.getVendorOrders(req.user.id);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error getting vendor orders:", error);
+      res.status(500).json({ error: "Failed to get vendor orders" });
+    }
+  });
+  
+  // Update order status (for vendors to accept/reject/update orders)
+  app.patch("/api/orders/:orderId/status", isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+      
+      const order = await storage.updateOrderStatus(req.params.orderId, status);
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ error: "Failed to update order status" });
+    }
+  });
 
   // ========================================
   // STRIPE PAYMENT ROUTES

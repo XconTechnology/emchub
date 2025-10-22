@@ -199,8 +199,10 @@ export interface IStorage {
   // Order operations
   createOrder(userId: string, orderData: any): Promise<any>;
   getUserOrders(userId: string): Promise<any[]>;
+  getVendorOrders(vendorId: string): Promise<any[]>;
   getOrderDetails(orderId: string): Promise<any>;
   updateOrderPaymentStatus(orderId: string, status: string, paymentIntentId: string): Promise<any>;
+  updateOrderStatus(orderId: string, status: string): Promise<any>;
   
   // Transaction operations (Stripe payments)
   createTransaction(transaction: any): Promise<any>;
@@ -1664,6 +1666,46 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`${orders.createdAt} DESC`);
   }
   
+  async getVendorOrders(vendorId: string): Promise<any[]> {
+    const { orders, orderItems, users } = await import("@shared/schema");
+    
+    // Get all orders for this vendor
+    const vendorOrders = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.vendorId, vendorId))
+      .orderBy(sql`${orders.createdAt} DESC`);
+    
+    // Get order items and customer details for each order
+    const ordersWithDetails = await Promise.all(
+      vendorOrders.map(async (order: any) => {
+        // Get order items
+        const items = await db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+        
+        // Get customer details
+        const [customer] = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+          })
+          .from(users)
+          .where(eq(users.id, order.userId));
+        
+        return {
+          ...order,
+          items,
+          customer,
+        };
+      })
+    );
+    
+    return ordersWithDetails;
+  }
+  
   async getOrderDetails(orderId: string): Promise<any> {
     const { orders, orderItems, listings } = await import("@shared/schema");
     
@@ -1698,6 +1740,21 @@ export class DatabaseStorage implements IStorage {
       .set({ 
         status, 
         transactionId: paymentIntentId,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    
+    return updatedOrder;
+  }
+
+  async updateOrderStatus(orderId: string, status: string): Promise<any> {
+    const { orders } = await import("@shared/schema");
+    
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ 
+        status,
         updatedAt: new Date(),
       })
       .where(eq(orders.id, orderId))
