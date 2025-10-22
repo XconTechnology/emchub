@@ -52,6 +52,7 @@ function Router() {
       <Route path="/product/:id" component={ProductDetailPage} />
       <ProtectedRoute path="/profile" component={ProfileRedirect} />
       <Route path="/dashboard" component={UserDashboardRouter} />
+      <Route path="/dashboard/vendor-orders" component={UserDashboardRouter} />
       <Route path="/dashboard/purchases" component={UserDashboardRouter} />
       <Route path="/dashboard/activity" component={UserDashboardRouter} />
       <Route path="/dashboard/become-vendor" component={UserDashboardRouter} />

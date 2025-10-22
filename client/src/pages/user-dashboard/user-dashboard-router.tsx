@@ -24,7 +24,8 @@ import {
   ShoppingCart,
   ShoppingBag,
   Activity,
-  BadgeDollarSign
+  BadgeDollarSign,
+  Truck
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -56,6 +57,7 @@ import UserPurchases from "./user-purchases";
 import UserActivity from "./user-activity";
 import UserBecomeVendor from "./user-become-vendor";
 import UserRecycleBin from "./user-recycle-bin";
+import UserVendorOrders from "./user-vendor-orders";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -83,6 +85,7 @@ export default function UserDashboardRouter() {
   // Navigation items for verified vendors
   const vendorNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "Vendor Orders", path: "/dashboard/vendor-orders", icon: Truck, testId: "nav-vendor-orders" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
@@ -199,6 +202,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/inventory" && "My Inventory"}
             {location === "/dashboard/coupons" && "Coupons"}
             {location === "/dashboard/pricing" && "Pricing Settings"}
+            {location === "/dashboard/vendor-orders" && "Vendor Orders"}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
@@ -223,6 +227,7 @@ export default function UserDashboardRouter() {
         <div className="flex-1 container mx-auto p-4 lg:p-8">
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
+            <Route path="/dashboard/vendor-orders" component={UserVendorOrders} />
             <Route path="/dashboard/purchases" component={UserPurchases} />
             <Route path="/dashboard/activity" component={UserActivity} />
             <Route path="/dashboard/become-vendor" component={UserBecomeVendor} />
