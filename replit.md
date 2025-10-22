@@ -132,6 +132,31 @@ Vite manages static assets with path aliases. The application incorporates custo
     - API endpoints: POST `/api/stripe/create-payment-intent`, POST `/api/stripe-webhook`, GET `/api/admin/transactions`
     - Frontend uses `@stripe/stripe-js` and `@stripe/react-stripe-js` for Elements integration
     - Transactions automatically recorded when webhook receives payment confirmation from Stripe
+- **Vendor Order Management**: Comprehensive order management system for vendors to view and manage orders:
+  - **Database Schema**:
+    - `orders` table includes `vendorId` field to track which vendor the order is for
+    - Order statuses: 'pending', 'accepted', 'rejected', 'completed', 'cancelled'
+  - **Vendor Orders Dashboard** (`/dashboard/vendor-orders`):
+    - Vendors can view all orders for their products
+    - Filter by order status (pending, accepted, rejected)
+    - Display customer details, order items, pricing, payment method, and order status
+    - Order management actions: Accept or reject pending orders
+    - Real-time updates using TanStack Query cache invalidation
+  - **Features**:
+    - Automatic vendorId assignment when orders are created (extracted from product's userId)
+    - Search functionality to find orders by customer name or order ID
+    - Status-based filtering for efficient order management
+    - TimeDollar to HKD conversion display (1 TD = 60 HK$) in order summaries
+    - Visual status badges (blue: pending, green: accepted/completed, red: rejected/cancelled)
+  - **Navigation**:
+    - "Vendor Orders" link appears in vendor navigation (second item after Dashboard)
+    - Uses Truck icon for visual identification
+    - Available only to verified vendors
+  - **Technical Implementation**:
+    - Storage methods: `getVendorOrders(vendorId, filters)`, `updateOrderStatus(orderId, status)`
+    - API endpoints: GET `/api/vendor/orders`, PUT `/api/orders/:id/status`
+    - Frontend: `user-vendor-orders.tsx` component with search and filter functionality
+    - Authentication: All vendor order endpoints protected by user authentication middleware
 
 ## External Dependencies
 
