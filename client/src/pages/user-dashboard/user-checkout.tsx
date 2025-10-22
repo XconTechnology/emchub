@@ -17,6 +17,83 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CheckCircle, CreditCard, Coins, AlertCircle, Wallet, DollarSign, Ticket } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+// Stripe Payment Form Component
+function StripePaymentForm({ onPaymentSuccess, amount, disabled }: { 
+  onPaymentSuccess: (paymentIntentId: string) => void;
+  amount: number;
+  disabled: boolean;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message || "Payment failed");
+        setProcessing(false);
+        return;
+      }
+
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || "Payment failed");
+        setProcessing(false);
+        return;
+      }
+
+      if (paymentIntent && paymentIntent.status === "succeeded") {
+        onPaymentSuccess(paymentIntent.id);
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="w-4 h-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <Button
+        type="submit"
+        className="w-full bg-[#8FC24C] hover:bg-[#7AB03C] text-white"
+        size="lg"
+        disabled={!stripe || processing || disabled}
+        data-testid="button-pay-now"
+      >
+        <CreditCard className="w-5 h-5 mr-2" />
+        {processing ? "Processing Payment..." : `Pay HK$${amount.toFixed(2)}`}
+      </Button>
+    </form>
+  );
+}
 
 const checkoutSchema = z.object({
   shippingName: z.string().min(1, "Name is required"),
@@ -61,6 +138,8 @@ export default function UserCheckout() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscounts, setCouponDiscounts] = useState({ cash: 0, td: 0 });
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   const { data: cartItems, isLoading } = useQuery<CartItem[]>({
     queryKey: ['/api/cart'],
@@ -151,8 +230,31 @@ export default function UserCheckout() {
     },
   });
 
+  const createPaymentIntentMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const response = await apiRequest("POST", "/api/stripe/create-payment-intent", { amount });
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      setClientSecret(data.clientSecret);
+      setPaymentIntentId(data.paymentIntentId);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Payment setup failed",
+        description: error.message || "Failed to initialize payment",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createOrderMutation = useMutation({
-    mutationFn: async (data: CheckoutFormData & { couponId?: string; cashDiscount?: number; tdDiscount?: number }) => {
+    mutationFn: async (data: CheckoutFormData & { 
+      couponId?: string; 
+      cashDiscount?: number; 
+      tdDiscount?: number;
+      paymentIntentId?: string;
+    }) => {
       return apiRequest("POST", "/api/orders", data);
     },
     onSuccess: () => {
@@ -240,6 +342,35 @@ export default function UserCheckout() {
     form.setValue("tdAmount", tdAmount);
   }, [cashAmount, tdAmount, form]);
 
+  // Create payment intent when cash amount is greater than 0
+  useEffect(() => {
+    if (cashAmount > 0 && (paymentMethod === "cash" || paymentMethod === "both")) {
+      createPaymentIntentMutation.mutate(cashAmount);
+    } else {
+      setClientSecret(null);
+      setPaymentIntentId(null);
+    }
+  }, [cashAmount, paymentMethod]);
+
+  const handlePaymentSuccess = (stripePaymentIntentId: string) => {
+    // Get form data
+    const formData = form.getValues();
+    
+    // Create order with payment intent ID
+    const orderData: any = { 
+      ...formData,
+      paymentIntentId: stripePaymentIntentId,
+    };
+    
+    if (appliedCoupon) {
+      orderData.couponId = appliedCoupon.id;
+      orderData.cashDiscount = couponDiscounts.cash;
+      orderData.tdDiscount = couponDiscounts.td;
+    }
+
+    createOrderMutation.mutate(orderData);
+  };
+
   const onSubmit = (data: CheckoutFormData) => {
     // Validate TimeDollar balance
     if (data.paymentMethod === "timedollar" && !hasEnoughTD) {
@@ -260,15 +391,18 @@ export default function UserCheckout() {
       return;
     }
 
-    // Include coupon data if applied
-    const orderData: any = { ...data };
-    if (appliedCoupon) {
-      orderData.couponId = appliedCoupon.id;
-      orderData.cashDiscount = couponDiscounts.cash;
-      orderData.tdDiscount = couponDiscounts.td;
+    // For TimeDollar only payment, create order directly (no Stripe payment needed)
+    if (data.paymentMethod === "timedollar") {
+      const orderData: any = { ...data };
+      if (appliedCoupon) {
+        orderData.couponId = appliedCoupon.id;
+        orderData.cashDiscount = couponDiscounts.cash;
+        orderData.tdDiscount = couponDiscounts.td;
+      }
+      createOrderMutation.mutate(orderData);
     }
-
-    createOrderMutation.mutate(orderData);
+    // For cash or both, payment will be handled by Stripe form
+    // Don't submit order here - wait for payment success
   };
 
   if (isLoading) {
@@ -567,20 +701,57 @@ export default function UserCheckout() {
                       )}
                     />
 
-                    <Button
-                      type="submit"
-                      className="w-full bg-[#8FC24C] hover:bg-[#7AB03C] text-white"
-                      size="lg"
-                      disabled={createOrderMutation.isPending || (paymentMethod !== "cash" && !hasEnoughTD)}
-                      data-testid="button-place-order"
-                    >
-                      <CreditCard className="w-5 h-5 mr-2" />
-                      {createOrderMutation.isPending ? "Processing..." : "Place Order"}
-                    </Button>
+                    {/* Show regular button only for TimeDollar payment */}
+                    {paymentMethod === "timedollar" && (
+                      <Button
+                        type="submit"
+                        className="w-full bg-[#8FC24C] hover:bg-[#7AB03C] text-white"
+                        size="lg"
+                        disabled={createOrderMutation.isPending || !hasEnoughTD}
+                        data-testid="button-place-order"
+                      >
+                        <Coins className="w-5 h-5 mr-2" />
+                        {createOrderMutation.isPending ? "Processing..." : "Place Order"}
+                      </Button>
+                    )}
                   </form>
                 </Form>
               </CardContent>
             </Card>
+
+            {/* Stripe Payment Form for Cash/Both payments */}
+            {(paymentMethod === "cash" || paymentMethod === "both") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Information</CardTitle>
+                  <CardDescription>
+                    Enter your card details to complete the HK${cashAmount.toFixed(2)} payment
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {createPaymentIntentMutation.isPending ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600">Initializing payment...</p>
+                    </div>
+                  ) : clientSecret ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripePaymentForm
+                        onPaymentSuccess={handlePaymentSuccess}
+                        amount={cashAmount}
+                        disabled={createOrderMutation.isPending || (paymentMethod === "both" && !hasEnoughTD)}
+                      />
+                    </Elements>
+                  ) : (
+                    <Alert variant="destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>
+                        Failed to initialize payment. Please try again.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Order Summary */}
