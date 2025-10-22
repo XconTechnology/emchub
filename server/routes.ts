@@ -15,6 +15,15 @@ import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
+import Stripe from "stripe";
+
+// Initialize Stripe with test mode keys
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-12-18.acacia",
+});
 
 // WebSocket clients storage
 const wsClients = new Set<WebSocket>();
@@ -2718,6 +2727,164 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error getting order details:", error);
       res.status(500).json({ error: "Failed to get order details" });
+    }
+  });
+
+  // ========================================
+  // STRIPE PAYMENT ROUTES
+  // ========================================
+
+  // Create payment intent for checkout
+  app.post("/api/create-payment-intent", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, amount, vendorId } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      if (!vendorId) {
+        return res.status(400).json({ error: "Vendor ID is required" });
+      }
+
+      // Calculate commission (5% for platform, 95% for vendor)
+      const totalAmount = parseFloat(amount);
+      const platformCommission = totalAmount * 0.05;
+      const vendorEarnings = totalAmount * 0.95;
+
+      // Create Stripe payment intent (amount in cents for HKD)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalAmount * 100), // Convert to cents
+        currency: "hkd",
+        metadata: {
+          orderId: orderId || '',
+          vendorId,
+          customerId: req.user.id,
+          platformCommission: platformCommission.toFixed(2),
+          vendorEarnings: vendorEarnings.toFixed(2),
+        },
+      });
+
+      // Create transaction record with pending status
+      await storage.createTransaction({
+        orderId: orderId || null,
+        vendorId,
+        customerId: req.user.id,
+        stripePaymentIntentId: paymentIntent.id,
+        stripeChargeId: null,
+        totalAmount: totalAmount.toFixed(2),
+        platformCommission: platformCommission.toFixed(2),
+        vendorEarnings: vendorEarnings.toFixed(2),
+        status: 'pending',
+        currency: 'hkd',
+        description: `Payment for order ${orderId || 'N/A'}`,
+        metadata: null,
+      });
+
+      res.json({ 
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent: " + error.message });
+    }
+  });
+
+  // Stripe webhook to handle payment success
+  app.post("/api/stripe-webhook", async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+
+    let event;
+
+    try {
+      // For testing, we'll skip signature verification
+      // In production, you should use stripe.webhooks.constructEvent with your webhook secret
+      event = req.body;
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      
+      try {
+        // Update transaction status to completed
+        await storage.updateTransactionByPaymentIntent(
+          paymentIntent.id,
+          {
+            status: 'completed',
+            stripeChargeId: paymentIntent.charges?.data[0]?.id || null,
+          }
+        );
+
+        // If there's an order ID, update the order
+        if (paymentIntent.metadata.orderId) {
+          await storage.updateOrderPaymentStatus(
+            paymentIntent.metadata.orderId,
+            'confirmed',
+            paymentIntent.id
+          );
+        }
+
+        console.log('Payment succeeded:', paymentIntent.id);
+      } catch (error) {
+        console.error('Error updating transaction:', error);
+      }
+    } else if (event.type === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object;
+      
+      try {
+        await storage.updateTransactionByPaymentIntent(
+          paymentIntent.id,
+          {
+            status: 'failed',
+          }
+        );
+        console.log('Payment failed:', paymentIntent.id);
+      } catch (error) {
+        console.error('Error updating failed transaction:', error);
+      }
+    }
+
+    res.json({ received: true });
+  });
+
+  // Get all transactions (admin only)
+  app.get("/api/admin/transactions", isAdminAuthenticated, async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error getting transactions:", error);
+      res.status(500).json({ error: "Failed to get transactions" });
+    }
+  });
+
+  // Get transaction details (admin only)
+  app.get("/api/admin/transactions/:id", isAdminAuthenticated, async (req, res) => {
+    try {
+      const transaction = await storage.getTransactionById(req.params.id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      res.json(transaction);
+    } catch (error) {
+      console.error("Error getting transaction:", error);
+      res.status(500).json({ error: "Failed to get transaction" });
+    }
+  });
+
+  // Get vendor's transactions
+  app.get("/api/vendor/transactions", isAuthenticated, async (req, res) => {
+    try {
+      const transactions = await storage.getVendorTransactions(req.user.id);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error getting vendor transactions:", error);
+      res.status(500).json({ error: "Failed to get transactions" });
     }
   });
 

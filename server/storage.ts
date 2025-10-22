@@ -11,6 +11,7 @@ import {
   vendorRequests,
   staffHelpRequests,
   activityLogs,
+  transactions,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -29,6 +30,7 @@ import {
   type StaffHelpRequest,
   type InsertStaffHelpRequest,
   type ActivityLog,
+  type Transaction,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ilike, inArray, sql } from "drizzle-orm";
@@ -198,6 +200,14 @@ export interface IStorage {
   createOrder(userId: string, orderData: any): Promise<any>;
   getUserOrders(userId: string): Promise<any[]>;
   getOrderDetails(orderId: string): Promise<any>;
+  updateOrderPaymentStatus(orderId: string, status: string, paymentIntentId: string): Promise<any>;
+  
+  // Transaction operations (Stripe payments)
+  createTransaction(transaction: any): Promise<any>;
+  getAllTransactions(): Promise<any[]>;
+  getTransactionById(id: string): Promise<any | undefined>;
+  getVendorTransactions(vendorId: string): Promise<any[]>;
+  updateTransactionByPaymentIntent(paymentIntentId: string, updates: any): Promise<any>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -1671,6 +1681,100 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orderItems.orderId, orderId));
     
     return { ...order, items };
+  }
+
+  async updateOrderPaymentStatus(orderId: string, status: string, paymentIntentId: string): Promise<any> {
+    const { orders } = await import("@shared/schema");
+    
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ 
+        status, 
+        transactionId: paymentIntentId,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    
+    return updatedOrder;
+  }
+
+  // Transaction operations (Stripe payments)
+  async createTransaction(transactionData: any): Promise<Transaction> {
+    const [transaction] = await db
+      .insert(transactions)
+      .values(transactionData)
+      .returning();
+    
+    return transaction;
+  }
+
+  async getAllTransactions(): Promise<Transaction[]> {
+    // Get all transactions with customer and vendor information
+    const result = await db
+      .select({
+        transaction: transactions,
+        customer: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(transactions)
+      .leftJoin(users, eq(transactions.customerId, users.id))
+      .orderBy(sql`${transactions.createdAt} DESC`);
+
+    // Enrich with vendor information
+    const enrichedTransactions = await Promise.all(
+      result.map(async (row) => {
+        const [vendor] = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+          })
+          .from(users)
+          .where(eq(users.id, row.transaction.vendorId));
+
+        return {
+          ...row.transaction,
+          customer: row.customer,
+          vendor,
+        };
+      })
+    );
+
+    return enrichedTransactions;
+  }
+
+  async getTransactionById(id: string): Promise<Transaction | undefined> {
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id));
+    
+    return transaction;
+  }
+
+  async getVendorTransactions(vendorId: string): Promise<Transaction[]> {
+    return db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.vendorId, vendorId))
+      .orderBy(sql`${transactions.createdAt} DESC`);
+  }
+
+  async updateTransactionByPaymentIntent(paymentIntentId: string, updates: any): Promise<Transaction> {
+    const [updatedTransaction] = await db
+      .update(transactions)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(transactions.stripePaymentIntentId, paymentIntentId))
+      .returning();
+    
+    return updatedTransaction;
   }
 }
 
