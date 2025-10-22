@@ -349,6 +349,43 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 
+// Transactions table for tracking Stripe payments and commissions
+export const transactions = pgTable("transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => orders.id),
+  vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who receives the payment
+  customerId: varchar("customer_id").notNull().references(() => users.id), // Customer who made the payment
+  
+  // Stripe payment details
+  stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(),
+  stripeChargeId: varchar("stripe_charge_id"),
+  
+  // Payment amounts (in HKD)
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(), // Total payment amount
+  platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin
+  vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor
+  
+  // Payment status
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'completed' | 'failed' | 'refunded'
+  currency: varchar("currency").notNull().default("hkd"),
+  
+  // Metadata
+  description: text("description"),
+  metadata: jsonb("metadata"), // Additional Stripe metadata
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
 // Keep the old business_listings table for backward compatibility but mark as deprecated
 export const businessListings = pgTable("business_listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
