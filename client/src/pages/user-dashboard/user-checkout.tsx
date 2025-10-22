@@ -528,9 +528,9 @@ export default function UserCheckout() {
                       <AlertCircle className="w-4 h-4" />
                       <AlertDescription>
                         {hasEnoughTD ? (
-                          <>Cost: <strong>{total.toFixed(0)} TD</strong>. You have sufficient balance!</>
+                          <>Cost: <strong>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</strong>. You have sufficient balance!</>
                         ) : (
-                          <>You need <strong>{total.toFixed(0)} TD</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
+                          <>You need <strong>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
                         )}
                       </AlertDescription>
                     </Alert>
@@ -551,11 +551,11 @@ export default function UserCheckout() {
                           <div className="flex justify-between items-center mb-2">
                             <label className="text-sm font-medium">Fixed Payment Split</label>
                             <Badge variant="outline" data-testid="badge-vendor-split">
-                              HK${(total - productTdPrice).toFixed(2)} Cash / {productTdPrice.toFixed(0)} TD
+                              HK${cashAmount.toFixed(2)} Cash / {tdAmount.toFixed(2)} TD
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            This vendor requires {productTdPrice.toFixed(0)} TimeDollars with the remainder in cash
+                            This vendor requires {tdAmount.toFixed(2)} TimeDollars (HK${convertTDtoHKD(tdAmount).toFixed(2)}) with the remainder in cash
                           </p>
                         </div>
                       ) : (
@@ -876,7 +876,7 @@ export default function UserCheckout() {
                   
                   {paymentMethod === "timedollar" && (
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Paying with {total.toFixed(0)} TD
+                      Paying with {tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})
                     </div>
                   )}
                   
@@ -884,11 +884,11 @@ export default function UserCheckout() {
                     <div className="text-sm space-y-1">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Cash:</span>
-                        <span>${cashAmount.toFixed(2)}</span>
+                        <span>HK${cashAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">TimeDollar:</span>
-                        <span>{tdAmount.toFixed(0)} TD</span>
+                        <span>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</span>
                       </div>
                     </div>
                   )}
