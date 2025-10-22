@@ -106,6 +106,32 @@ Vite manages static assets with path aliases. The application incorporates custo
     - Custom TanStack Query queryFn that serializes filters into URL query parameters
     - PII masking logic based on `req.user.role` in backend
     - All admin endpoints protected by `isAdminAuthenticated` middleware
+- **Stripe Payment Integration**: Complete payment processing system for credit card payments with automatic commission splitting:
+  - **Database Schema**: 
+    - `transactions` table tracks all payments with fields: stripePaymentIntentId, customerId, vendorId, totalAmount, adminCommission (5%), vendorEarnings (95%), paymentStatus
+  - **Payment Flow**:
+    - Frontend creates payment intent via `/api/stripe/create-payment-intent` endpoint
+    - Stripe Elements integration on checkout page (`user-checkout.tsx`) for secure card input
+    - Commission automatically calculated: 5% to admin, 95% to vendor
+    - Payment confirmation handled via `/api/stripe-webhook` endpoint using Stripe webhook events
+  - **Payment Methods**:
+    - Cash Only: Full payment through Stripe
+    - TimeDollar Only: No Stripe payment, balance deducted directly
+    - Combo: Cash portion through Stripe, TimeDollar portion deducted from balance
+  - **Security**:
+    - Stripe keys stored in Replit Secrets (STRIPE_SECRET_KEY, VITE_STRIPE_PUBLIC_KEY)
+    - Currently running in test mode for development
+    - Webhook endpoint validates Stripe signatures for security
+  - **Admin Transactions Page** (`/admin/transactions`):
+    - View all payment transactions with customer and vendor details
+    - Search and filter by payment status (succeeded, pending, failed)
+    - Display commission breakdown: total revenue, admin earnings (5%), vendor earnings (95%)
+    - Real-time statistics cards showing transaction metrics
+  - **Technical Implementation**:
+    - Storage methods: `createTransaction`, `getAllTransactions`, `getVendorTransactions`, `updateTransactionByPaymentIntent`
+    - API endpoints: POST `/api/stripe/create-payment-intent`, POST `/api/stripe-webhook`, GET `/api/admin/transactions`
+    - Frontend uses `@stripe/stripe-js` and `@stripe/react-stripe-js` for Elements integration
+    - Transactions automatically recorded when webhook receives payment confirmation from Stripe
 
 ## External Dependencies
 
