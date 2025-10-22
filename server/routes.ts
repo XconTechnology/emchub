@@ -856,9 +856,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
       
-      // Hash the new password
-      const bcrypt = await import("bcrypt");
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Hash the new password using the same method as auth system
+      const { hashPassword } = await import("./auth");
+      const hashedPassword = await hashPassword(newPassword);
       
       const updatedUser = await storage.adminResetUserPassword(userId, hashedPassword);
       
