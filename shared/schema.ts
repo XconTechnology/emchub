@@ -302,6 +302,7 @@ export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
+  vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who receives the order
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: varchar("status").notNull().default("pending"), // 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
   paymentMethod: varchar("payment_method"), // 'cash' | 'timedollar' | 'both'

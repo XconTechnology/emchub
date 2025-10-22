@@ -1543,6 +1543,12 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Cart is empty");
     }
     
+    // Extract vendor ID from the first product (assuming all products are from the same vendor)
+    const vendorId = cart[0]?.product?.userId;
+    if (!vendorId) {
+      throw new Error("Could not determine vendor for this order");
+    }
+    
     // Calculate total
     let totalAmount = 0;
     const orderItemsData = cart.map((item: any) => {
@@ -1608,6 +1614,7 @@ export class DatabaseStorage implements IStorage {
     // Create order with payment details
     const orderValues: any = {
       userId,
+      vendorId,
       totalAmount: totalAmount.toString(),
       paymentMethod,
       cashAmount: cashAmountValue.toString(),
