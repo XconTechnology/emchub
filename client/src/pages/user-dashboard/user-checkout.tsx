@@ -401,7 +401,7 @@ export default function UserCheckout() {
     if (data.paymentMethod === "both" && !hasEnoughTD) {
       toast({
         title: "Insufficient TimeDollar Balance",
-        description: `You need ${tdAmount.toFixed(0)} TD but only have ${tdBalance?.balance || 0} TD.`,
+        description: `You need ${tdAmount.toFixed(2)} TD (HK$${convertTDtoHKD(tdAmount).toFixed(2)}) but only have ${tdBalance?.balance || 0} TD (HK$${convertTDtoHKD(tdBalance?.balance || 0).toFixed(2)}).`,
         variant: "destructive",
       });
       return;
@@ -520,7 +520,7 @@ export default function UserCheckout() {
                     <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Your TimeDollar Balance</p>
-                        <p className="text-2xl font-bold" data-testid="text-td-balance">{tdBalance?.balance || 0} TD</p>
+                        <p className="text-2xl font-bold" data-testid="text-td-balance">{tdBalance?.balance || 0} TD (HK${convertTDtoHKD(tdBalance?.balance || 0).toFixed(2)})</p>
                       </div>
                       <Coins className="w-8 h-8 text-[#8FC24C]" />
                     </div>
@@ -530,7 +530,7 @@ export default function UserCheckout() {
                         {hasEnoughTD ? (
                           <>Cost: <strong>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</strong>. You have sufficient balance!</>
                         ) : (
-                          <>You need <strong>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</strong> but only have <strong>{tdBalance?.balance || 0} TD</strong>. Insufficient balance!</>
+                          <>You need <strong>{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</strong> but only have <strong>{tdBalance?.balance || 0} TD (HK${convertTDtoHKD(tdBalance?.balance || 0).toFixed(2)})</strong>. Insufficient balance!</>
                         )}
                       </AlertDescription>
                     </Alert>
@@ -540,7 +540,7 @@ export default function UserCheckout() {
                     <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Available TimeDollars</p>
-                        <p className="text-xl font-bold" data-testid="text-td-balance-combo">{tdBalance?.balance || 0} TD</p>
+                        <p className="text-xl font-bold" data-testid="text-td-balance-combo">{tdBalance?.balance || 0} TD (HK${convertTDtoHKD(tdBalance?.balance || 0).toFixed(2)})</p>
                       </div>
                       <Coins className="w-8 h-8 text-[#8FC24C]" />
                     </div>
@@ -551,7 +551,7 @@ export default function UserCheckout() {
                           <div className="flex justify-between items-center mb-2">
                             <label className="text-sm font-medium">Fixed Payment Split</label>
                             <Badge variant="outline" data-testid="badge-vendor-split">
-                              HK${cashAmount.toFixed(2)} Cash / {tdAmount.toFixed(2)} TD
+                              HK${cashAmount.toFixed(2)} Cash / {tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
@@ -579,14 +579,14 @@ export default function UserCheckout() {
                         </div>
                         <div className="p-3 border rounded-lg">
                           <p className="text-sm text-gray-600 dark:text-gray-400">TimeDollar Amount</p>
-                          <p className="text-xl font-bold" data-testid="text-td-amount">{tdAmount.toFixed(0)} TD</p>
+                          <p className="text-xl font-bold" data-testid="text-td-amount">{tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})</p>
                         </div>
                       </div>
                       {!hasEnoughTD && (
                         <Alert variant="destructive">
                           <AlertCircle className="w-4 h-4" />
                           <AlertDescription>
-                            Insufficient TimeDollar balance! You need {tdAmount.toFixed(0)} TD but only have {tdBalance?.balance || 0} TD.
+                            Insufficient TimeDollar balance! You need {tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)}) but only have {tdBalance?.balance || 0} TD (HK${convertTDtoHKD(tdBalance?.balance || 0).toFixed(2)}).
                           </AlertDescription>
                         </Alert>
                       )}
@@ -855,7 +855,7 @@ export default function UserCheckout() {
                       {couponDiscounts.td > 0 && (
                         <div className="flex justify-between text-sm text-blue-600">
                           <span>Coupon Discount (TD)</span>
-                          <span data-testid="text-td-discount">-{couponDiscounts.td.toFixed(0)} TD</span>
+                          <span data-testid="text-td-discount">-{couponDiscounts.td.toFixed(2)} TD (HK${convertTDtoHKD(couponDiscounts.td).toFixed(2)})</span>
                         </div>
                       )}
                     </>
