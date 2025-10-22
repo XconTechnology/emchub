@@ -19,6 +19,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CheckCircle, CreditCard, Coins, AlertCircle, Wallet, DollarSign, Ticket } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { TD_TO_HKD_RATE, convertTDtoHKD } from "@/../../shared/constants";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -231,8 +232,11 @@ export default function UserCheckout() {
   });
 
   const createPaymentIntentMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await apiRequest("POST", "/api/stripe/create-payment-intent", { amount });
+    mutationFn: async ({ amount, vendorId }: { amount: number; vendorId: string }) => {
+      const response = await apiRequest("POST", "/api/create-payment-intent", { 
+        amount, 
+        vendorId 
+      });
       return response.json();
     },
     onSuccess: (data: any) => {
@@ -287,22 +291,29 @@ export default function UserCheckout() {
   const total = calculateTotal();
   
   // Calculate amounts before discounts based on product's fixed TD price
+  // NOTE: 1 TimeDollar = 60 HK$ (TD_TO_HKD_RATE)
   let cashAmountBeforeDiscount = 0;
   let tdAmountBeforeDiscount = 0;
+  let tdQuantity = 0; // Number of TimeDollars (not HKD value)
   
   if (paymentMethod === "cash") {
     cashAmountBeforeDiscount = total;
   } else if (paymentMethod === "timedollar") {
-    tdAmountBeforeDiscount = total;
+    // When paying with TimeDollars only, convert HKD price to TD quantity
+    tdQuantity = total / TD_TO_HKD_RATE;
+    tdAmountBeforeDiscount = tdQuantity; // This represents TD quantity
   } else if (paymentMethod === "both") {
     if (productTdPrice !== null && productTdPrice > 0) {
-      // Use fixed TD price set by vendor
+      // Use fixed TD price set by vendor (productTdPrice is in TimeDollars)
+      tdQuantity = productTdPrice;
       tdAmountBeforeDiscount = productTdPrice;
-      cashAmountBeforeDiscount = Math.max(0, total - productTdPrice);
+      // Subtract the HKD value of TimeDollars from total
+      cashAmountBeforeDiscount = Math.max(0, total - convertTDtoHKD(productTdPrice));
     } else {
       // If no TD price set, default to cash only
       cashAmountBeforeDiscount = total;
       tdAmountBeforeDiscount = 0;
+      tdQuantity = 0;
     }
   }
   
@@ -310,9 +321,11 @@ export default function UserCheckout() {
   const cashAmount = Math.max(0, cashAmountBeforeDiscount - couponDiscounts.cash);
   const tdAmount = Math.max(0, tdAmountBeforeDiscount - couponDiscounts.td);
   
-  const finalTotal = cashAmount + tdAmount;
+  // Final total in HKD = cash amount + (TD amount * conversion rate)
+  const finalTotal = cashAmount + convertTDtoHKD(tdAmount);
   const totalDiscount = couponDiscounts.cash + couponDiscounts.td;
   
+  // Check if user has enough TimeDollars (tdAmount represents TD quantity)
   const hasEnoughTD = tdBalance ? tdBalance.balance >= tdAmount : false;
 
   const handleApplyCoupon = () => {
@@ -344,13 +357,16 @@ export default function UserCheckout() {
 
   // Create payment intent when cash amount is greater than 0
   useEffect(() => {
-    if (cashAmount > 0 && (paymentMethod === "cash" || paymentMethod === "both")) {
-      createPaymentIntentMutation.mutate(cashAmount);
+    if (cashAmount > 0 && (paymentMethod === "cash" || paymentMethod === "both") && cartItems && cartItems.length > 0) {
+      const vendorId = cartItems[0]?.product?.userId;
+      if (vendorId) {
+        createPaymentIntentMutation.mutate({ amount: cashAmount, vendorId });
+      }
     } else {
       setClientSecret(null);
       setPaymentIntentId(null);
     }
-  }, [cashAmount, paymentMethod]);
+  }, [cashAmount, paymentMethod, cartItems]);
 
   const handlePaymentSuccess = (stripePaymentIntentId: string) => {
     // Get form data
