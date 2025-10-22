@@ -711,6 +711,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin transactions endpoint
+  app.get('/api/admin/transactions', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
   // Admin routes for listing moderation
   app.get('/api/admin/listings', isAdminAuthenticated, async (req: any, res) => {
     try {

@@ -13,6 +13,7 @@ import {
   Activity,
   Store,
   BarChart3,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,6 +62,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Analytics",
       url: "/admin/analytics",
       icon: BarChart3,
+    },
+    {
+      title: "Transactions",
+      url: "/admin/transactions",
+      icon: CreditCard,
     },
     {
       title: "Pending Approvals",

@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import AdminDashboardLayout from "@/components/AdminDashboardLayout";
 import AdminOverview from "./admin-overview";
 import AdminAnalytics from "./admin-analytics";
+import AdminTransactions from "./admin-transactions";
 import AdminListings from "./admin-listings";
 import AdminAddListing from "./admin-add-listing";
 import AdminEditListing from "./admin-edit-listing";
@@ -37,6 +38,7 @@ export default function AdminRouter() {
     <AdminDashboardLayout>
       <Switch>
         <Route path="/admin/analytics" component={AdminAnalytics} />
+        <Route path="/admin/transactions" component={AdminTransactions} />
         <Route path="/admin/pending-approvals" component={AdminPendingApprovals} />
         <Route path="/admin/vendor-requests" component={AdminVendorRequests} />
         <Route path="/admin/vendors" component={AdminVendors} />
