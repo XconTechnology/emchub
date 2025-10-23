@@ -1651,6 +1651,55 @@ export class DatabaseStorage implements IStorage {
       await this.useCoupon(couponId, userId, order.id, totalDiscount);
     }
 
+    // Create transaction record with 5% commission for admin, 95% for vendor
+    // For all payment types: cash, TimeDollar, and both
+    const { transactions: transactionsTable } = await import("@shared/schema");
+    
+    // Calculate total transaction amount (in HKD equivalent)
+    // TimeDollars are converted to HKD at 60 HK$ per 1 TD for commission calculation
+    const tdToHkdRate = 60;
+    const tdAmountInHkd = tdAmountValue * tdToHkdRate;
+    const totalTransactionAmount = cashAmountValue + tdAmountInHkd;
+    
+    // Calculate 5% platform commission and 95% vendor earnings
+    const platformCommission = totalTransactionAmount * 0.05;
+    const vendorEarnings = totalTransactionAmount * 0.95;
+    
+    // Determine transaction status based on payment method
+    let transactionStatus = 'completed';
+    if (paymentMethod === 'cash' || paymentMethod === 'both') {
+      // For cash/both payments, status is pending until Stripe confirms
+      transactionStatus = 'pending';
+    }
+    
+    const transactionData = {
+      orderId: order.id,
+      vendorId,
+      customerId: userId,
+      paymentMethod,
+      cashAmount: cashAmountValue.toString(),
+      tdAmount: tdAmountValue.toString(),
+      totalAmount: totalTransactionAmount.toFixed(2),
+      platformCommission: platformCommission.toFixed(2),
+      vendorEarnings: vendorEarnings.toFixed(2),
+      status: transactionStatus,
+      description: `Order #${order.id.substring(0, 8)} - ${orderItemsData.length} item(s)`,
+      metadata: {
+        orderItems: orderItemsData.length,
+        paymentMethod,
+        cashAmount: cashAmountValue,
+        tdAmount: tdAmountValue,
+        tdToHkdRate,
+      },
+    };
+    
+    // Add payment intent ID if it exists (for cash/both payments)
+    if (orderData.paymentIntentId) {
+      transactionData.stripePaymentIntentId = orderData.paymentIntentId;
+    }
+    
+    await db.insert(transactionsTable).values(transactionData);
+
     // Clear cart
     await this.clearCart(userId);
     
