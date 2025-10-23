@@ -233,7 +233,7 @@ export default function UserCheckout() {
 
   const createPaymentIntentMutation = useMutation({
     mutationFn: async ({ amount, vendorId }: { amount: number; vendorId: string }) => {
-      const response = await apiRequest("POST", "/api/create-payment-intent", { 
+      const response = await apiRequest("POST", "/api/stripe/create-payment-intent", { 
         amount, 
         vendorId 
       });
