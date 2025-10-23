@@ -29,7 +29,7 @@ interface Transaction {
   customerId: string;
   vendorId: string;
   totalAmount: number;
-  adminCommission: number;
+  platformCommission: number;
   vendorEarnings: number;
   paymentStatus: string;
   createdAt: Date;
@@ -55,11 +55,11 @@ export default function AdminTransactions() {
 
   const filteredTransactions = transactions?.filter((transaction) => {
     const matchesSearch = 
-      transaction.customer?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.customer?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.vendor?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.vendor?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.stripePaymentIntentId.toLowerCase().includes(searchQuery.toLowerCase());
+      transaction.customer?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.customer?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.vendor?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.vendor?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.stripePaymentIntentId?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || transaction.paymentStatus === statusFilter;
 
@@ -68,7 +68,7 @@ export default function AdminTransactions() {
 
   const totalTransactions = filteredTransactions?.length || 0;
   const totalRevenue = filteredTransactions?.reduce((sum, t) => sum + Number(t.totalAmount), 0) || 0;
-  const totalCommission = filteredTransactions?.reduce((sum, t) => sum + Number(t.adminCommission), 0) || 0;
+  const totalCommission = filteredTransactions?.reduce((sum, t) => sum + Number(t.platformCommission), 0) || 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -212,7 +212,7 @@ export default function AdminTransactions() {
                         HK${Number(transaction.totalAmount).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-green-600 font-medium" data-testid={`text-commission-${transaction.id}`}>
-                        HK${Number(transaction.adminCommission).toFixed(2)}
+                        HK${Number(transaction.platformCommission).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-blue-600 font-medium" data-testid={`text-earnings-${transaction.id}`}>
                         HK${Number(transaction.vendorEarnings).toFixed(2)}
