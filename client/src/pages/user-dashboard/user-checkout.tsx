@@ -237,7 +237,8 @@ export default function UserCheckout() {
         amount, 
         vendorId 
       });
-      return response;
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data: any) => {
       setClientSecret(data.clientSecret);
