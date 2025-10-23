@@ -2770,8 +2770,65 @@ export function registerRoutes(app: Express): Server {
   });
 
   // ========================================
-  // STRIPE PAYMENT ROUTES (WEBHOOK)
+  // STRIPE PAYMENT ROUTES
   // ========================================
+
+  // Create payment intent for checkout
+  app.post("/api/stripe/create-payment-intent", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, amount, vendorId } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      if (!vendorId) {
+        return res.status(400).json({ error: "Vendor ID is required" });
+      }
+
+      // Calculate commission (5% for platform, 95% for vendor)
+      const totalAmount = parseFloat(amount);
+      const platformCommission = totalAmount * 0.05;
+      const vendorEarnings = totalAmount * 0.95;
+
+      // Create Stripe payment intent (amount in cents for HKD)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalAmount * 100), // Convert to cents
+        currency: "hkd",
+        metadata: {
+          orderId: orderId || '',
+          vendorId,
+          customerId: req.user.id,
+          platformCommission: platformCommission.toFixed(2),
+          vendorEarnings: vendorEarnings.toFixed(2),
+        },
+      });
+
+      // Create transaction record with pending status
+      await storage.createTransaction({
+        orderId: orderId || null,
+        vendorId,
+        customerId: req.user.id,
+        stripePaymentIntentId: paymentIntent.id,
+        stripeChargeId: null,
+        totalAmount: totalAmount.toFixed(2),
+        platformCommission: platformCommission.toFixed(2),
+        vendorEarnings: vendorEarnings.toFixed(2),
+        status: 'pending',
+        currency: 'hkd',
+        description: `Payment for order ${orderId || 'N/A'}`,
+        metadata: null,
+      });
+
+      res.json({ 
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent: " + error.message });
+    }
+  });
 
   // Stripe webhook to handle payment success
   app.post("/api/stripe-webhook", async (req, res) => {
