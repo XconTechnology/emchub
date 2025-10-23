@@ -2816,13 +2816,17 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Create transaction record with pending status
+      // Note: paymentMethod will be updated when order is created
       await storage.createTransaction({
         orderId: orderId || null,
         vendorId,
         customerId: req.user.id,
         stripePaymentIntentId: paymentIntent.id,
         stripeChargeId: null,
+        paymentMethod: 'cash', // Default, will be updated in createOrder
         totalAmount: totalAmount.toFixed(2),
+        cashAmount: totalAmount.toFixed(2), // Initial cash amount, may be updated for "both" payments
+        tdAmount: '0',
         platformCommission: platformCommission.toFixed(2),
         vendorEarnings: vendorEarnings.toFixed(2),
         status: 'pending',

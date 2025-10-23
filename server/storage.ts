@@ -1651,6 +1651,51 @@ export class DatabaseStorage implements IStorage {
       await this.useCoupon(couponId, userId, order.id, totalDiscount);
     }
 
+    // Create or update transaction record
+    const platformCommission = totalAmount * 0.05; // 5% commission
+    const vendorEarnings = totalAmount * 0.95; // 95% for vendor
+    
+    if (orderData.paymentIntentId) {
+      // Update existing transaction (created by payment intent) with order details
+      await this.updateTransactionByPaymentIntent(orderData.paymentIntentId, {
+        orderId: order.id,
+        paymentMethod,
+        cashAmount: cashAmountValue.toFixed(2),
+        tdAmount: tdAmountValue.toFixed(2),
+        totalAmount: totalAmount.toFixed(2),
+        platformCommission: platformCommission.toFixed(2),
+        vendorEarnings: vendorEarnings.toFixed(2),
+        status: 'completed',
+        metadata: {
+          couponId,
+          cashDiscount: cashDiscountValue,
+          tdDiscount: tdDiscountValue,
+        },
+      });
+    } else {
+      // Create new transaction (for TimeDollar-only payments)
+      await this.createTransaction({
+        orderId: order.id,
+        vendorId,
+        customerId: userId,
+        stripePaymentIntentId: null,
+        paymentMethod,
+        totalAmount: totalAmount.toFixed(2),
+        cashAmount: cashAmountValue.toFixed(2),
+        tdAmount: tdAmountValue.toFixed(2),
+        platformCommission: platformCommission.toFixed(2),
+        vendorEarnings: vendorEarnings.toFixed(2),
+        status: 'completed', // TimeDollar payments are immediately completed
+        currency: 'hkd',
+        description: `Payment for order ${order.id}`,
+        metadata: {
+          couponId,
+          cashDiscount: cashDiscountValue,
+          tdDiscount: tdDiscountValue,
+        },
+      });
+    }
+
     // Clear cart
     await this.clearCart(userId);
     
