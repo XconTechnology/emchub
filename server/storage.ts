@@ -1130,19 +1130,19 @@ export class DatabaseStorage implements IStorage {
     
     // Top categories
     const topCategoriesData = await db.select({
-      category: listings.category,
+      categoryId: listings.categoryId,
       count: sql<number>`count(DISTINCT ${orderItems.orderId})`,
       revenue: sql<string>`COALESCE(SUM(CAST(${orderItems.subtotal} AS NUMERIC)), 0)`,
     })
     .from(orderItems)
     .leftJoin(listings, eq(orderItems.productId, listings.id))
-    .where(sql`${listings.category} IS NOT NULL`)
-    .groupBy(listings.category)
+    .where(sql`${listings.categoryId} IS NOT NULL`)
+    .groupBy(listings.categoryId)
     .orderBy(sql`SUM(CAST(${orderItems.subtotal} AS NUMERIC)) DESC`)
     .limit(10);
     
     const topCategories = topCategoriesData.map(c => ({
-      category: c.category || 'Uncategorized',
+      category: c.categoryId || 'Uncategorized',
       count: Number(c.count || 0),
       revenue: c.revenue || '0',
     }));
@@ -1693,12 +1693,13 @@ export class DatabaseStorage implements IStorage {
       },
     };
     
-    // Add payment intent ID if it exists (for cash/both payments)
+    // Create transaction with payment intent ID if it exists
+    const finalTransactionData: any = { ...transactionData };
     if (orderData.paymentIntentId) {
-      transactionData.stripePaymentIntentId = orderData.paymentIntentId;
+      finalTransactionData.stripePaymentIntentId = orderData.paymentIntentId;
     }
     
-    await db.insert(transactionsTable).values(transactionData);
+    await db.insert(transactionsTable).values(finalTransactionData);
 
     // Clear cart
     await this.clearCart(userId);
