@@ -350,19 +350,22 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 
-// Transactions table for tracking Stripe payments and commissions
+// Transactions table for tracking all payments and commissions
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").references(() => orders.id),
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who receives the payment
   customerId: varchar("customer_id").notNull().references(() => users.id), // Customer who made the payment
   
-  // Stripe payment details
-  stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(),
+  // Payment method and details
+  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both'
+  stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(), // For cash/both payments
   stripeChargeId: varchar("stripe_charge_id"),
   
-  // Payment amounts (in HKD)
+  // Payment amounts (in HKD or TD equivalent)
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(), // Total payment amount
+  cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default('0'), // Cash portion (HKD)
+  tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default('0'), // TimeDollar portion
   platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin
   vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor
   
@@ -372,7 +375,7 @@ export const transactions = pgTable("transactions", {
   
   // Metadata
   description: text("description"),
-  metadata: jsonb("metadata"), // Additional Stripe metadata
+  metadata: jsonb("metadata"), // Additional payment metadata
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
