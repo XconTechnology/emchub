@@ -25,18 +25,14 @@ import { format } from "date-fns";
 interface Transaction {
   id: string;
   orderId: string;
-  paymentMethod: string;
-  stripePaymentIntentId?: string;
+  stripePaymentIntentId: string;
   customerId: string;
   vendorId: string;
-  totalAmount: string;
-  cashAmount?: string;
-  tdAmount?: string;
-  platformCommission: string;
-  vendorEarnings: string;
-  status: string;
-  description?: string;
-  createdAt: string;
+  totalAmount: number;
+  adminCommission: number;
+  vendorEarnings: number;
+  paymentStatus: string;
+  createdAt: Date;
   customer?: {
     id: string;
     username: string;
@@ -63,22 +59,21 @@ export default function AdminTransactions() {
       transaction.customer?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       transaction.vendor?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       transaction.vendor?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.stripePaymentIntentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      transaction.stripePaymentIntentId.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || transaction.paymentStatus === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   const totalTransactions = filteredTransactions?.length || 0;
   const totalRevenue = filteredTransactions?.reduce((sum, t) => sum + Number(t.totalAmount), 0) || 0;
-  const totalCommission = filteredTransactions?.reduce((sum, t) => sum + Number(t.platformCommission), 0) || 0;
+  const totalCommission = filteredTransactions?.reduce((sum, t) => sum + Number(t.adminCommission), 0) || 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "completed":
-        return <Badge className="bg-green-500" data-testid={`badge-status-completed`}>Completed</Badge>;
+      case "succeeded":
+        return <Badge className="bg-green-500" data-testid={`badge-status-succeeded`}>Succeeded</Badge>;
       case "pending":
         return <Badge className="bg-yellow-500" data-testid={`badge-status-pending`}>Pending</Badge>;
       case "failed":
@@ -165,7 +160,7 @@ export default function AdminTransactions() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="succeeded">Succeeded</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
@@ -217,16 +212,16 @@ export default function AdminTransactions() {
                         HK${Number(transaction.totalAmount).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-green-600 font-medium" data-testid={`text-commission-${transaction.id}`}>
-                        HK${Number(transaction.platformCommission).toFixed(2)}
+                        HK${Number(transaction.adminCommission).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-blue-600 font-medium" data-testid={`text-earnings-${transaction.id}`}>
                         HK${Number(transaction.vendorEarnings).toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        {getStatusBadge(transaction.status)}
+                        {getStatusBadge(transaction.paymentStatus)}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-gray-500" data-testid={`text-payment-id-${transaction.id}`}>
-                        {transaction.stripePaymentIntentId ? transaction.stripePaymentIntentId.substring(0, 20) + '...' : 'N/A'}
+                        {transaction.stripePaymentIntentId.substring(0, 20)}...
                       </TableCell>
                     </TableRow>
                   ))}
