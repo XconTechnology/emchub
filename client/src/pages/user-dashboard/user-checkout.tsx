@@ -238,23 +238,18 @@ export default function UserCheckout() {
         vendorId 
       });
       const data = await response.json();
-      console.log('Payment Intent Response:', data);
       return data;
     },
     onSuccess: (data: any) => {
-      console.log('Setting clientSecret:', data.clientSecret);
-      console.log('Setting paymentIntentId:', data.paymentIntentId);
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
     },
     onError: (error: any) => {
-      console.error('Payment Intent Error:', error);
       toast({
         title: "Payment setup failed",
         description: error.message || "Failed to initialize payment",
         variant: "destructive",
       });
-      // Reset client secret on error
       setClientSecret(null);
       setPaymentIntentId(null);
     },
@@ -367,14 +362,16 @@ export default function UserCheckout() {
   useEffect(() => {
     if (cashAmount > 0 && (paymentMethod === "cash" || paymentMethod === "both") && cartItems && cartItems.length > 0) {
       const vendorId = cartItems[0]?.product?.userId;
-      if (vendorId) {
+      // Only create a new payment intent if we don't have one yet
+      if (vendorId && !clientSecret) {
         createPaymentIntentMutation.mutate({ amount: cashAmount, vendorId });
       }
-    } else {
+    } else if (cashAmount === 0) {
+      // Only clear clientSecret when cashAmount is actually 0
       setClientSecret(null);
       setPaymentIntentId(null);
     }
-  }, [cashAmount, paymentMethod, cartItems]);
+  }, [cashAmount, paymentMethod, cartItems, clientSecret]);
 
   const handlePaymentSuccess = (stripePaymentIntentId: string) => {
     // Get form data

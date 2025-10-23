@@ -14,12 +14,29 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAdminAuth = async (): Promise<boolean> => {
     try {
-      const response = await fetch("/api/admin/check", {
-        credentials: "include",
-      });
-      const isAuth = response.ok;
-      setIsAdminAuthenticated(isAuth);
-      return isAuth;
+      // Check both admin session and user role
+      const [adminResponse, userResponse] = await Promise.all([
+        fetch("/api/admin/check", { credentials: "include" }),
+        fetch("/api/me", { credentials: "include" })
+      ]);
+      
+      // Allow access if either:
+      // 1. Has valid admin session
+      // 2. Is a user with admin or super-admin role
+      if (adminResponse.ok) {
+        setIsAdminAuthenticated(true);
+        return true;
+      }
+      
+      if (userResponse.ok) {
+        const user = await userResponse.json();
+        const isAdminRole = user.role === 'admin' || user.role === 'super-admin';
+        setIsAdminAuthenticated(isAdminRole);
+        return isAdminRole;
+      }
+      
+      setIsAdminAuthenticated(false);
+      return false;
     } catch {
       setIsAdminAuthenticated(false);
       return false;
