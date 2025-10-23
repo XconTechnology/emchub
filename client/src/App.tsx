@@ -53,6 +53,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={ProfileRedirect} />
       <Route path="/dashboard" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-orders" component={UserDashboardRouter} />
+      <Route path="/dashboard/vendor-transactions" component={UserDashboardRouter} />
       <Route path="/dashboard/purchases" component={UserDashboardRouter} />
       <Route path="/dashboard/activity" component={UserDashboardRouter} />
       <Route path="/dashboard/become-vendor" component={UserDashboardRouter} />
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/dashboard/pricing" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/analytics" component={AdminRouter} />
+      <Route path="/admin/transactions" component={AdminRouter} />
       <Route path="/admin/pending-approvals" component={AdminRouter} />
       <Route path="/admin/vendor-requests" component={AdminRouter} />
       <Route path="/admin/vendors" component={AdminRouter} />
