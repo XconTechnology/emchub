@@ -1820,12 +1820,55 @@ export class DatabaseStorage implements IStorage {
     return transaction;
   }
 
-  async getVendorTransactions(vendorId: string): Promise<Transaction[]> {
-    return db
-      .select()
+  async getVendorTransactions(vendorId: string): Promise<any[]> {
+    // Get vendor transactions with customer and order information
+    const result = await db
+      .select({
+        transaction: transactions,
+        customer: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
       .from(transactions)
+      .leftJoin(users, eq(transactions.customerId, users.id))
       .where(eq(transactions.vendorId, vendorId))
       .orderBy(sql`${transactions.createdAt} DESC`);
+
+    // Enrich with order details
+    const enrichedTransactions = await Promise.all(
+      result.map(async (row) => {
+        let orderDetails = null;
+        if (row.transaction.orderId) {
+          // Get order with items
+          const [order] = await db
+            .select()
+            .from(orders)
+            .where(eq(orders.id, row.transaction.orderId));
+          
+          if (order) {
+            const items = await db
+              .select()
+              .from(orderItems)
+              .where(eq(orderItems.orderId, order.id));
+            
+            orderDetails = {
+              ...order,
+              items,
+            };
+          }
+        }
+
+        return {
+          ...row.transaction,
+          customer: row.customer,
+          order: orderDetails,
+        };
+      })
+    );
+
+    return enrichedTransactions;
   }
 
   async updateTransactionByPaymentIntent(paymentIntentId: string, updates: any): Promise<Transaction> {

@@ -361,8 +361,11 @@ export const transactions = pgTable("transactions", {
   stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(),
   stripeChargeId: varchar("stripe_charge_id"),
   
-  // Payment amounts (in HKD)
+  // Payment method and amounts (in HKD)
+  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both'
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(), // Total payment amount
+  cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in cash (HKD)
+  tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in TimeDollars (TD)
   platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin
   vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor
   

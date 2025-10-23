@@ -2752,6 +2752,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Get vendor's transactions (sales and earnings)
+  app.get("/api/vendor/transactions", isAuthenticated, async (req, res) => {
+    try {
+      const transactions = await storage.getVendorTransactions(req.user.id);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error getting vendor transactions:", error);
+      res.status(500).json({ error: "Failed to get vendor transactions" });
+    }
+  });
+  
   // Update order status (for vendors to accept/reject/update orders)
   app.patch("/api/orders/:orderId/status", isAuthenticated, async (req, res) => {
     try {
