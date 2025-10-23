@@ -238,18 +238,25 @@ export default function UserCheckout() {
         vendorId 
       });
       const data = await response.json();
+      console.log('Payment Intent Response:', data);
       return data;
     },
     onSuccess: (data: any) => {
+      console.log('Setting clientSecret:', data.clientSecret);
+      console.log('Setting paymentIntentId:', data.paymentIntentId);
       setClientSecret(data.clientSecret);
       setPaymentIntentId(data.paymentIntentId);
     },
     onError: (error: any) => {
+      console.error('Payment Intent Error:', error);
       toast({
         title: "Payment setup failed",
         description: error.message || "Failed to initialize payment",
         variant: "destructive",
       });
+      // Reset client secret on error
+      setClientSecret(null);
+      setPaymentIntentId(null);
     },
   });
 
