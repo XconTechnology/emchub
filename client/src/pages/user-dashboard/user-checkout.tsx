@@ -154,8 +154,8 @@ export default function UserCheckout() {
 
   // Get product's payment type and percentages
   const productPaymentType = cartItems?.[0]?.product?.paymentType || "cash_only";
-  const productTdPercentage = cartItems?.[0]?.product?.timedollarPercentage || 0;
-  const productCashPercentage = cartItems?.[0]?.product?.cashPercentage || 100;
+  const productTdPercentage = cartItems?.[0]?.product?.timedollarPercentage ?? 0;
+  const productCashPercentage = cartItems?.[0]?.product?.cashPercentage ?? (productTdPercentage > 0 ? 100 - productTdPercentage : 100);
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),

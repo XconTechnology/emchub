@@ -22,7 +22,9 @@ import {
   BadgeCheck,
   Package,
   Truck,
-  Shield
+  Shield,
+  DollarSign,
+  Coins
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -282,6 +284,29 @@ export default function ProductDetailPage() {
                   </div>
                 )}
               </div>
+
+              <Separator />
+
+              {/* Payment Methods */}
+              {product.paymentType && product.paymentType === "combo" && product.timedollarPercentage && product.timedollarPercentage > 0 && (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950 dark:to-green-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
+                      <DollarSign className="w-5 h-5 text-[#8FC24C]" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Combo Payment Available</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        This product uses a custom payment split: 
+                        <span className="font-bold text-[#8FC24C]"> {product.timedollarPercentage}% TimeDollar + {product.cashPercentage}% Cash</span>
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        At checkout, you'll pay {product.timedollarPercentage}% of the price in TimeDollars and {product.cashPercentage}% in cash (1 TD = 60 HK$)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
