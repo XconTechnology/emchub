@@ -74,6 +74,7 @@ function Router() {
       <Route path="/dashboard/inventory" component={UserDashboardRouter} />
       <Route path="/dashboard/coupons" component={UserDashboardRouter} />
       <Route path="/dashboard/pricing" component={UserDashboardRouter} />
+      <Route path="/dashboard/messages" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/analytics" component={AdminRouter} />
       <Route path="/admin/transactions" component={AdminRouter} />

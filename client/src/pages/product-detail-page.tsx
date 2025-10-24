@@ -24,9 +24,10 @@ import {
   Truck,
   Shield,
   DollarSign,
-  Coins
+  Coins,
+  MessageCircle
 } from "lucide-react";
-import type { Listing } from "@shared/schema";
+import type { Listing, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -37,6 +38,11 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Check if user is logged in
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ['/api/me'],
+  });
 
   const { data: product, isLoading } = useQuery<Listing>({
     queryKey: [`/api/listings/${productId}`],
@@ -87,6 +93,50 @@ export default function ProductDetailPage() {
       });
     },
   });
+
+  // Create or get conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async () => {
+      if (!product) throw new Error("Product not found");
+      
+      return apiRequest('POST', '/api/conversations', {
+        vendorId: product.userId,
+        productId: product.id,
+        productTitle: product.title,
+      });
+    },
+    onSuccess: (data: any) => {
+      setLocation(`/dashboard/messages`);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to start conversation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleMessageVendor = () => {
+    if (!currentUser) {
+      // Save return URL and redirect to login
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    // Don't allow messaging yourself
+    if (currentUser.id === product?.userId) {
+      toast({
+        title: "Cannot message yourself",
+        description: "You cannot send messages to your own products",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createConversationMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -491,6 +541,17 @@ export default function ProductDetailPage() {
 
                       <Button variant="outline" className="w-full mt-3" data-testid="button-contact-seller">
                         Contact Seller
+                      </Button>
+
+                      <Button 
+                        variant="default" 
+                        className="w-full mt-2 bg-[#8FC24C] hover:bg-[#7AB23C]" 
+                        onClick={handleMessageVendor}
+                        disabled={createConversationMutation.isPending}
+                        data-testid="button-message-vendor"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        {createConversationMutation.isPending ? "Starting..." : "Message Vendor"}
                       </Button>
                     </div>
                   </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Search, 
   Star, 
@@ -59,11 +61,19 @@ import UserBecomeVendor from "./user-become-vendor";
 import UserRecycleBin from "./user-recycle-bin";
 import UserVendorOrders from "./user-vendor-orders";
 import UserVendorTransactions from "./user-vendor-transactions";
+import UserChats from "./user-chats";
+import VendorMessages from "./vendor-messages";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Fetch unread message count
+  const { data: unreadCountData } = useQuery<{ count: number }>({
+    queryKey: ['/api/messages/unread/count'],
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -75,10 +85,13 @@ export default function UserDashboardRouter() {
     return null;
   }
 
+  const unreadCount = unreadCountData?.count || 0;
+
   // Navigation items for normal users (non-vendors)
   const normalUserNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
+    { name: "My Chats", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
   ];
@@ -87,6 +100,7 @@ export default function UserDashboardRouter() {
   const vendorNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
     { name: "Vendor Orders", path: "/dashboard/vendor-orders", icon: Truck, testId: "nav-vendor-orders" },
+    { name: "Messages", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "Transactions", path: "/dashboard/vendor-transactions", icon: Receipt, testId: "nav-vendor-transactions" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
@@ -143,7 +157,7 @@ export default function UserDashboardRouter() {
                 <li key={item.path}>
                   <Link 
                     href={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive(item.path)
                         ? "bg-white text-[#8FC24C] font-semibold shadow-md"
                         : "text-white/90 hover:bg-white/15 hover:text-white hover:shadow-sm"
@@ -151,8 +165,19 @@ export default function UserDashboardRouter() {
                     data-testid={item.testId}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="font-medium">{item.name}</span>
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <Badge 
+                        variant="destructive" 
+                        className="ml-auto bg-red-500 text-white text-xs"
+                        data-testid={`badge-unread-${item.testId}`}
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
                   </Link>
                 </li>
               );
@@ -206,6 +231,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/pricing" && "Pricing Settings"}
             {location === "/dashboard/vendor-orders" && "Vendor Orders"}
             {location === "/dashboard/vendor-transactions" && "Transactions & Earnings"}
+            {location === "/dashboard/messages" && (user?.vendorStatus === 'verified' ? "Messages" : "My Chats")}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
@@ -253,6 +279,9 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/cart" component={UserCart} />
             <Route path="/dashboard/checkout" component={UserCheckout} />
             <Route path="/dashboard/recycle-bin" component={UserRecycleBin} />
+            <Route path="/dashboard/messages">
+              {user?.vendorStatus === 'verified' ? <VendorMessages /> : <UserChats />}
+            </Route>
           </Switch>
         </div>
       </main>

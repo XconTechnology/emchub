@@ -2942,6 +2942,214 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ========================================
+  // MESSAGING ROUTES
+  // ========================================
+
+  // Create or get existing conversation
+  app.post("/api/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const { vendorId, productId, productTitle } = req.body;
+      const customerId = req.user.id;
+
+      // Check if conversation already exists
+      let conversation = await storage.findConversation(customerId, vendorId, productId);
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = await storage.createConversation({
+          customerId,
+          vendorId,
+          productId,
+          productTitle,
+        });
+      }
+
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  // Get user's conversations (customer or vendor)
+  app.get("/api/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      let conversations;
+
+      // Check if user wants specific role conversations or both
+      const roleFilter = req.query.role as string | undefined;
+
+      if (roleFilter === 'vendor') {
+        // Get only vendor conversations
+        conversations = await storage.getVendorConversations(user.id);
+      } else if (roleFilter === 'customer') {
+        // Get only customer conversations
+        conversations = await storage.getUserConversations(user.id);
+      } else {
+        // Get all conversations where user is either customer or vendor
+        // This is important for vendors who also act as customers
+        const customerConvos = await storage.getUserConversations(user.id);
+        const vendorConvos = await storage.getVendorConversations(user.id);
+        
+        // Combine and sort by last message timestamp
+        conversations = [...customerConvos, ...vendorConvos].sort((a, b) => {
+          const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+          const dateB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+          return dateB - dateA;
+        });
+      }
+
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error getting conversations:", error);
+      res.status(500).json({ error: "Failed to get conversations" });
+    }
+  });
+
+  // Get conversation details
+  app.get("/api/conversations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Verify user is part of this conversation
+      if (conversation.customerId !== req.user.id && conversation.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error getting conversation:", error);
+      res.status(500).json({ error: "Failed to get conversation" });
+    }
+  });
+
+  // Get messages in a conversation
+  app.get("/api/conversations/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Verify user is part of this conversation
+      if (conversation.customerId !== req.user.id && conversation.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const messages = await storage.getConversationMessages(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error getting messages:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
+  // Send a message
+  app.post("/api/conversations/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const { message } = req.body;
+      const conversationId = req.params.id;
+      
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Verify user is part of this conversation
+      if (conversation.customerId !== req.user.id && conversation.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Determine sender role
+      const senderRole = conversation.vendorId === req.user.id ? 'vendor' : 'customer';
+
+      const newMessage = await storage.sendMessage({
+        conversationId,
+        senderId: req.user.id,
+        senderRole,
+        message: message.trim(),
+      });
+
+      // Broadcast new message via WebSocket
+      broadcastEvent({
+        type: 'new_message',
+        data: {
+          conversationId,
+          message: newMessage,
+          recipientId: senderRole === 'vendor' ? conversation.customerId : conversation.vendorId,
+        },
+      });
+
+      res.json(newMessage);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Mark messages as read
+  app.put("/api/conversations/:id/read", isAuthenticated, async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      const conversation = await storage.getConversation(conversationId);
+      
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Verify user is part of this conversation
+      if (conversation.customerId !== req.user.id && conversation.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Determine user role
+      const userRole = conversation.vendorId === req.user.id ? 'vendor' : 'customer';
+
+      await storage.markMessagesAsRead(conversationId, req.user.id, userRole);
+
+      // Broadcast read status via WebSocket
+      broadcastEvent({
+        type: 'messages_read',
+        data: {
+          conversationId,
+          userId: req.user.id,
+        },
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+
+  // Get unread message count
+  app.get("/api/messages/unread-count", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      // Determine user role (vendor or customer)
+      const userRole = user.role === 'vendor' || user.vendorStatus === 'verified' ? 'vendor' : 'customer';
+      
+      const unreadCount = await storage.getUnreadCount(user.id, userRole);
+      res.json({ count: unreadCount });
+    } catch (error) {
+      console.error("Error getting unread count:", error);
+      res.status(500).json({ error: "Failed to get unread count" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates

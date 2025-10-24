@@ -478,6 +478,53 @@ export const insertBusinessListingSchema = createInsertSchema(businessListings).
   tags: z.string().optional(),
 });
 
+// ========================================
+// MESSAGING SYSTEM
+// ========================================
+
+// Conversations table - tracks conversations between customers and vendors
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").notNull().references(() => users.id),
+  vendorId: varchar("vendor_id").notNull().references(() => users.id),
+  productId: varchar("product_id").references(() => listings.id), // Optional: conversation about a specific product
+  productTitle: varchar("product_title"), // Cached product title for display
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  lastMessage: text("last_message"), // Cached for preview
+  unreadByCustomer: integer("unread_by_customer").default(0), // Unread count for customer
+  unreadByVendor: integer("unread_by_vendor").default(0), // Unread count for vendor
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+// Messages table - individual messages within conversations
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  senderRole: varchar("sender_role").notNull(), // 'customer' | 'vendor' - for quick filtering
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
 // Types
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

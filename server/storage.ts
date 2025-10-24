@@ -211,6 +211,18 @@ export interface IStorage {
   getVendorTransactions(vendorId: string): Promise<any[]>;
   updateTransactionByPaymentIntent(paymentIntentId: string, updates: any): Promise<any>;
   
+  // Messaging operations
+  createConversation(data: { customerId: string; vendorId: string; productId?: string; productTitle?: string }): Promise<any>;
+  getConversation(conversationId: string): Promise<any | undefined>;
+  findConversation(customerId: string, vendorId: string, productId?: string): Promise<any | undefined>;
+  getUserConversations(userId: string): Promise<any[]>;
+  getVendorConversations(vendorId: string): Promise<any[]>;
+  sendMessage(data: { conversationId: string; senderId: string; senderRole: string; message: string }): Promise<any>;
+  getConversationMessages(conversationId: string): Promise<any[]>;
+  markMessagesAsRead(conversationId: string, userId: string, userRole: string): Promise<void>;
+  getUnreadCount(userId: string, userRole: string): Promise<number>;
+  updateConversationLastMessage(conversationId: string, message: string): Promise<void>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -1927,6 +1939,232 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedTransaction;
+  }
+
+  // Messaging operations implementation
+  async createConversation(data: { 
+    customerId: string; 
+    vendorId: string; 
+    productId?: string; 
+    productTitle?: string 
+  }): Promise<any> {
+    const { conversations } = await import("@shared/schema");
+    
+    const [conversation] = await db
+      .insert(conversations)
+      .values({
+        customerId: data.customerId,
+        vendorId: data.vendorId,
+        productId: data.productId,
+        productTitle: data.productTitle,
+      })
+      .returning();
+    
+    return conversation;
+  }
+
+  async getConversation(conversationId: string): Promise<any | undefined> {
+    const { conversations } = await import("@shared/schema");
+    
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
+    
+    return conversation;
+  }
+
+  async findConversation(customerId: string, vendorId: string, productId?: string): Promise<any | undefined> {
+    const { conversations } = await import("@shared/schema");
+    
+    const conditions = [
+      eq(conversations.customerId, customerId),
+      eq(conversations.vendorId, vendorId)
+    ];
+    
+    if (productId) {
+      conditions.push(eq(conversations.productId, productId));
+    }
+    
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(and(...conditions))
+      .limit(1);
+    
+    return conversation;
+  }
+
+  async getUserConversations(userId: string): Promise<any[]> {
+    const { conversations } = await import("@shared/schema");
+    
+    const convos = await db
+      .select({
+        id: conversations.id,
+        customerId: conversations.customerId,
+        vendorId: conversations.vendorId,
+        productId: conversations.productId,
+        productTitle: conversations.productTitle,
+        lastMessageAt: conversations.lastMessageAt,
+        lastMessage: conversations.lastMessage,
+        unreadByCustomer: conversations.unreadByCustomer,
+        unreadByVendor: conversations.unreadByVendor,
+        createdAt: conversations.createdAt,
+        vendor: users,
+      })
+      .from(conversations)
+      .leftJoin(users, eq(conversations.vendorId, users.id))
+      .where(eq(conversations.customerId, userId))
+      .orderBy(sql`${conversations.lastMessageAt} DESC`);
+    
+    return convos;
+  }
+
+  async getVendorConversations(vendorId: string): Promise<any[]> {
+    const { conversations } = await import("@shared/schema");
+    
+    const convos = await db
+      .select({
+        id: conversations.id,
+        customerId: conversations.customerId,
+        vendorId: conversations.vendorId,
+        productId: conversations.productId,
+        productTitle: conversations.productTitle,
+        lastMessageAt: conversations.lastMessageAt,
+        lastMessage: conversations.lastMessage,
+        unreadByCustomer: conversations.unreadByCustomer,
+        unreadByVendor: conversations.unreadByVendor,
+        createdAt: conversations.createdAt,
+        customer: users,
+      })
+      .from(conversations)
+      .leftJoin(users, eq(conversations.customerId, users.id))
+      .where(eq(conversations.vendorId, vendorId))
+      .orderBy(sql`${conversations.lastMessageAt} DESC`);
+    
+    return convos;
+  }
+
+  async sendMessage(data: { 
+    conversationId: string; 
+    senderId: string; 
+    senderRole: string; 
+    message: string 
+  }): Promise<any> {
+    const { messages, conversations } = await import("@shared/schema");
+    
+    // Insert the message
+    const [message] = await db
+      .insert(messages)
+      .values({
+        conversationId: data.conversationId,
+        senderId: data.senderId,
+        senderRole: data.senderRole,
+        message: data.message,
+      })
+      .returning();
+    
+    // Update conversation's last message and unread count
+    const unreadField = data.senderRole === 'customer' 
+      ? conversations.unreadByVendor 
+      : conversations.unreadByCustomer;
+    
+    await db
+      .update(conversations)
+      .set({
+        lastMessage: data.message,
+        lastMessageAt: new Date(),
+        [unreadField.name]: sql`${unreadField} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, data.conversationId));
+    
+    return message;
+  }
+
+  async getConversationMessages(conversationId: string): Promise<any[]> {
+    const { messages } = await import("@shared/schema");
+    
+    const msgs = await db
+      .select({
+        id: messages.id,
+        conversationId: messages.conversationId,
+        senderId: messages.senderId,
+        senderRole: messages.senderRole,
+        message: messages.message,
+        isRead: messages.isRead,
+        createdAt: messages.createdAt,
+        sender: users,
+      })
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.createdAt);
+    
+    return msgs;
+  }
+
+  async markMessagesAsRead(conversationId: string, userId: string, userRole: string): Promise<void> {
+    const { messages, conversations } = await import("@shared/schema");
+    
+    // Mark all messages as read where the current user is the receiver
+    await db
+      .update(messages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(messages.conversationId, conversationId),
+          sql`${messages.senderRole} != ${userRole}`,
+          eq(messages.isRead, false)
+        )
+      );
+    
+    // Reset the unread counter for this user
+    const unreadField = userRole === 'customer' 
+      ? conversations.unreadByCustomer 
+      : conversations.unreadByVendor;
+    
+    await db
+      .update(conversations)
+      .set({
+        [unreadField.name]: 0,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId));
+  }
+
+  async getUnreadCount(userId: string, userRole: string): Promise<number> {
+    const { conversations } = await import("@shared/schema");
+    
+    const userField = userRole === 'customer' 
+      ? conversations.customerId 
+      : conversations.vendorId;
+    
+    const unreadField = userRole === 'customer' 
+      ? conversations.unreadByCustomer 
+      : conversations.unreadByVendor;
+    
+    const result = await db
+      .select({
+        total: sql<number>`COALESCE(SUM(${unreadField}), 0)`,
+      })
+      .from(conversations)
+      .where(eq(userField, userId));
+    
+    return result[0]?.total || 0;
+  }
+
+  async updateConversationLastMessage(conversationId: string, message: string): Promise<void> {
+    const { conversations } = await import("@shared/schema");
+    
+    await db
+      .update(conversations)
+      .set({
+        lastMessage: message,
+        lastMessageAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId));
   }
 }
 
