@@ -9,6 +9,7 @@ import {
   decimal,
   boolean,
   text,
+  real,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -39,7 +40,7 @@ export const users = pgTable("users", {
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin' | 'super-admin'
   vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
   status: varchar("status").notNull().default("active"), // 'active' | 'suspended'
-  timeDollarBalance: integer("timedollar_balance").default(0), // TimeDollar balance
+  timeDollarBalance: real("timedollar_balance").default(0), // TimeDollar balance (supports decimals for accurate combo payments)
   tdCashSplitPercentage: integer("td_cash_split_percentage").default(50), // Vendor's TD/cash split: % of CASH (0-100), TD is remainder
   resetPasswordToken: varchar("reset_password_token"),
   resetPasswordExpires: timestamp("reset_password_expires"),
