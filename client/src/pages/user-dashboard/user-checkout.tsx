@@ -123,7 +123,9 @@ interface CartItem {
     userId: string; // This is the vendor/creator ID
     title: string;
     price: string;
-    tdPrice?: string;
+    paymentType?: string;
+    timedollarPercentage?: number;
+    cashPercentage?: number;
     imageUrl?: string;
   };
 }
@@ -150,8 +152,10 @@ export default function UserCheckout() {
     queryKey: ['/api/timedollars/balance'],
   });
 
-  // Get product's fixed TD price (if set)
-  const productTdPrice = cartItems?.[0]?.product?.tdPrice ? parseFloat(cartItems[0].product.tdPrice) : null;
+  // Get product's payment type and percentages
+  const productPaymentType = cartItems?.[0]?.product?.paymentType || "cash_only";
+  const productTdPercentage = cartItems?.[0]?.product?.timedollarPercentage || 0;
+  const productCashPercentage = cartItems?.[0]?.product?.cashPercentage || 100;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -293,7 +297,7 @@ export default function UserCheckout() {
 
   const total = calculateTotal();
   
-  // Calculate amounts before discounts based on product's fixed TD price
+  // Calculate amounts before discounts based on product's payment type and percentages
   // NOTE: 1 TimeDollar = 60 HK$ (TD_TO_HKD_RATE)
   let cashAmountBeforeDiscount = 0;
   let tdAmountBeforeDiscount = 0;
@@ -306,14 +310,15 @@ export default function UserCheckout() {
     tdQuantity = total / TD_TO_HKD_RATE;
     tdAmountBeforeDiscount = tdQuantity; // This represents TD quantity
   } else if (paymentMethod === "both") {
-    if (productTdPrice !== null && productTdPrice > 0) {
-      // Use fixed TD price set by vendor (productTdPrice is in TimeDollars)
-      tdQuantity = productTdPrice;
-      tdAmountBeforeDiscount = productTdPrice;
-      // Subtract the HKD value of TimeDollars from total
-      cashAmountBeforeDiscount = Math.max(0, total - convertTDtoHKD(productTdPrice));
+    // Use percentage-based combo payment system
+    if (productPaymentType === "combo" && productTdPercentage > 0) {
+      // Calculate TD and cash amounts based on vendor's percentage settings
+      const tdAmountInHKD = total * (productTdPercentage / 100);
+      tdQuantity = tdAmountInHKD / TD_TO_HKD_RATE; // Convert HKD to TD quantity
+      tdAmountBeforeDiscount = tdQuantity;
+      cashAmountBeforeDiscount = total * (productCashPercentage / 100);
     } else {
-      // If no TD price set, default to cash only
+      // If no combo percentage set, default to cash only
       cashAmountBeforeDiscount = total;
       tdAmountBeforeDiscount = 0;
       tdQuantity = 0;
@@ -551,16 +556,16 @@ export default function UserCheckout() {
                     </div>
 
                     <div className="space-y-3">
-                      {productTdPrice !== null && productTdPrice > 0 ? (
+                      {productPaymentType === "combo" && productTdPercentage > 0 ? (
                         <div className="p-4 border rounded-lg bg-muted">
                           <div className="flex justify-between items-center mb-2">
-                            <label className="text-sm font-medium">Fixed Payment Split</label>
+                            <label className="text-sm font-medium">Vendor Combo Split</label>
                             <Badge variant="outline" data-testid="badge-vendor-split">
-                              HK${cashAmount.toFixed(2)} Cash / {tdAmount.toFixed(2)} TD (HK${convertTDtoHKD(tdAmount).toFixed(2)})
+                              {productTdPercentage}% TD + {productCashPercentage}% Cash
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            This vendor requires {tdAmount.toFixed(2)} TimeDollars (HK${convertTDtoHKD(tdAmount).toFixed(2)}) with the remainder in cash
+                            This vendor requires {productTdPercentage}% in TimeDollars ({tdAmount.toFixed(2)} TD = HK${convertTDtoHKD(tdAmount).toFixed(2)}) and {productCashPercentage}% in cash (HK${cashAmount.toFixed(2)})
                           </p>
                         </div>
                       ) : (
