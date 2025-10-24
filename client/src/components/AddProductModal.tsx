@@ -23,7 +23,8 @@ const productSchema = insertListingSchema.extend({
   inventory: z.string().min(1, "Stock quantity is required"),
   customCategory: z.string().optional(),
   status: z.enum(["draft", "published", "pending", "rejected"]),
-  tdPrice: z.string().optional(), // Fixed TD price for "both" payment option
+  paymentType: z.enum(["cash_only", "timedollar_only", "both_choice", "combo"]).optional(),
+  timedollarPercentage: z.string().optional(), // Percentage of price to be paid in TD (0-100)
   // Optional coupon fields
   createCoupon: z.boolean().optional(),
   couponCode: z.string().optional(),
@@ -41,6 +42,16 @@ const productSchema = insertListingSchema.extend({
 }, {
   message: "All coupon fields are required when creating a coupon",
   path: ["createCoupon"],
+}).refine((data) => {
+  // If payment type is combo, TD percentage is required
+  if (data.paymentType === "combo") {
+    const tdPercent = parseInt(data.timedollarPercentage || "0");
+    return tdPercent > 0 && tdPercent <= 100;
+  }
+  return true;
+}, {
+  message: "TimeDollar percentage must be between 1 and 100 for combo payments",
+  path: ["timedollarPercentage"],
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -66,7 +77,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
       customCategory: "",
       price: "",
       inventory: "",
-      tdPrice: "",
+      paymentType: "cash_only",
+      timedollarPercentage: "",
       status: "pending",
       createCoupon: false,
       couponCode: "",
@@ -96,7 +108,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: editProduct.customCategory || "",
         price: editProduct.price?.toString() || "",
         inventory: editProduct.inventory?.toString() || "",
-        tdPrice: editProduct.tdPrice?.toString() || "",
+        paymentType: editProduct.paymentType || "cash_only",
+        timedollarPercentage: editProduct.timedollarPercentage?.toString() || "",
         status: editProduct.status || "pending",
         createCoupon: false, // Will be updated when coupon data loads
         couponCode: "",
@@ -115,7 +128,8 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
         customCategory: "",
         price: "",
         inventory: "",
-        tdPrice: "",
+        paymentType: "cash_only",
+        timedollarPercentage: "",
         status: "pending",
         createCoupon: false,
         couponCode: "",
@@ -170,13 +184,18 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      const tdPercentage = data.timedollarPercentage ? parseInt(data.timedollarPercentage) : null;
+      const cashPercentage = tdPercentage ? 100 - tdPercentage : null;
+      
       const productData: any = {
         ...data,
         type: "product",
         userId: user?.id,
         price: data.price,
         inventory: parseInt(data.inventory),
-        tdPrice: data.tdPrice || null,
+        paymentType: data.paymentType || "cash_only",
+        timedollarPercentage: tdPercentage,
+        cashPercentage: cashPercentage,
         images: imageUrl ? [imageUrl] : [],
         status: isEditing ? editProduct.status : "pending",
       };
@@ -307,19 +326,58 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tdPrice">TimeDollar Price (Optional)</Label>
-            <Input
-              id="tdPrice"
-              type="number"
-              step="0.01"
-              {...form.register("tdPrice")}
-              placeholder="e.g., 20 (if total price is 100, customer pays 20 TD + 80 HK$)"
-              data-testid="input-td-price"
-            />
-            <p className="text-xs text-muted-foreground">
-              If set, customers paying with both TD and cash will pay this fixed TD amount, with the remainder in cash. Leave blank for cash-only.
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="paymentType">Payment Type *</Label>
+              <Select
+                value={form.watch("paymentType")}
+                onValueChange={(value) => form.setValue("paymentType", value as any)}
+              >
+                <SelectTrigger data-testid="select-payment-type">
+                  <SelectValue placeholder="Select payment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash_only">Cash Only (HK$)</SelectItem>
+                  <SelectItem value="timedollar_only">TimeDollar Only</SelectItem>
+                  <SelectItem value="both_choice">Both (Customer Choice)</SelectItem>
+                  <SelectItem value="combo">Combo (Custom % Split)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose how customers can pay for this product
+              </p>
+            </div>
+
+            {form.watch("paymentType") === "combo" && (
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+                <Label htmlFor="timedollarPercentage">TimeDollar Percentage *</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="timedollarPercentage"
+                    type="number"
+                    min="1"
+                    max="100"
+                    {...form.register("timedollarPercentage")}
+                    placeholder="e.g., 10"
+                    data-testid="input-td-percentage"
+                  />
+                  <span className="text-sm font-medium">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Set what percentage of the price should be paid in TimeDollars. For example, if you set 10% and price is HK$100, customers will pay <strong>10 TD + HK$90</strong> (at 1 TD = 60 HK$ conversion).
+                </p>
+                {form.formState.errors.timedollarPercentage && (
+                  <p className="text-sm text-red-500">{form.formState.errors.timedollarPercentage.message}</p>
+                )}
+                {form.watch("timedollarPercentage") && form.watch("price") && (
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Preview: Customers will pay {(parseFloat(form.watch("price") || "0") * parseInt(form.watch("timedollarPercentage") || "0") / 100 / 60).toFixed(2)} TD + HK${(parseFloat(form.watch("price") || "0") * (100 - parseInt(form.watch("timedollarPercentage") || "0")) / 100).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
