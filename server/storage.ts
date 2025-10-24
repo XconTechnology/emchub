@@ -1715,12 +1715,43 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserOrders(userId: string): Promise<any[]> {
-    const { orders } = await import("@shared/schema");
-    return db
+    const { orders, orderItems, users } = await import("@shared/schema");
+    
+    // Get all orders for this user
+    const userOrders = await db
       .select()
       .from(orders)
       .where(eq(orders.userId, userId))
       .orderBy(sql`${orders.createdAt} DESC`);
+    
+    // Get order items and vendor details for each order
+    const ordersWithDetails = await Promise.all(
+      userOrders.map(async (order: any) => {
+        // Get order items
+        const items = await db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+        
+        // Get vendor details
+        const [vendor] = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+          })
+          .from(users)
+          .where(eq(users.id, order.vendorId));
+        
+        return {
+          ...order,
+          items,
+          vendor,
+        };
+      })
+    );
+    
+    return ordersWithDetails;
   }
   
   async getVendorOrders(vendorId: string): Promise<any[]> {

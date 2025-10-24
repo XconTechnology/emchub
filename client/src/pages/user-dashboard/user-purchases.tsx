@@ -1,13 +1,34 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
-import { Package, Calendar, DollarSign, Clock } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Package, Calendar, DollarSign, Clock, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  productTitle: string;
+  productPrice: number;
+  quantity: number;
+  subtotal: number;
+}
+
+interface Vendor {
+  id: string;
+  username: string;
+  email: string;
+}
 
 interface Order {
   id: string;
   userId: string;
+  vendorId: string;
   totalAmount: number;
   paymentMethod: string;
   cashAmount?: number;
@@ -19,15 +40,57 @@ interface Order {
   shippingPhone: string;
   notes?: string;
   createdAt: string;
+  items: OrderItem[];
+  vendor: Vendor;
 }
 
 export default function UserPurchases() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ['/api/orders/user'],
     enabled: !!user,
   });
+
+  // Create or get conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async ({ vendorId, productId, productTitle }: { vendorId: string; productId: string; productTitle: string }) => {
+      return apiRequest('POST', '/api/conversations', {
+        vendorId,
+        productId,
+        productTitle,
+      });
+    },
+    onSuccess: () => {
+      // Navigate to messages page
+      setLocation('/dashboard/messages');
+      toast({
+        title: "Chat opened",
+        description: "You can now message the vendor about your order",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to start conversation with vendor",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleChatWithVendor = (order: Order) => {
+    // Use the first product from the order for product context
+    const firstProduct = order.items[0];
+    if (firstProduct) {
+      createConversationMutation.mutate({
+        vendorId: order.vendorId,
+        productId: firstProduct.productId,
+        productTitle: firstProduct.productTitle,
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -141,6 +204,21 @@ export default function UserPurchases() {
                   </p>
                 </div>
               )}
+              
+              {/* Chat with Vendor Button */}
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => handleChatWithVendor(order)}
+                  disabled={createConversationMutation.isPending}
+                  data-testid={`button-chat-vendor-${order.id}`}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  {createConversationMutation.isPending ? "Opening chat..." : "Chat with Vendor"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
