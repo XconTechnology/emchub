@@ -1,191 +1,62 @@
 # EMC HUB - Ethnic Minority Community Business Directory
 
 ## Overview
-EMC HUB is a web platform designed to connect Hong Kong's ethnic minority community by facilitating the digital discovery and support of ethnic minority-owned businesses, products, and services. The platform features business listings, a product marketplace, a service directory, a TimeDollars exchange system, robust search functionality, location-based discovery, and community engagement tools. Its primary purpose is to act as a comprehensive marketplace, fostering economic growth and community cohesion within Hong Kong's ethnic minority groups.
+EMC HUB is a web platform designed to connect Hong Kong's ethnic minority community by facilitating the digital discovery and support of ethnic minority-owned businesses, products, and services. It acts as a comprehensive marketplace, featuring business listings, a product marketplace, a service directory, a TimeDollars exchange system, robust search functionality, location-based discovery, and community engagement tools. The platform's primary purpose is to foster economic growth and community cohesion within Hong Kong's ethnic minority groups.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-The client is built with React and TypeScript, using a component-based architecture. UI components are developed with `shadcn/ui` on top of Radix UI primitives for a consistent and accessible design system. Wouter handles client-side routing, and state management utilizes TanStack React Query for server state and React's built-in hooks for local UI state.
+### Core Architecture
+The platform utilizes a React and TypeScript frontend built on a component-based architecture with `shadcn/ui` for UI components and Tailwind CSS for styling. Backend services are powered by Express.js with TypeScript, employing a modular design. Data persistence is managed with Drizzle ORM and PostgreSQL (Neon). Vite is used for development and building.
 
-### Backend Architecture
-The server uses a modular Express.js architecture with TypeScript, featuring separate files for routes, storage interfaces, and database connections. It includes middleware for logging and error handling. The storage layer uses an interface pattern, currently in-memory but designed for easy transition to database persistence.
-
-### Database Design
-The application uses Drizzle ORM with PostgreSQL (hosted on Neon for serverless capabilities and WebSocket support) for data persistence. The schema is defined in a shared module, accessible to both client and server.
-
-### Styling and UI Framework
-Styling is managed with Tailwind CSS, incorporating a custom design system with CSS variables for theming and dark mode. The `shadcn/ui` library provides pre-built, customizable components.
-
-### Development Tooling
-Vite serves as the build tool and development server, offering fast HMR. TypeScript ensures type safety throughout the project, with path mapping for clean imports. Replit-specific plugins enhance the development experience.
-
-### Authentication Strategy
-The current implementation uses a basic user schema with username/password fields, suggesting a traditional session-based authentication approach.
-
-### Asset Management
-Vite manages static assets with path aliases. The application incorporates custom fonts (Inter, DM Sans, Fira Code, etc.) and utilizes external CDN resources for performance.
-
-### Key Features and Implementations
-- **Custom Category System**: Vendors can define free-text product categories, which are admin-approved and displayed as badges.
-- **Admin Search**: Comprehensive real-time search for listings on the admin page across multiple fields.
-- **Enhanced Dashboards**: Improved UI/UX for user and vendor dashboards, including fixed navbars, modernized profile cards, and reorganized navigation.
-- **Listing Management**: Authenticated users can create and manage listings with tab-based filtering for approved, pending, and rejected statuses.
-- **Public Products Marketplace**: A dedicated `/products` page for browsing and purchasing approved products, featuring search, stock indicators, and product detail pages.
-- **Advanced Pricing System**: Flexible payment options for products, services, and events including Cash Only, TimeDollar Only, Both (Customer Choice), and Combo Split.
-- **Vendor-Specific Dashboard Sections**: Dedicated sections for verified vendors to manage products, services, events, inventory, coupons, and pricing settings.
-- **Comprehensive Coupon System**: Two-tier coupon system with vendor and admin capabilities:
-  - **Coupon Types**:
-    - Discount Coupons: Percentage or fixed HK$ off (vendor or admin-issued)
-    - Cash Coupons: Fixed HK$ value (admin-only, via TimeDollar redemption)
-  - **Issuers & Approval Flow**:
-    - Vendor-issued coupons require admin approval (pending → approved/rejected)
-    - Admin-issued coupons are auto-approved
-    - **Product-Coupon Auto-Approval**: When admin approves a product, any pending coupons linked to that product are automatically approved
-    - **Coupon Lock Mechanism**: Once approved, coupons become locked and vendors cannot edit them (admins retain full control)
-  - **Scope & Applicability**:
-    - Platform-wide coupons: Apply to all eligible orders
-    - Product-specific coupons: Apply only to specific products
-  - **Liability & Cost Tracking**:
-    - Vendor coupons: Vendor pays the discount cost
-    - Admin coupons: Platform pays the discount cost
-  - **Features**:
-    - Usage limits and validity date ranges
-    - Real-time validation at checkout (stock, expiry, usage limits)
-    - Single discount field at checkout (supports both discount and cash coupons)
-    - Coupon analytics and redemption tracking for vendors and admins
-    - Integration with order system to record usage history
-    - Admin can view coupon details in product approval modal for informed decision-making
-  - **Management Pages**:
-    - Vendor dashboard: Create, edit, view status of vendor coupons (locked after approval)
-    - Admin dashboard: Create admin coupons, approve/reject vendor coupons, view all coupons with filters
-- **Admin Vendors Tab**: Dedicated admin page (`/admin/vendors`) to view and manage all verified vendors with:
-  - List of all users with vendor role
-  - Vendor information display (username, email, phone, join date)
-  - Role management dropdown to change user roles
-  - Dedicated API endpoint `/api/admin/vendors` to fetch vendor users
-- **Vendor Document Viewing**: Admin can view and download vendor verification documents with:
-  - Large modal preview (95vw × 90vh) for documents
-  - Support for images (PNG, JPG) and PDFs
-  - Secure download from private Google Cloud Storage
-  - Base64 data URL conversion for authenticated access
-  - Admin authentication supports both session-based and OIDC users
-- **Admin Dashboard & Analytics**: Comprehensive admin dashboard at `/admin` with:
-  - **Dashboard Overview** (`/admin`): Real-time platform metrics including:
-    - Business metrics: Total/active users (daily/weekly/monthly), total sales, 5% platform commission, TimeBank total
-    - Listing statistics: Total, published, draft, and deleted listings
-    - Recent activity: Latest signups, orders, and coupon redemptions
-  - **Platform Analytics** (`/admin/analytics`): In-depth analytics with charts and tables:
-    - User growth: 30-day line chart showing new user signups
-    - Top users by activity: Table of most active users based on activity logs
-    - Top users by spend: Table of highest-spending customers
-    - Sales analytics: Total volume, average order value
-    - Top categories: Bar chart of best-performing product categories by orders
-    - Top products: Table of best-selling products by revenue
-    - TimeBank statistics: TD earned, TD spent, net balance, top contributors
-    - Coupon redemption rate: Percentage of orders using coupons
-  - Uses Recharts library for data visualization (line charts, bar charts)
-  - All analytics use server-side aggregation via `getAnalytics()` method in storage layer
-  - API endpoints: `/api/admin/stats` for dashboard metrics, `/api/admin/analytics` for detailed analytics
-- **User Management System**: Comprehensive admin user management at `/admin/users` with:
-  - **User Search & Filtering**: Real-time search by name/email/phone and filters by role and account status
-  - **User Status Management**: Suspend and reactivate user accounts (status: 'active' | 'suspended')
-  - **User Editing**: Admin can edit non-PII user fields (username, role, timeDollars, etc.)
-  - **Password Reset**: Admin can reset any user's password
-  - **PII Access Control**: Email, phone, firstName, and lastName fields are:
-    - Visible and editable only by super-admins
-    - Masked/hidden for regular admins
-    - Enforced at both API response level and UI display level
-  - **User Roles**: 'consumer', 'vendor', 'admin', 'super-admin'
-  - **Technical Implementation**:
-    - Storage methods: `getUsersWithFilters()` with SQL LIKE search across multiple fields
-    - API endpoints: GET `/api/admin/users` with query params, PUT `/api/admin/users/:id`, POST `/api/admin/users/:id/suspend|reactivate|reset-password`
-    - Custom TanStack Query queryFn that serializes filters into URL query parameters
-    - PII masking logic based on `req.user.role` in backend
-    - All admin endpoints protected by `isAdminAuthenticated` middleware
-- **Stripe Payment Integration**: Complete payment processing system for credit card payments with automatic commission splitting:
-  - **Database Schema**: 
-    - `transactions` table tracks all payments with fields: stripePaymentIntentId, customerId, vendorId, totalAmount, adminCommission (5%), vendorEarnings (95%), paymentStatus
-  - **Payment Flow**:
-    - Frontend creates payment intent via `/api/stripe/create-payment-intent` endpoint
-    - Stripe Elements integration on checkout page (`user-checkout.tsx`) for secure card input
-    - Commission automatically calculated: 5% to admin, 95% to vendor
-    - Payment confirmation handled via `/api/stripe-webhook` endpoint using Stripe webhook events
-  - **Payment Methods**:
-    - Cash Only: Full payment through Stripe
-    - TimeDollar Only: No Stripe payment, balance deducted directly
-    - Combo: Cash portion through Stripe, TimeDollar portion deducted from balance
-  - **Security**:
-    - Stripe keys stored in Replit Secrets (STRIPE_SECRET_KEY, VITE_STRIPE_PUBLIC_KEY)
-    - Currently running in test mode for development
-    - Webhook endpoint validates Stripe signatures for security
-  - **Admin Transactions Page** (`/admin/transactions`):
-    - View all payment transactions with customer and vendor details
-    - Search and filter by payment status (succeeded, pending, failed)
-    - Display commission breakdown: total revenue, admin earnings (5%), vendor earnings (95%)
-    - Real-time statistics cards showing transaction metrics
-  - **Technical Implementation**:
-    - Storage methods: `createTransaction`, `getAllTransactions`, `getVendorTransactions`, `updateTransactionByPaymentIntent`
-    - API endpoints: POST `/api/stripe/create-payment-intent`, POST `/api/stripe-webhook`, GET `/api/admin/transactions`
-    - Frontend uses `@stripe/stripe-js` and `@stripe/react-stripe-js` for Elements integration
-    - Transactions automatically recorded when webhook receives payment confirmation from Stripe
-- **Vendor Order Management**: Comprehensive order management system for vendors to view and manage orders:
-  - **Database Schema**:
-    - `orders` table includes `vendorId` field to track which vendor the order is for
-    - Order statuses: 'pending', 'accepted', 'rejected', 'completed', 'cancelled'
-  - **Vendor Orders Dashboard** (`/dashboard/vendor-orders`):
-    - Vendors can view all orders for their products
-    - Filter by order status (pending, accepted, rejected)
-    - Display customer details, order items, pricing, payment method, and order status
-    - Order management actions: Accept or reject pending orders
-    - Real-time updates using TanStack Query cache invalidation
-  - **Features**:
-    - Automatic vendorId assignment when orders are created (extracted from product's userId)
-    - Search functionality to find orders by customer name or order ID
-    - Status-based filtering for efficient order management
-    - TimeDollar to HKD conversion display (1 TD = 60 HK$) in order summaries
-    - Visual status badges (blue: pending, green: accepted/completed, red: rejected/cancelled)
-  - **Navigation**:
-    - "Vendor Orders" link appears in vendor navigation (second item after Dashboard)
-    - Uses Truck icon for visual identification
-    - Available only to verified vendors
-  - **Technical Implementation**:
-    - Storage methods: `getVendorOrders(vendorId, filters)`, `updateOrderStatus(orderId, status)`
-    - API endpoints: GET `/api/vendor/orders`, PUT `/api/orders/:id/status`
-    - Frontend: `user-vendor-orders.tsx` component with search and filter functionality
-    - Authentication: All vendor order endpoints protected by user authentication middleware
+### Key Features
+- **Custom Category System**: Vendor-defined, admin-approved product categories.
+- **Enhanced Dashboards**: Improved UI/UX for user and vendor dashboards, including fixed navbars and reorganized navigation.
+- **Listing Management**: Authenticated users can create and manage product and service listings.
+- **Public Products Marketplace**: A dedicated section for browsing and purchasing products with search and product detail pages.
+- **Advanced Pricing System**: Supports Cash Only, TimeDollar Only, Both, and Combo Split payment options.
+- **Comprehensive Coupon System**: Two-tier system with vendor and admin-issued coupons, including discount and cash coupons, with approval workflows, usage limits, and analytics.
+- **Admin Dashboards**:
+    - **Admin Vendors Tab**: Manage verified vendors and user roles.
+    - **Admin Dashboard & Analytics**: Real-time platform metrics, user growth, sales analytics, TimeBank statistics, and coupon redemption rates, utilizing Recharts for visualization.
+    - **User Management System**: Admin tools for user search, filtering, status management, non-PII editing, and password resets with role-based PII access control.
+    - **Transactions Page**: View all payment transactions, commission breakdowns, and filter by status.
+- **Stripe Payment Integration**: Secure credit card payment processing with automatic 5% admin commission splitting, supporting various payment methods (Cash Only, TimeDollar Only, Combo).
+- **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
+- **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
 
 ## External Dependencies
 
 ### Database Services
-- **Neon Database**: Serverless PostgreSQL hosting.
-- **Drizzle ORM**: Type-safe ORM for PostgreSQL.
+- Neon Database (PostgreSQL)
+- Drizzle ORM
 
 ### UI and Styling
-- **Radix UI**: Headless component primitives.
-- **Tailwind CSS**: Utility-first CSS framework.
-- **Lucide React**: Icon library.
-- **Google Fonts**: External font resources.
+- Radix UI
+- Tailwind CSS
+- Lucide React
+- Google Fonts
 
 ### Frontend Libraries
-- **React**: Core frontend framework.
-- **TanStack React Query**: Server state management.
-- **Wouter**: Lightweight client-side routing.
-- **React Hook Form**: Form handling.
-- **Zod**: Schema validation.
-- **Date-fns**: Date manipulation.
-- **Recharts**: Data visualization library for charts (line charts, bar charts, etc.).
+- React
+- TanStack React Query
+- Wouter
+- React Hook Form
+- Zod
+- Date-fns
+- Recharts
+- `@stripe/stripe-js`
+- `@stripe/react-stripe-js`
 
 ### Development and Build Tools
-- **Vite**: Build tool and development server.
-- **Replit Plugins**: Replit platform enhancements.
-- **ESBuild**: Fast JavaScript bundler.
+- Vite
+- Replit Plugins
+- ESBuild
 
 ### Backend Dependencies
-- **Express.js**: Node.js web framework.
-- **Connect-PG-Simple**: PostgreSQL session store.
-- **WebSocket (ws)**: Real-time communication.
-- **Memoizee**: Function memoization.
+- Express.js
+- Connect-PG-Simple
+- WebSocket (ws)
+- Memoizee
