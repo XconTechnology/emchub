@@ -525,56 +525,6 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
-// Support Tickets table - for user support enquiries
-export const supportTickets = pgTable("support_tickets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  subject: varchar("subject").notNull(),
-  message: text("message").notNull(),
-  status: varchar("status").notNull().default("open"), // 'open' | 'pending' | 'closed'
-  assignedTo: varchar("assigned_to").references(() => users.id), // Staff/admin assigned to ticket
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
-  id: true,
-  userId: true,
-  status: true,
-  assignedTo: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type SupportTicket = typeof supportTickets.$inferSelect;
-export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
-
-// Reports table - for reporting products/vendors
-export const reports = pgTable("reports", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  reporterId: varchar("reporter_id").notNull().references(() => users.id),
-  reportedItemId: varchar("reported_item_id").notNull(), // ID of product or vendor being reported
-  reportedItemType: varchar("reported_item_type").notNull(), // 'product' | 'vendor'
-  reason: varchar("reason").notNull(), // 'fraud', 'spam', 'inappropriate', 'other'
-  details: text("details"), // Additional details for 'other' reason
-  status: varchar("status").notNull().default("open"), // 'open' | 'pending' | 'closed'
-  ticketId: varchar("ticket_id").references(() => supportTickets.id), // Linked support ticket
-  actionTaken: text("action_taken"), // Admin notes on action taken
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertReportSchema = createInsertSchema(reports).omit({
-  id: true,
-  reporterId: true,
-  status: true,
-  ticketId: true,
-  actionTaken: true,
-  createdAt: true,
-});
-
-export type Report = typeof reports.$inferSelect;
-export type InsertReport = z.infer<typeof insertReportSchema>;
-
 // Types
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

@@ -89,8 +89,6 @@ function Router() {
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />
       <Route path="/admin/users" component={AdminRouter} />
       <Route path="/admin/recycle-bin" component={AdminRouter} />
-      <Route path="/admin/support-tickets" component={AdminRouter} />
-      <Route path="/admin/reports" component={AdminRouter} />
       <Route path="/access-denied" component={AccessDenied} />
       <Route component={NotFound} />
     </Switch>

@@ -30,7 +30,6 @@ import {
 import type { Listing, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import ReportButton from "@/components/ReportButton";
 
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:id");
@@ -296,17 +295,9 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               {/* Title & Rating */}
               <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h1 className="text-2xl font-bold text-gray-900 flex-1" data-testid="product-title">
-                    {product.title}
-                  </h1>
-                  <ReportButton 
-                    reportedItemId={product.id} 
-                    reportedItemType="product"
-                    variant="outline"
-                    size="sm"
-                  />
-                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="product-title">
+                  {product.title}
+                </h1>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
