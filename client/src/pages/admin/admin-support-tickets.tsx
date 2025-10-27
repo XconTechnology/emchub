@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -31,9 +33,19 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, LifeBuoy, User as UserIcon, Mail, Send } from "lucide-react";
+import { Search, LifeBuoy, User as UserIcon, Mail, Send, Clock, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
+
+interface TicketMessage {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  message: string;
+  createdAt: string;
+  senderUsername: string;
+  senderRole: string;
+}
 
 export default function AdminSupportTickets() {
   const { toast } = useToast();
@@ -43,6 +55,8 @@ export default function AdminSupportTickets() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [assignDialog, setAssignDialog] = useState<{ ticket: SupportTicket; vendorId: string } | null>(null);
   const [assignMessage, setAssignMessage] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all tickets
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
@@ -58,6 +72,26 @@ export default function AdminSupportTickets() {
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
   });
+
+  // Fetch ticket messages when a ticket is selected
+  const { data: messages = [] } = useQuery<TicketMessage[]>({
+    queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'],
+    queryFn: async () => {
+      if (!selectedTicket?.id) return [];
+      const response = await fetch(`/api/support-tickets/${selectedTicket.id}/messages`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      return response.json();
+    },
+    enabled: !!selectedTicket?.id,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+  });
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // Update status mutation
   const updateStatusMutation = useMutation({
@@ -142,6 +176,38 @@ export default function AdminSupportTickets() {
       });
     },
   });
+
+  // Send message mutation for admin messaging in ticket thread
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageText: string) => {
+      if (!selectedTicket?.id) throw new Error("No ticket selected");
+      const response = await apiRequest("POST", `/api/support-tickets/${selectedTicket.id}/messages`, { 
+        message: messageText 
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'] });
+      setNewMessage("");
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent to the vendor.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle sending admin message
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    sendMessageMutation.mutate(newMessage);
+  };
 
   // Handle ticket assignment with message
   const handleAssignWithMessage = async () => {
@@ -526,6 +592,104 @@ export default function AdminSupportTickets() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Messages Thread Section */}
+                  {selectedTicket.assignedTo && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Conversation with Vendor
+                        </h3>
+                        
+                        <ScrollArea className="h-[300px] border rounded-lg p-4 bg-muted/20">
+                          <div className="space-y-4">
+                            {messages.length === 0 ? (
+                              <div className="text-center text-muted-foreground py-8 text-sm">
+                                <p>No messages yet. Send the first message to start the conversation.</p>
+                              </div>
+                            ) : (
+                              messages.map((msg) => {
+                                const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'super-admin';
+
+                                return (
+                                  <div
+                                    key={msg.id}
+                                    className="space-y-1"
+                                    data-testid={`admin-message-${msg.id}`}
+                                  >
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <UserIcon className="w-3 h-3" />
+                                      <span className="font-semibold">
+                                        {msg.senderUsername}
+                                        {isAdmin && <Badge className="ml-1 text-xs" variant="destructive">Admin</Badge>}
+                                      </span>
+                                      <span className="text-muted-foreground flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {format(new Date(msg.createdAt), "MMM d, h:mm a")}
+                                      </span>
+                                    </div>
+                                    <div
+                                      className={`rounded-lg px-4 py-2 ${
+                                        isAdmin
+                                          ? 'bg-primary text-primary-foreground ml-0'
+                                          : 'bg-muted ml-8'
+                                      }`}
+                                    >
+                                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                            <div ref={messagesEndRef} />
+                          </div>
+                        </ScrollArea>
+
+                        {/* Message Input */}
+                        {selectedTicket.status !== 'closed' && (
+                          <div className="mt-4 space-y-2">
+                            <Textarea
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              placeholder="Type your message to vendor..."
+                              rows={3}
+                              disabled={sendMessageMutation.isPending}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSendMessage();
+                                }
+                              }}
+                              data-testid="textarea-admin-message"
+                              className="resize-none"
+                            />
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-muted-foreground">
+                                Press Enter to send, Shift+Enter for new line
+                              </p>
+                              <Button
+                                onClick={handleSendMessage}
+                                disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                                data-testid="button-send-admin-message"
+                                size="sm"
+                              >
+                                <Send className="w-4 h-4 mr-2" />
+                                {sendMessageMutation.isPending ? "Sending..." : "Send"}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {selectedTicket.status === 'closed' && (
+                          <p className="text-xs text-muted-foreground mt-2 text-center">
+                            This ticket is closed. Reopen it to send messages.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             );
