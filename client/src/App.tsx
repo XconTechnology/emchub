@@ -75,6 +75,7 @@ function Router() {
       <Route path="/dashboard/coupons" component={UserDashboardRouter} />
       <Route path="/dashboard/pricing" component={UserDashboardRouter} />
       <Route path="/dashboard/messages" component={UserDashboardRouter} />
+      <Route path="/dashboard/support-tickets" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/analytics" component={AdminRouter} />
       <Route path="/admin/transactions" component={AdminRouter} />
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/admin/coupons" component={AdminRouter} />
       <Route path="/admin/staff-help" component={AdminRouter} />
       <Route path="/admin/activity-logs" component={AdminRouter} />
+      <Route path="/admin/support-tickets" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />
       <Route path="/admin/listings/new" component={AdminRouter} />
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />

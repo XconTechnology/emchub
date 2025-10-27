@@ -223,6 +223,15 @@ export interface IStorage {
   getUnreadCount(userId: string, userRole: string): Promise<number>;
   updateConversationLastMessage(conversationId: string, message: string): Promise<void>;
   
+  // Support Ticket operations
+  createSupportTicket(data: { userId: string; subject: string; message: string; priority?: string }): Promise<any>;
+  getAllSupportTickets(): Promise<any[]>;
+  getUserSupportTickets(userId: string): Promise<any[]>;
+  getSupportTicket(ticketId: string): Promise<any | undefined>;
+  updateTicketStatus(ticketId: string, status: string): Promise<any>;
+  assignTicket(ticketId: string, assignedTo: string): Promise<any>;
+  updateTicketPriority(ticketId: string, priority: string): Promise<any>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -2196,6 +2205,167 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(conversations.id, conversationId));
+  }
+
+  // Support Ticket operations
+  async createSupportTicket(data: { userId: string; subject: string; message: string; priority?: string }): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .insert(supportTickets)
+      .values({
+        userId: data.userId,
+        subject: data.subject,
+        message: data.message,
+        priority: data.priority || 'normal',
+        status: 'open',
+      })
+      .returning();
+    
+    return ticket;
+  }
+
+  async getAllSupportTickets(): Promise<any[]> {
+    const { supportTickets, users } = await import("@shared/schema");
+    
+    // Get all tickets with user details and assigned staff details
+    const tickets = await db
+      .select()
+      .from(supportTickets)
+      .orderBy(sql`${supportTickets.createdAt} DESC`);
+    
+    // Fetch user and assigned staff details for each ticket
+    const ticketsWithDetails = await Promise.all(
+      tickets.map(async (ticket: any) => {
+        // Get ticket creator details
+        const [user] = await db
+          .select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+          })
+          .from(users)
+          .where(eq(users.id, ticket.userId));
+        
+        // Get assigned staff details if assigned
+        let assignedStaff = null;
+        if (ticket.assignedTo) {
+          const [staff] = await db
+            .select({
+              id: users.id,
+              username: users.username,
+              email: users.email,
+            })
+            .from(users)
+            .where(eq(users.id, ticket.assignedTo));
+          assignedStaff = staff;
+        }
+        
+        return {
+          ...ticket,
+          user,
+          assignedStaff,
+        };
+      })
+    );
+    
+    return ticketsWithDetails;
+  }
+
+  async getUserSupportTickets(userId: string): Promise<any[]> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    return db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.userId, userId))
+      .orderBy(sql`${supportTickets.createdAt} DESC`);
+  }
+
+  async getSupportTicket(ticketId: string): Promise<any | undefined> {
+    const { supportTickets, users } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.id, ticketId));
+    
+    if (!ticket) return undefined;
+    
+    // Get user details
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, ticket.userId));
+    
+    // Get assigned staff details if assigned
+    let assignedStaff = null;
+    if (ticket.assignedTo) {
+      const [staff] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.id, ticket.assignedTo));
+      assignedStaff = staff;
+    }
+    
+    return {
+      ...ticket,
+      user,
+      assignedStaff,
+    };
+  }
+
+  async updateTicketStatus(ticketId: string, status: string): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return ticket;
+  }
+
+  async assignTicket(ticketId: string, assignedTo: string): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        assignedTo,
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return ticket;
+  }
+
+  async updateTicketPriority(ticketId: string, priority: string): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        priority,
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return ticket;
   }
 }
 

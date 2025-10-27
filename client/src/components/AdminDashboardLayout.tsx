@@ -14,6 +14,7 @@ import {
   Store,
   BarChart3,
   CreditCard,
+  LifeBuoy,
 } from "lucide-react";
 import {
   Sidebar,
@@ -97,6 +98,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Activity Logs",
       url: "/admin/activity-logs",
       icon: Activity,
+    },
+    {
+      title: "Support Tickets",
+      url: "/admin/support-tickets",
+      icon: LifeBuoy,
     },
     {
       title: "All Listings",
@@ -184,6 +190,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 {location === "/admin/coupons" && "Coupon Management"}
                 {location === "/admin/staff-help" && "Staff Help Requests"}
                 {location === "/admin/activity-logs" && "Activity Logs"}
+                {location === "/admin/support-tickets" && "Support Tickets"}
                 {location === "/admin/listings" && "All Listings"}
                 {location === "/admin/listings/new" && "Add New Listing"}
                 {location === "/admin/users" && "Users"}

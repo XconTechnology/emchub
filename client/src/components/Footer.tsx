@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import emcLogo from "@assets/image_1756989816731.png";
+import ContactSupportForm from "./ContactSupportForm";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Footer() {
+  const { user } = useAuth();
+  const [showSupportForm, setShowSupportForm] = useState(false);
+
   return (
-    <footer className="bg-foreground text-background">
+    <>
+      <footer className="bg-foreground text-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -81,6 +88,15 @@ export default function Footer() {
                   About Us
                 </a>
               </li>
+              <li>
+                <button 
+                  onClick={() => user ? setShowSupportForm(true) : window.location.href = '/auth'}
+                  className="text-background/80 hover:text-primary transition-colors text-left" 
+                  data-testid="footer-link-contact-support"
+                >
+                  Contact Support
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -124,5 +140,7 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    <ContactSupportForm isOpen={showSupportForm} onClose={() => setShowSupportForm(false)} />
+    </>
   );
 }

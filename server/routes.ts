@@ -3150,6 +3150,131 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ==================== Support Ticket Routes ====================
+
+  // Create a new support ticket
+  app.post("/api/support-tickets", isAuthenticated, async (req, res) => {
+    try {
+      const { subject, message, priority } = req.body;
+      
+      if (!subject || !message) {
+        return res.status(400).json({ error: "Subject and message are required" });
+      }
+
+      const ticket = await storage.createSupportTicket({
+        userId: req.user.id,
+        subject,
+        message,
+        priority,
+      });
+
+      // TODO: Send email notification to admin
+      console.log(`New support ticket created: ${ticket.id} by user ${req.user.username}`);
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      res.status(500).json({ error: "Failed to create support ticket" });
+    }
+  });
+
+  // Get all support tickets (admin only)
+  app.get("/api/support-tickets", isAdminAuthenticated, async (req, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error getting support tickets:", error);
+      res.status(500).json({ error: "Failed to get support tickets" });
+    }
+  });
+
+  // Get user's own support tickets
+  app.get("/api/support-tickets/my-tickets", isAuthenticated, async (req, res) => {
+    try {
+      const tickets = await storage.getUserSupportTickets(req.user.id);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error getting user support tickets:", error);
+      res.status(500).json({ error: "Failed to get your support tickets" });
+    }
+  });
+
+  // Get a specific support ticket
+  app.get("/api/support-tickets/:ticketId", isAuthenticated, async (req, res) => {
+    try {
+      const ticket = await storage.getSupportTicket(req.params.ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      // Check if user is admin or the ticket owner
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
+      const isOwner = ticket.userId === req.user.id;
+
+      if (!isAdmin && !isOwner) {
+        return res.status(403).json({ error: "Unauthorized to view this ticket" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error getting support ticket:", error);
+      res.status(500).json({ error: "Failed to get support ticket" });
+    }
+  });
+
+  // Update ticket status (admin only)
+  app.put("/api/support-tickets/:ticketId/status", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.body;
+      
+      if (!status || !['open', 'pending', 'closed'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const ticket = await storage.updateTicketStatus(req.params.ticketId, status);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket status:", error);
+      res.status(500).json({ error: "Failed to update ticket status" });
+    }
+  });
+
+  // Assign ticket to staff (admin only)
+  app.put("/api/support-tickets/:ticketId/assign", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { assignedTo } = req.body;
+      
+      if (!assignedTo) {
+        return res.status(400).json({ error: "assignedTo is required" });
+      }
+
+      const ticket = await storage.assignTicket(req.params.ticketId, assignedTo);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+      res.status(500).json({ error: "Failed to assign ticket" });
+    }
+  });
+
+  // Update ticket priority (admin only)
+  app.put("/api/support-tickets/:ticketId/priority", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { priority } = req.body;
+      
+      if (!priority || !['low', 'normal', 'high', 'urgent'].includes(priority)) {
+        return res.status(400).json({ error: "Invalid priority" });
+      }
+
+      const ticket = await storage.updateTicketPriority(req.params.ticketId, priority);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket priority:", error);
+      res.status(500).json({ error: "Failed to update ticket priority" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates
