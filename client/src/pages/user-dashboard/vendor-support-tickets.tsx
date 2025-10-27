@@ -200,11 +200,13 @@ export default function VendorSupportTickets() {
 
       {/* Chat Dialog */}
       <Dialog open={!!selectedTicket} onOpenChange={(open) => {
-        if (!open) {
-          // Clear messages cache when closing to ensure fresh data on next open
-          queryClient.removeQueries({ queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'] });
+        if (!open && selectedTicket) {
+          // Store ticket ID before clearing to ensure cache is properly removed
+          const ticketId = selectedTicket.id;
           setSelectedTicket(null);
           setMessage("");
+          // Clear messages cache when closing to ensure fresh data on next open
+          queryClient.removeQueries({ queryKey: ['/api/support-tickets', ticketId, 'messages'] });
         }
       }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
