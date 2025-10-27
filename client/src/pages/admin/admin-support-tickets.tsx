@@ -251,7 +251,9 @@ export default function AdminSupportTickets() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTickets.map((ticket) => (
+                  {filteredTickets.map((ticket) => {
+                    const assignedVendor = ticket.assignedTo ? vendors.find(v => v.id === ticket.assignedTo) : null;
+                    return (
                     <TableRow key={ticket.id} data-testid={`row-ticket-${ticket.id}`}>
                       <TableCell className="font-mono text-xs" data-testid={`cell-id-${ticket.id}`}>
                         {ticket.id.slice(0, 8)}
@@ -312,20 +314,22 @@ export default function AdminSupportTickets() {
                           }
                         >
                           <SelectTrigger className="w-48" data-testid={`select-assign-${ticket.id}`}>
-                            <SelectValue placeholder="Unassigned" />
+                            <SelectValue placeholder="Unassigned">
+                              {assignedVendor ? `${assignedVendor.username}` : "Unassigned"}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {vendors.map((vendor) => (
                               <SelectItem key={vendor.id} value={vendor.id}>
-                                {vendor.username} - {vendor.businessName || 'Vendor'}
+                                {vendor.username} - {(vendor as any).businessName || 'Vendor'}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </TableCell>
                       <TableCell className="text-sm" data-testid={`cell-created-${ticket.id}`}>
-                        {format(new Date(ticket.createdAt), "PP")}
+                        {ticket.createdAt ? format(new Date(ticket.createdAt), "PP") : 'N/A'}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -344,7 +348,8 @@ export default function AdminSupportTickets() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                  })}
                 </TableBody>
               </Table>
             </div>

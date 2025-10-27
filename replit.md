@@ -27,7 +27,7 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
 - **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
 - **Order-Based Chat**: "Chat with Vendor" button on each order in My Purchases page allows customers to message vendors about specific orders, automatically creating conversations with product context.
-- **C2Admin Support and Reporting System**: Complete support ticket system for user inquiries and admin management:
+- **C2Admin Support and Reporting System**: Complete support ticket system for user inquiries and vendor-assisted support:
     - **User Features**:
         - "Contact Support" button in user dashboard and footer
         - Submit support tickets with subject, message, and priority (low, normal, high, urgent)
@@ -36,7 +36,7 @@ The platform utilizes a React and TypeScript frontend built on a component-based
     - **Admin Features**:
         - Admin Support Tickets dashboard to view all user support tickets
         - Search and filter by status and priority
-        - Assign tickets to staff members
+        - Assign tickets to verified vendors (enables vendors to help solve user problems)
         - Update ticket status (open → pending → closed)
         - Change ticket priority
         - Console logging for new tickets (ready for email notification integration)
