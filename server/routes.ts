@@ -3312,19 +3312,25 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Get user ID - prioritize regular user auth over admin session
+      // Get user ID and role
       let userId: string;
       let userRole: string;
+      const isAdminSession = req.session?.adminAuth === true;
+      const isAdminUser = req.user?.role === 'admin' || req.user?.role === 'super-admin';
+      const isAdmin = isAdminSession || isAdminUser;
       
       if (req.user) {
-        // Regular user (vendor/customer)
+        // Regular user (vendor/customer) or admin via Passport
         userId = req.user.id;
         userRole = req.user.role || 'consumer';
-      } else if (req.session?.adminAuth) {
-        // Admin user via session
-        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+      } else if (isAdminSession) {
+        // Admin user via session - get system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        
         if (adminUsers.length === 0) {
-          return res.status(500).json({ error: "Admin user not found" });
+          return res.status(500).json({ error: "System admin not found. Please contact support." });
         }
         userId = adminUsers[0].id;
         userRole = 'admin';
@@ -3333,12 +3339,14 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Check if user has permission to message in this ticket
-      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
-      const isTicketOwner = ticket.userId === userId;
-      const isAssignedVendor = ticket.assignedTo === userId;
+      // Admins (both session-based and user-based) can always message
+      if (!isAdmin) {
+        const isTicketOwner = ticket.userId === userId;
+        const isAssignedVendor = ticket.assignedTo === userId;
 
-      if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
-        return res.status(403).json({ error: "Unauthorized to message in this ticket" });
+        if (!isTicketOwner && !isAssignedVendor) {
+          return res.status(403).json({ error: "Unauthorized to message in this ticket" });
+        }
       }
 
       const ticketMessage = await storage.createTicketMessage({
@@ -3369,33 +3377,38 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Get user ID - prioritize regular user auth over admin session
+      // Get user ID and role
       let userId: string;
-      let userRole: string;
+      const isAdminSession = req.session?.adminAuth === true;
+      const isAdminUser = req.user?.role === 'admin' || req.user?.role === 'super-admin';
+      const isAdmin = isAdminSession || isAdminUser;
       
       if (req.user) {
-        // Regular user (vendor/customer)
+        // Regular user (vendor/customer) or admin via Passport
         userId = req.user.id;
-        userRole = req.user.role || 'consumer';
-      } else if (req.session?.adminAuth) {
-        // Admin user via session
-        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+      } else if (isAdminSession) {
+        // Admin user via session - use system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        
         if (adminUsers.length === 0) {
-          return res.status(500).json({ error: "Admin user not found" });
+          return res.status(500).json({ error: "System admin not found. Please contact support." });
         }
         userId = adminUsers[0].id;
-        userRole = 'admin';
       } else {
         return res.status(401).json({ error: "Authentication required" });
       }
 
       // Check if user has permission to view this ticket's messages
-      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
-      const isTicketOwner = ticket.userId === userId;
-      const isAssignedVendor = ticket.assignedTo === userId;
+      // Admins (both session-based and user-based) can always view
+      if (!isAdmin) {
+        const isTicketOwner = ticket.userId === userId;
+        const isAssignedVendor = ticket.assignedTo === userId;
 
-      if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
-        return res.status(403).json({ error: "Unauthorized to view this ticket" });
+        if (!isTicketOwner && !isAssignedVendor) {
+          return res.status(403).json({ error: "Unauthorized to view this ticket" });
+        }
       }
 
       const messages = await storage.getTicketMessages(ticketId);
