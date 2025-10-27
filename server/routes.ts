@@ -747,7 +747,8 @@ export function registerRoutes(app: Express): Server {
       const users = await storage.getUsersWithFilters(filters);
       
       // If user is not super-admin, remove PII fields
-      const isSuperAdmin = req.user?.role === 'super-admin' || req.session?.adminAuth?.role === 'super-admin';
+      // Session-based admins are always regular admins (not super-admins)
+      const isSuperAdmin = req.user?.role === 'super-admin';
       
       if (!isSuperAdmin) {
         const sanitizedUsers = users.map(user => ({
@@ -784,7 +785,8 @@ export function registerRoutes(app: Express): Server {
       const hasPiiUpdate = piiFields.some(field => updates.hasOwnProperty(field));
       
       // Only super-admins can update PII fields
-      const isSuperAdmin = req.user?.role === 'super-admin' || req.session?.adminAuth?.role === 'super-admin';
+      // Session-based admins are always regular admins (not super-admins)
+      const isSuperAdmin = req.user?.role === 'super-admin';
       
       if (hasPiiUpdate && !isSuperAdmin) {
         return res.status(403).json({ message: "Only super-admins can update PII fields (email, phone, firstName, lastName)" });
@@ -799,10 +801,35 @@ export function registerRoutes(app: Express): Server {
       
       const updatedUser = await storage.updateUser(userId, updates);
       
+      // Get admin ID and username for activity log
+      let adminId: string;
+      let adminUsername: string;
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else if (req.session?.adminAuth === true) {
+        // Use system admin for session-based admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+          adminUsername = adminUsers[0].username;
+        } else {
+          adminId = 'system';
+          adminUsername = 'admin';
+        }
+      } else {
+        adminId = 'unknown';
+        adminUsername = 'admin';
+      }
+      
       // Log the activity
       await storage.createActivityLog({
-        userId: req.user?.id || req.session?.adminAuth?.id,
-        userName: req.user?.username || req.session?.adminAuth?.username,
+        userId: adminId,
+        userName: adminUsername,
         actionType: 'update',
         entityType: 'user',
         entityId: userId,
@@ -822,7 +849,20 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/users/:id/suspend', isAdminAuthenticated, async (req: any, res) => {
     try {
       const userId = req.params.id;
-      const adminId = req.user?.id || req.session?.adminAuth?.id;
+      
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string;
+      if (req.user) {
+        adminId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        // Use system admin for session-based admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : 'system';
+      } else {
+        adminId = 'unknown';
+      }
       
       const updatedUser = await storage.suspendUser(userId, adminId);
       res.json({ ...updatedUser, password: undefined });
@@ -836,7 +876,20 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/users/:id/reactivate', isAdminAuthenticated, async (req: any, res) => {
     try {
       const userId = req.params.id;
-      const adminId = req.user?.id || req.session?.adminAuth?.id;
+      
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string;
+      if (req.user) {
+        adminId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        // Use system admin for session-based admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : 'system';
+      } else {
+        adminId = 'unknown';
+      }
       
       const updatedUser = await storage.reactivateUser(userId, adminId);
       res.json({ ...updatedUser, password: undefined });
@@ -862,10 +915,38 @@ export function registerRoutes(app: Express): Server {
       
       const updatedUser = await storage.adminResetUserPassword(userId, hashedPassword);
       
+      // Get admin user ID and username for activity log
+      let adminId: string;
+      let adminUsername: string;
+      
+      if (req.user) {
+        // Admin via Passport authentication
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else if (req.session?.adminAuth === true) {
+        // Admin via session - use system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+          adminUsername = adminUsers[0].username;
+        } else {
+          // Fallback if system admin doesn't exist
+          adminId = 'system';
+          adminUsername = 'admin';
+        }
+      } else {
+        // Fallback (should not happen due to middleware)
+        adminId = 'unknown';
+        adminUsername = 'admin';
+      }
+      
       // Log the activity
       await storage.createActivityLog({
-        userId: req.user?.id || req.session?.adminAuth?.id,
-        userName: req.user?.username || req.session?.adminAuth?.username,
+        userId: adminId,
+        userName: adminUsername,
         actionType: 'reset_password',
         entityType: 'user',
         entityId: userId,
@@ -1884,9 +1965,20 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/seed-demo', isAdminAuthenticated, async (req: any, res) => {
     try {
       // Get or find a valid user ID for creating listings
-      let userId = req.session?.adminAuth?.userId;
+      let userId: string | undefined;
       
-      // If no user ID from session, try to find the admin user
+      // First check if admin is authenticated via Passport
+      if (req.user) {
+        userId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        // Session-based admin - use system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        userId = adminUsers.length > 0 ? adminUsers[0].id : undefined;
+      }
+      
+      // If no user ID from auth, try to find the admin user
       if (!userId) {
         const adminUser = await storage.getUserByUsername('admin');
         if (adminUser) {
