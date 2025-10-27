@@ -52,9 +52,7 @@ export default function VendorSupportTickets() {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch messages');
-      const data = await response.json();
-      console.log('📩 Fetched messages:', data.length, 'messages', data);
-      return data;
+      return response.json();
     },
     enabled: !!selectedTicket?.id,
     refetchInterval: 3000, // Poll every 3 seconds for new messages
@@ -248,7 +246,7 @@ export default function VendorSupportTickets() {
             {/* Messages Thread */}
             <div className="flex-1 overflow-hidden flex flex-col">
               <h3 className="text-sm font-semibold mb-2">Conversation ({messages.length} messages)</h3>
-              <ScrollArea className="flex-1 pr-4 border rounded-lg p-4">
+              <ScrollArea className="h-[400px] pr-4 border rounded-lg p-4">
                 <div className="space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
@@ -256,7 +254,6 @@ export default function VendorSupportTickets() {
                     </div>
                   ) : (
                     messages.map((msg) => {
-                      console.log('🎨 Rendering message:', msg.id, msg.message, msg.senderUsername);
                       const isCurrentUser = msg.senderId === user?.id;
                       const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'super-admin';
 
