@@ -167,6 +167,7 @@ export default function AdminSupportTickets() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
     },
     onError: (error: Error) => {
       toast({
@@ -188,6 +189,8 @@ export default function AdminSupportTickets() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
       setNewMessage("");
       toast({
         title: "Message Sent",

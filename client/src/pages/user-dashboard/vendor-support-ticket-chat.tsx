@@ -62,7 +62,14 @@ export default function VendorSupportTicketChat() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', ticketId, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
       setMessage("");
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+      });
     },
     onError: (error: Error) => {
       toast({
