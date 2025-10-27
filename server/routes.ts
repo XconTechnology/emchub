@@ -3312,11 +3312,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Get user ID - either from session user or admin session
+      // Get user ID - prioritize regular user auth over admin session
       let userId: string;
       let userRole: string;
       
-      if (req.session?.adminAuth) {
+      if (req.user) {
+        // Regular user (vendor/customer)
+        userId = req.user.id;
+        userRole = req.user.role || 'consumer';
+      } else if (req.session?.adminAuth) {
         // Admin user via session
         const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
         if (adminUsers.length === 0) {
@@ -3324,9 +3328,6 @@ export function registerRoutes(app: Express): Server {
         }
         userId = adminUsers[0].id;
         userRole = 'admin';
-      } else if (req.user) {
-        userId = req.user.id;
-        userRole = req.user.role || 'consumer';
       } else {
         return res.status(401).json({ error: "Authentication required" });
       }
@@ -3368,11 +3369,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Get user ID - either from session user or admin session
+      // Get user ID - prioritize regular user auth over admin session
       let userId: string;
       let userRole: string;
       
-      if (req.session?.adminAuth) {
+      if (req.user) {
+        // Regular user (vendor/customer)
+        userId = req.user.id;
+        userRole = req.user.role || 'consumer';
+      } else if (req.session?.adminAuth) {
         // Admin user via session
         const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
         if (adminUsers.length === 0) {
@@ -3380,9 +3385,6 @@ export function registerRoutes(app: Express): Server {
         }
         userId = adminUsers[0].id;
         userRole = 'admin';
-      } else if (req.user) {
-        userId = req.user.id;
-        userRole = req.user.role || 'consumer';
       } else {
         return res.status(401).json({ error: "Authentication required" });
       }
