@@ -56,6 +56,7 @@ export default function VendorSupportTickets() {
     },
     enabled: !!selectedTicket?.id,
     refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchOnMount: true, // Force fresh fetch when dialog opens
   });
 
   // Send message mutation
@@ -200,6 +201,8 @@ export default function VendorSupportTickets() {
       {/* Chat Dialog */}
       <Dialog open={!!selectedTicket} onOpenChange={(open) => {
         if (!open) {
+          // Clear messages cache when closing to ensure fresh data on next open
+          queryClient.removeQueries({ queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'] });
           setSelectedTicket(null);
           setMessage("");
         }
