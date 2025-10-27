@@ -90,11 +90,6 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       icon: Ticket,
     },
     {
-      title: "Staff Help",
-      url: "/admin/staff-help",
-      icon: HelpCircle,
-    },
-    {
       title: "Activity Logs",
       url: "/admin/activity-logs",
       icon: Activity,
@@ -188,7 +183,6 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 {location === "/admin/vendor-requests" && "Vendor Requests"}
                 {location === "/admin/vendors" && "Verified Vendors"}
                 {location === "/admin/coupons" && "Coupon Management"}
-                {location === "/admin/staff-help" && "Staff Help Requests"}
                 {location === "/admin/activity-logs" && "Activity Logs"}
                 {location === "/admin/support-tickets" && "Support Tickets"}
                 {location === "/admin/listings" && "All Listings"}

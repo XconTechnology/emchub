@@ -37,13 +37,10 @@ export default function AdminSupportTickets() {
     queryKey: ['/api/support-tickets'],
   });
 
-  // Fetch all users for assignment dropdown (admin and staff)
-  const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/admin/users'],
+  // Fetch verified vendors for assignment dropdown
+  const { data: vendors = [] } = useQuery<User[]>({
+    queryKey: ['/api/admin/vendors'],
   });
-
-  // Filter admin and staff users for assignment
-  const staffUsers = users.filter(u => u.role === 'admin' || u.role === 'staff' || u.role === 'super-admin');
 
   // Update status mutation
   const updateStatusMutation = useMutation({
@@ -314,14 +311,14 @@ export default function AdminSupportTickets() {
                             })
                           }
                         >
-                          <SelectTrigger className="w-40" data-testid={`select-assign-${ticket.id}`}>
+                          <SelectTrigger className="w-48" data-testid={`select-assign-${ticket.id}`}>
                             <SelectValue placeholder="Unassigned" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {staffUsers.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.username} ({user.role})
+                            {vendors.map((vendor) => (
+                              <SelectItem key={vendor.id} value={vendor.id}>
+                                {vendor.username} - {vendor.businessName || 'Vendor'}
                               </SelectItem>
                             ))}
                           </SelectContent>
