@@ -39,6 +39,8 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Assign tickets to verified vendors with required initial message
         - Message dialog when assigning: admin writes message to explain issue to vendor
         - View detailed ticket information in popup with user details
+        - Quick Message button next to View button for assigned tickets (direct messaging without opening full details)
+        - Dedicated quick message dialog with conversation history and real-time updates
         - Update ticket status (open → pending → closed)
         - Change ticket priority
         - Console logging for new tickets (ready for email notification integration)
