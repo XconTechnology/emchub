@@ -14,6 +14,7 @@ import AdminVendorRequests from "./admin-vendor-requests";
 import AdminCoupons from "./admin-coupons";
 import AdminActivityLogs from "./admin-activity-logs";
 import AdminSupportTickets from "./admin-support-tickets";
+import AdminSupportTicketDetail from "./admin-support-ticket-detail";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +45,7 @@ export default function AdminRouter() {
         <Route path="/admin/vendors" component={AdminVendors} />
         <Route path="/admin/coupons" component={AdminCoupons} />
         <Route path="/admin/activity-logs" component={AdminActivityLogs} />
+        <Route path="/admin/support-tickets/:id" component={AdminSupportTicketDetail} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
         <Route path="/admin/listings/new" component={AdminAddListing} />
         <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
