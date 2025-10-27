@@ -223,6 +223,21 @@ export interface IStorage {
   getUnreadCount(userId: string, userRole: string): Promise<number>;
   updateConversationLastMessage(conversationId: string, message: string): Promise<void>;
   
+  // Support Ticket operations
+  createSupportTicket(data: { userId: string; subject: string; message: string }): Promise<any>;
+  getUserTickets(userId: string): Promise<any[]>;
+  getAllTickets(filters?: { status?: string; assignedTo?: string }): Promise<any[]>;
+  getTicketById(ticketId: string): Promise<any | undefined>;
+  updateTicketStatus(ticketId: string, status: string): Promise<any>;
+  assignTicket(ticketId: string, staffId: string): Promise<any>;
+  
+  // Report operations
+  createReport(data: { reporterId: string; reportedItemId: string; reportedItemType: string; reason: string; details?: string }): Promise<any>;
+  getAllReports(filters?: { status?: string; reportedItemType?: string }): Promise<any[]>;
+  getReportById(reportId: string): Promise<any | undefined>;
+  updateReportStatus(reportId: string, status: string, actionTaken?: string): Promise<any>;
+  linkReportToTicket(reportId: string, ticketId: string): Promise<void>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -2196,6 +2211,297 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       })
       .where(eq(conversations.id, conversationId));
+  }
+  
+  // Support Ticket operations
+  async createSupportTicket(data: { userId: string; subject: string; message: string }): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .insert(supportTickets)
+      .values({
+        userId: data.userId,
+        subject: data.subject,
+        message: data.message,
+        status: 'open',
+      })
+      .returning();
+    
+    return ticket;
+  }
+  
+  async getUserTickets(userId: string): Promise<any[]> {
+    const { supportTickets, users } = await import("@shared/schema");
+    
+    const tickets = await db
+      .select({
+        ticket: supportTickets,
+        assignedToUser: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(supportTickets)
+      .leftJoin(users, eq(supportTickets.assignedTo, users.id))
+      .where(eq(supportTickets.userId, userId))
+      .orderBy(sql`${supportTickets.createdAt} DESC`);
+    
+    return tickets.map(t => ({
+      ...t.ticket,
+      assignedToUser: t.assignedToUser,
+    }));
+  }
+  
+  async getAllTickets(filters?: { status?: string; assignedTo?: string }): Promise<any[]> {
+    const { supportTickets, users } = await import("@shared/schema");
+    
+    let query = db
+      .select({
+        ticket: supportTickets,
+        user: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(supportTickets)
+      .leftJoin(users, eq(supportTickets.userId, users.id));
+    
+    const conditions = [];
+    if (filters?.status) {
+      conditions.push(eq(supportTickets.status, filters.status));
+    }
+    if (filters?.assignedTo) {
+      conditions.push(eq(supportTickets.assignedTo, filters.assignedTo));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const tickets = await query.orderBy(sql`${supportTickets.createdAt} DESC`);
+    
+    return tickets.map(t => ({
+      ...t.ticket,
+      user: t.user,
+    }));
+  }
+  
+  async getTicketById(ticketId: string): Promise<any | undefined> {
+    const { supportTickets, users } = await import("@shared/schema");
+    
+    const [result] = await db
+      .select({
+        ticket: supportTickets,
+        user: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(supportTickets)
+      .leftJoin(users, eq(supportTickets.userId, users.id))
+      .where(eq(supportTickets.id, ticketId));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.ticket,
+      user: result.user,
+    };
+  }
+  
+  async updateTicketStatus(ticketId: string, status: string): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return ticket;
+  }
+  
+  async assignTicket(ticketId: string, staffId: string): Promise<any> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        assignedTo: staffId,
+        status: 'pending', // Auto-change to pending when assigned
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    
+    return ticket;
+  }
+  
+  // Report operations
+  async createReport(data: { reporterId: string; reportedItemId: string; reportedItemType: string; reason: string; details?: string }): Promise<any> {
+    const { reports } = await import("@shared/schema");
+    
+    const [report] = await db
+      .insert(reports)
+      .values({
+        reporterId: data.reporterId,
+        reportedItemId: data.reportedItemId,
+        reportedItemType: data.reportedItemType,
+        reason: data.reason,
+        details: data.details,
+        status: 'open',
+      })
+      .returning();
+    
+    return report;
+  }
+  
+  async getAllReports(filters?: { status?: string; reportedItemType?: string }): Promise<any[]> {
+    const { reports, users, listings } = await import("@shared/schema");
+    
+    let query = db
+      .select({
+        report: reports,
+        reporter: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(reports)
+      .leftJoin(users, eq(reports.reporterId, users.id));
+    
+    const conditions = [];
+    if (filters?.status) {
+      conditions.push(eq(reports.status, filters.status));
+    }
+    if (filters?.reportedItemType) {
+      conditions.push(eq(reports.reportedItemType, filters.reportedItemType));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const reportsData = await query.orderBy(sql`${reports.createdAt} DESC`);
+    
+    // Get reported item details
+    const reportsWithDetails = await Promise.all(
+      reportsData.map(async (r) => {
+        let reportedItem = null;
+        
+        if (r.report.reportedItemType === 'product') {
+          const [product] = await db
+            .select({
+              id: listings.id,
+              title: listings.title,
+              userId: listings.userId,
+            })
+            .from(listings)
+            .where(eq(listings.id, r.report.reportedItemId));
+          reportedItem = product;
+        } else if (r.report.reportedItemType === 'vendor') {
+          const [vendor] = await db
+            .select({
+              id: users.id,
+              username: users.username,
+              email: users.email,
+            })
+            .from(users)
+            .where(eq(users.id, r.report.reportedItemId));
+          reportedItem = vendor;
+        }
+        
+        return {
+          ...r.report,
+          reporter: r.reporter,
+          reportedItem,
+        };
+      })
+    );
+    
+    return reportsWithDetails;
+  }
+  
+  async getReportById(reportId: string): Promise<any | undefined> {
+    const { reports, users, listings } = await import("@shared/schema");
+    
+    const [result] = await db
+      .select({
+        report: reports,
+        reporter: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        },
+      })
+      .from(reports)
+      .leftJoin(users, eq(reports.reporterId, users.id))
+      .where(eq(reports.id, reportId));
+    
+    if (!result) return undefined;
+    
+    // Get reported item details
+    let reportedItem = null;
+    if (result.report.reportedItemType === 'product') {
+      const [product] = await db
+        .select({
+          id: listings.id,
+          title: listings.title,
+          userId: listings.userId,
+        })
+        .from(listings)
+        .where(eq(listings.id, result.report.reportedItemId));
+      reportedItem = product;
+    } else if (result.report.reportedItemType === 'vendor') {
+      const [vendor] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.id, result.report.reportedItemId));
+      reportedItem = vendor;
+    }
+    
+    return {
+      ...result.report,
+      reporter: result.reporter,
+      reportedItem,
+    };
+  }
+  
+  async updateReportStatus(reportId: string, status: string, actionTaken?: string): Promise<any> {
+    const { reports } = await import("@shared/schema");
+    
+    const [report] = await db
+      .update(reports)
+      .set({
+        status,
+        actionTaken: actionTaken || undefined,
+      })
+      .where(eq(reports.id, reportId))
+      .returning();
+    
+    return report;
+  }
+  
+  async linkReportToTicket(reportId: string, ticketId: string): Promise<void> {
+    const { reports } = await import("@shared/schema");
+    
+    await db
+      .update(reports)
+      .set({
+        ticketId,
+      })
+      .where(eq(reports.id, reportId));
   }
 }
 
