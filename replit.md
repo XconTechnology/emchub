@@ -27,7 +27,7 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
 - **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
 - **Order-Based Chat**: "Chat with Vendor" button on each order in My Purchases page allows customers to message vendors about specific orders, automatically creating conversations with product context.
-- **C2Admin Support and Reporting System**: Complete support ticket system for user inquiries and vendor-assisted support:
+- **C2Admin Support and Reporting System**: Complete support ticket system with real-time messaging for user inquiries and vendor-assisted support:
     - **User Features**:
         - "Contact Support" button in user dashboard and footer
         - Submit support tickets with subject, message, and priority (low, normal, high, urgent)
@@ -36,17 +36,45 @@ The platform utilizes a React and TypeScript frontend built on a component-based
     - **Admin Features**:
         - Admin Support Tickets dashboard to view all user support tickets
         - Search and filter by status and priority
-        - Assign tickets to verified vendors (enables vendors to help solve user problems)
+        - Assign tickets to verified vendors with required initial message
+        - Message dialog when assigning: admin writes message to explain issue to vendor
+        - View detailed ticket information in popup with user details
         - Update ticket status (open → pending → closed)
         - Change ticket priority
         - Console logging for new tickets (ready for email notification integration)
+    - **Vendor Features**:
+        - "Assigned Tickets" page in vendor dashboard to view tickets assigned by admins
+        - Real-time ticket chat interface for communicating with admins and users
+        - Full conversation thread with message history
+        - Auto-refreshing messages (polls every 3 seconds)
+        - Send and receive messages in ticket thread
+        - View original issue details and ticket metadata
+    - **Messaging System**:
+        - Two-way communication between admin and vendor within ticket threads
+        - Message history with sender information and timestamps
+        - Visual distinction for admin messages (badge)
+        - Real-time message display with auto-scroll
+        - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
+        - Disabled messaging for closed tickets
     - **Database Schema**:
         - `support_tickets` table: id, userId, subject, message, status, priority, assignedTo, createdAt, updatedAt
+        - `support_ticket_messages` table: id, ticketId, senderId, message, createdAt
     - **Technical Implementation**:
-        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority
-        - API endpoints: POST /api/support-tickets, GET /api/support-tickets, GET /api/support-tickets/my-tickets, PUT endpoints for status/assign/priority
-        - Frontend components: ContactSupportForm (modal), user-support-tickets page, admin-support-tickets page
-        - Real-time updates via TanStack Query with cache invalidation
+        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, createTicketMessage, getTicketMessages
+        - API endpoints: 
+            - POST /api/support-tickets, GET /api/support-tickets, GET /api/support-tickets/my-tickets
+            - PUT endpoints for status/assign/priority
+            - GET /api/support-tickets/vendor/assigned (vendor assigned tickets)
+            - POST /api/support-tickets/:ticketId/messages (create message)
+            - GET /api/support-tickets/:ticketId/messages (get all messages for ticket)
+        - Frontend components: 
+            - ContactSupportForm (modal)
+            - user-support-tickets page
+            - admin-support-tickets page with detailed view dialog and assign message dialog
+            - vendor-support-tickets page (list of assigned tickets)
+            - vendor-support-ticket-chat page (full chat interface)
+        - Real-time updates via TanStack Query with cache invalidation and polling
+        - Permission-based access: admins, ticket owners, and assigned vendors can message
         - Admin-only access for ticket management via isAdminAuthenticated middleware
 
 ## External Dependencies

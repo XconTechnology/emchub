@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -29,7 +31,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, LifeBuoy, User as UserIcon, Mail } from "lucide-react";
+import { Search, LifeBuoy, User as UserIcon, Mail, Send } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
 
@@ -39,6 +41,8 @@ export default function AdminSupportTickets() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [assignDialog, setAssignDialog] = useState<{ ticket: SupportTicket; vendorId: string } | null>(null);
+  const [assignMessage, setAssignMessage] = useState("");
 
   // Fetch all tickets
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
@@ -120,6 +124,61 @@ export default function AdminSupportTickets() {
       });
     },
   });
+
+  // Create ticket message mutation
+  const createMessageMutation = useMutation({
+    mutationFn: async ({ ticketId, message }: { ticketId: string; message: string }) => {
+      const response = await apiRequest("POST", `/api/support-tickets/${ticketId}/messages`, { message });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle ticket assignment with message
+  const handleAssignWithMessage = async () => {
+    if (!assignDialog || !assignMessage.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a message to send to the vendor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // First assign the ticket
+      await assignTicketMutation.mutateAsync({
+        ticketId: assignDialog.ticket.id,
+        assignedTo: assignDialog.vendorId,
+      });
+
+      // Then send the initial message
+      await createMessageMutation.mutateAsync({
+        ticketId: assignDialog.ticket.id,
+        message: assignMessage,
+      });
+
+      // Close dialog and reset
+      setAssignDialog(null);
+      setAssignMessage("");
+
+      toast({
+        title: "Ticket Assigned",
+        description: "Ticket assigned and message sent to vendor successfully.",
+      });
+    } catch (error) {
+      console.error("Error assigning ticket with message:", error);
+    }
+  };
 
   // Filter tickets
   const filteredTickets = tickets.filter(ticket => {
@@ -319,12 +378,18 @@ export default function AdminSupportTickets() {
                       <TableCell>
                         <Select
                           value={ticket.assignedTo || "unassigned"}
-                          onValueChange={(value) =>
-                            assignTicketMutation.mutate({
-                              ticketId: ticket.id,
-                              assignedTo: value === "unassigned" ? null : value,
-                            })
-                          }
+                          onValueChange={(value) => {
+                            if (value === "unassigned") {
+                              // Unassign without message
+                              assignTicketMutation.mutate({
+                                ticketId: ticket.id,
+                                assignedTo: null,
+                              });
+                            } else {
+                              // Open dialog to enter message when assigning to vendor
+                              setAssignDialog({ ticket, vendorId: value });
+                            }
+                          }}
                         >
                           <SelectTrigger className="w-48" data-testid={`select-assign-${ticket.id}`}>
                             <SelectValue placeholder="Unassigned">
@@ -462,6 +527,85 @@ export default function AdminSupportTickets() {
                     </div>
                   </div>
                 </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Ticket with Message Dialog */}
+      <Dialog 
+        open={!!assignDialog} 
+        onOpenChange={() => {
+          setAssignDialog(null);
+          setAssignMessage("");
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]" data-testid="dialog-assign-message">
+          {assignDialog && (() => {
+            const selectedVendor = vendors.find(v => v.id === assignDialog.vendorId);
+            
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Send className="w-5 h-5" />
+                    Assign Ticket to Vendor
+                  </DialogTitle>
+                  <DialogDescription>
+                    Send a message to <strong>{selectedVendor?.username}</strong> about this ticket
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <p className="text-sm font-semibold">{assignDialog.ticket.subject}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ticket ID: {assignDialog.ticket.id.slice(0, 8)}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Message to Vendor <span className="text-destructive">*</span>
+                    </label>
+                    <Textarea
+                      value={assignMessage}
+                      onChange={(e) => setAssignMessage(e.target.value)}
+                      placeholder="Explain the issue to the vendor and provide any necessary context..."
+                      rows={5}
+                      data-testid="textarea-assign-message"
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This message will be sent to the vendor's ticket dashboard
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setAssignDialog(null);
+                      setAssignMessage("");
+                    }}
+                    data-testid="button-cancel-assign"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAssignWithMessage}
+                    disabled={!assignMessage.trim() || assignTicketMutation.isPending || createMessageMutation.isPending}
+                    data-testid="button-send-assign"
+                  >
+                    {assignTicketMutation.isPending || createMessageMutation.isPending ? (
+                      "Assigning..."
+                    ) : (
+                      "Assign & Send Message"
+                    )}
+                  </Button>
+                </DialogFooter>
               </>
             );
           })()}

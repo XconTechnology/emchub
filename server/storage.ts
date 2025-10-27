@@ -231,6 +231,11 @@ export interface IStorage {
   updateTicketStatus(ticketId: string, status: string): Promise<any>;
   assignTicket(ticketId: string, assignedTo: string): Promise<any>;
   updateTicketPriority(ticketId: string, priority: string): Promise<any>;
+  getVendorAssignedTickets(vendorId: string): Promise<any[]>;
+  
+  // Support Ticket Message operations
+  createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any>;
+  getTicketMessages(ticketId: string): Promise<any[]>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -2366,6 +2371,53 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return ticket;
+  }
+
+  async getVendorAssignedTickets(vendorId: string): Promise<any[]> {
+    const { supportTickets } = await import("@shared/schema");
+    
+    return db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.assignedTo, vendorId))
+      .orderBy(sql`${supportTickets.createdAt} DESC`);
+  }
+
+  // Support Ticket Message operations
+  async createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any> {
+    const { supportTicketMessages } = await import("@shared/schema");
+    
+    const [message] = await db
+      .insert(supportTicketMessages)
+      .values({
+        ticketId: data.ticketId,
+        senderId: data.senderId,
+        message: data.message,
+      })
+      .returning();
+    
+    return message;
+  }
+
+  async getTicketMessages(ticketId: string): Promise<any[]> {
+    const { supportTicketMessages, users } = await import("@shared/schema");
+    
+    const messages = await db
+      .select({
+        id: supportTicketMessages.id,
+        ticketId: supportTicketMessages.ticketId,
+        senderId: supportTicketMessages.senderId,
+        message: supportTicketMessages.message,
+        createdAt: supportTicketMessages.createdAt,
+        senderUsername: users.username,
+        senderRole: users.role,
+      })
+      .from(supportTicketMessages)
+      .leftJoin(users, eq(supportTicketMessages.senderId, users.id))
+      .where(eq(supportTicketMessages.ticketId, ticketId))
+      .orderBy(supportTicketMessages.createdAt);
+    
+    return messages;
   }
 }
 

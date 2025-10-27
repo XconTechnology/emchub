@@ -3275,6 +3275,97 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get vendor's assigned tickets
+  app.get("/api/support-tickets/vendor/assigned", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Check if user is a verified vendor
+      if (user.vendorStatus !== 'verified') {
+        return res.status(403).json({ error: "Only verified vendors can access this" });
+      }
+
+      const tickets = await storage.getVendorAssignedTickets(user.id);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error getting vendor assigned tickets:", error);
+      res.status(500).json({ error: "Failed to get assigned tickets" });
+    }
+  });
+
+  // ==================== Support Ticket Message Routes ====================
+
+  // Create a new ticket message
+  app.post("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+    try {
+      const { ticketId } = req.params;
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Get the ticket to verify permissions
+      const ticket = await storage.getSupportTicket(ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      // Check if user has permission to message in this ticket
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
+      const isTicketOwner = ticket.userId === req.user.id;
+      const isAssignedVendor = ticket.assignedTo === req.user.id;
+
+      if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
+        return res.status(403).json({ error: "Unauthorized to message in this ticket" });
+      }
+
+      const ticketMessage = await storage.createTicketMessage({
+        ticketId,
+        senderId: req.user.id,
+        message,
+      });
+
+      // Update ticket's updatedAt timestamp
+      await storage.updateTicketStatus(ticketId, ticket.status);
+
+      res.json(ticketMessage);
+    } catch (error) {
+      console.error("Error creating ticket message:", error);
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  // Get all messages for a ticket
+  app.get("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+    try {
+      const { ticketId } = req.params;
+
+      // Get the ticket to verify permissions
+      const ticket = await storage.getSupportTicket(ticketId);
+      
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      // Check if user has permission to view this ticket's messages
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
+      const isTicketOwner = ticket.userId === req.user.id;
+      const isAssignedVendor = ticket.assignedTo === req.user.id;
+
+      if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
+        return res.status(403).json({ error: "Unauthorized to view this ticket" });
+      }
+
+      const messages = await storage.getTicketMessages(ticketId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error getting ticket messages:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates

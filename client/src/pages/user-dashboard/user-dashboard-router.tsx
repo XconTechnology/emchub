@@ -65,6 +65,8 @@ import UserVendorTransactions from "./user-vendor-transactions";
 import UserChats from "./user-chats";
 import VendorMessages from "./vendor-messages";
 import UserSupportTickets from "./user-support-tickets";
+import VendorSupportTickets from "./vendor-support-tickets";
+import VendorSupportTicketChat from "./vendor-support-ticket-chat";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -106,6 +108,7 @@ export default function UserDashboardRouter() {
     { name: "Messages", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "Transactions", path: "/dashboard/vendor-transactions", icon: Receipt, testId: "nav-vendor-transactions" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
+    { name: "Assigned Tickets", path: "/dashboard/vendor-support-tickets", icon: LifeBuoy, testId: "nav-vendor-assigned-tickets" },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
@@ -237,6 +240,8 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/vendor-transactions" && "Transactions & Earnings"}
             {location === "/dashboard/messages" && (user?.vendorStatus === 'verified' ? "Messages" : "My Chats")}
             {location === "/dashboard/support-tickets" && "Support Tickets"}
+            {location === "/dashboard/vendor-support-tickets" && "Assigned Support Tickets"}
+            {location.startsWith("/dashboard/vendor-support-tickets/") && "Support Ticket Chat"}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
@@ -285,6 +290,8 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/checkout" component={UserCheckout} />
             <Route path="/dashboard/recycle-bin" component={UserRecycleBin} />
             <Route path="/dashboard/support-tickets" component={UserSupportTickets} />
+            <Route path="/dashboard/vendor-support-tickets/:id" component={VendorSupportTicketChat} />
+            <Route path="/dashboard/vendor-support-tickets" component={VendorSupportTickets} />
             <Route path="/dashboard/messages">
               {user?.vendorStatus === 'verified' ? <VendorMessages /> : <UserChats />}
             </Route>
