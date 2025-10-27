@@ -110,7 +110,7 @@ export default function UserSupportTickets() {
                       {ticket.subject}
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Created on {format(new Date(ticket.createdAt), "PPP 'at' p")}
+                      Created on {ticket.createdAt ? format(new Date(ticket.createdAt), "PPP 'at' p") : 'N/A'}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -141,7 +141,7 @@ export default function UserSupportTickets() {
               <DialogHeader>
                 <DialogTitle data-testid="title-ticket-detail">{selectedTicket.subject}</DialogTitle>
                 <DialogDescription>
-                  Ticket ID: {selectedTicket.id.slice(0, 8)} • Created on {format(new Date(selectedTicket.createdAt), "PPP 'at' p")}
+                  Ticket ID: {selectedTicket.id.slice(0, 8)} • Created on {selectedTicket.createdAt ? format(new Date(selectedTicket.createdAt), "PPP 'at' p") : 'N/A'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -170,7 +170,7 @@ export default function UserSupportTickets() {
                 <div>
                   <h4 className="font-semibold mb-2">Last Updated:</h4>
                   <p className="text-sm text-muted-foreground" data-testid="text-detail-updated">
-                    {format(new Date(selectedTicket.updatedAt), "PPP 'at' p")}
+                    {selectedTicket.updatedAt ? format(new Date(selectedTicket.updatedAt), "PPP 'at' p") : 'N/A'}
                   </p>
                 </div>
               </div>
