@@ -260,11 +260,15 @@ export default function VendorSupportTickets() {
                         >
                           <div className={`max-w-[70%] ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                             <div className="flex items-center gap-2 mb-1">
-                              <UserIcon className="w-3 h-3" />
-                              <span className="text-xs font-semibold">
-                                {msg.senderUsername}
-                                {isAdmin && <Badge className="ml-1 text-xs" variant="destructive">Admin</Badge>}
-                              </span>
+                              {isAdmin && <Badge className="text-xs" variant="destructive">Admin</Badge>}
+                              {!isAdmin && (
+                                <>
+                                  <UserIcon className="w-3 h-3" />
+                                  <span className="text-xs font-semibold">
+                                    {msg.senderUsername}
+                                  </span>
+                                </>
+                              )}
                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 {format(new Date(msg.createdAt), "MMM d, h:mm a")}

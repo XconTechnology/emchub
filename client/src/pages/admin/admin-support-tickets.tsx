@@ -796,11 +796,15 @@ export default function AdminSupportTickets() {
                               data-testid={`quick-message-${msg.id}`}
                             >
                               <div className="flex items-center gap-2 text-xs">
-                                <UserIcon className="w-3 h-3" />
-                                <span className="font-semibold">
-                                  {msg.senderUsername}
-                                  {isAdmin && <Badge className="ml-1 text-xs" variant="destructive">Admin</Badge>}
-                                </span>
+                                {isAdmin && <Badge className="text-xs" variant="destructive">Admin</Badge>}
+                                {!isAdmin && (
+                                  <>
+                                    <UserIcon className="w-3 h-3" />
+                                    <span className="font-semibold">
+                                      {msg.senderUsername}
+                                    </span>
+                                  </>
+                                )}
                                 <span className="text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
                                   {format(new Date(msg.createdAt), "MMM d, h:mm a")}
