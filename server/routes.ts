@@ -3296,7 +3296,7 @@ export function registerRoutes(app: Express): Server {
   // ==================== Support Ticket Message Routes ====================
 
   // Create a new ticket message
-  app.post("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+  app.post("/api/support-tickets/:ticketId/messages", isAuthenticatedOrAdmin, async (req: any, res) => {
     try {
       const { ticketId } = req.params;
       const { message } = req.body;
@@ -3312,10 +3312,29 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
+      // Get user ID - either from session user or admin session
+      let userId: string;
+      let userRole: string;
+      
+      if (req.session?.adminAuth) {
+        // Admin user via session
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length === 0) {
+          return res.status(500).json({ error: "Admin user not found" });
+        }
+        userId = adminUsers[0].id;
+        userRole = 'admin';
+      } else if (req.user) {
+        userId = req.user.id;
+        userRole = req.user.role || 'consumer';
+      } else {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       // Check if user has permission to message in this ticket
-      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
-      const isTicketOwner = ticket.userId === req.user.id;
-      const isAssignedVendor = ticket.assignedTo === req.user.id;
+      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
+      const isTicketOwner = ticket.userId === userId;
+      const isAssignedVendor = ticket.assignedTo === userId;
 
       if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
         return res.status(403).json({ error: "Unauthorized to message in this ticket" });
@@ -3323,7 +3342,7 @@ export function registerRoutes(app: Express): Server {
 
       const ticketMessage = await storage.createTicketMessage({
         ticketId,
-        senderId: req.user.id,
+        senderId: userId,
         message,
       });
 
@@ -3338,7 +3357,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get all messages for a ticket
-  app.get("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+  app.get("/api/support-tickets/:ticketId/messages", isAuthenticatedOrAdmin, async (req: any, res) => {
     try {
       const { ticketId } = req.params;
 
@@ -3349,10 +3368,29 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
+      // Get user ID - either from session user or admin session
+      let userId: string;
+      let userRole: string;
+      
+      if (req.session?.adminAuth) {
+        // Admin user via session
+        const adminUsers = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+        if (adminUsers.length === 0) {
+          return res.status(500).json({ error: "Admin user not found" });
+        }
+        userId = adminUsers[0].id;
+        userRole = 'admin';
+      } else if (req.user) {
+        userId = req.user.id;
+        userRole = req.user.role || 'consumer';
+      } else {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       // Check if user has permission to view this ticket's messages
-      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
-      const isTicketOwner = ticket.userId === req.user.id;
-      const isAssignedVendor = ticket.assignedTo === req.user.id;
+      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
+      const isTicketOwner = ticket.userId === userId;
+      const isAssignedVendor = ticket.assignedTo === userId;
 
       if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
         return res.status(403).json({ error: "Unauthorized to view this ticket" });
