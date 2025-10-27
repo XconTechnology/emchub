@@ -75,7 +75,7 @@ export function setupAuth(app: Express) {
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // True in production with HTTPS
-      sameSite: "lax", // lax works for both custom domain and replit.dev
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'none' for custom domain support
       maxAge: sessionTtl,
     },
   };
