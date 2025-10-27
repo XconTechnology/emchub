@@ -26,6 +26,10 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Stripe Payment Integration**: Secure credit card payment processing with automatic 5% admin commission splitting, supporting various payment methods (Cash Only, TimeDollar Only, Combo).
 - **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
 - **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
+- **C2Admin Support and Reporting System**:
+    - **Support Tickets**: Users can contact support from dashboard or footer, creating tickets with subject and message. Admins can view, filter (by status/assigned staff), assign to staff, and update status (open→pending→closed).
+    - **Content Reporting**: Users can report products and vendor profiles with reasons (fraud, spam, inappropriate, other). Reports auto-create linked support tickets for admin review.
+    - **Admin Management**: Dedicated admin pages for managing support tickets and reports with filtering, status updates, and action tracking.
 
 ## External Dependencies
 
