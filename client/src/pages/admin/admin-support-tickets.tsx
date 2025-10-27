@@ -497,7 +497,7 @@ export default function AdminSupportTickets() {
 
       {/* Ticket Details Dialog */}
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="sm:max-w-[700px]" data-testid="dialog-ticket-details">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col" data-testid="dialog-ticket-details">
           {selectedTicket && (() => {
             const ticketUser = allUsers.find(u => u.id === selectedTicket.userId);
             const assignedVendor = selectedTicket.assignedTo ? vendors.find(v => v.id === selectedTicket.assignedTo) : null;
@@ -510,7 +510,8 @@ export default function AdminSupportTickets() {
                     Ticket ID: {selectedTicket.id.slice(0, 8)}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-6">
+                <ScrollArea className="flex-1 pr-4">
+                  <div className="space-y-6">
                   {/* User Information */}
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -690,7 +691,8 @@ export default function AdminSupportTickets() {
                       </div>
                     </>
                   )}
-                </div>
+                  </div>
+                </ScrollArea>
               </>
             );
           })()}
