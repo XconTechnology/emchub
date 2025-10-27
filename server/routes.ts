@@ -3296,21 +3296,13 @@ export function registerRoutes(app: Express): Server {
   // ==================== Support Ticket Message Routes ====================
 
   // Create a new ticket message
-  app.post("/api/support-tickets/:ticketId/messages", async (req, res) => {
+  app.post("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
     try {
       const { ticketId } = req.params;
       const { message } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
-      }
-
-      // Check authentication - either admin session or regular user
-      const isAdminSession = req.session?.adminAuth === true;
-      const hasUserSession = req.isAuthenticated && req.isAuthenticated();
-      
-      if (!isAdminSession && !hasUserSession) {
-        return res.status(401).json({ error: "Unauthorized" });
       }
 
       // Get the ticket to verify permissions
@@ -3320,25 +3312,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Determine sender ID and role
-      let senderId: string;
-      let userRole: string;
-      
-      if (isAdminSession) {
-        // Admin session
-        senderId = req.session.userId!;
-        const adminUser = await storage.getUser(senderId);
-        userRole = adminUser?.role || 'admin';
-      } else {
-        // Regular user session
-        senderId = req.user!.id;
-        userRole = req.user!.role;
-      }
-
       // Check if user has permission to message in this ticket
-      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
-      const isTicketOwner = ticket.userId === senderId;
-      const isAssignedVendor = ticket.assignedTo === senderId;
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
+      const isTicketOwner = ticket.userId === req.user.id;
+      const isAssignedVendor = ticket.assignedTo === req.user.id;
 
       if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
         return res.status(403).json({ error: "Unauthorized to message in this ticket" });
@@ -3346,7 +3323,7 @@ export function registerRoutes(app: Express): Server {
 
       const ticketMessage = await storage.createTicketMessage({
         ticketId,
-        senderId,
+        senderId: req.user.id,
         message,
       });
 
@@ -3361,17 +3338,9 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get all messages for a ticket
-  app.get("/api/support-tickets/:ticketId/messages", async (req, res) => {
+  app.get("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
     try {
       const { ticketId } = req.params;
-
-      // Check authentication - either admin session or regular user
-      const isAdminSession = req.session?.adminAuth === true;
-      const hasUserSession = req.isAuthenticated && req.isAuthenticated();
-      
-      if (!isAdminSession && !hasUserSession) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
 
       // Get the ticket to verify permissions
       const ticket = await storage.getSupportTicket(ticketId);
@@ -3380,25 +3349,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Ticket not found" });
       }
 
-      // Determine user ID and role
-      let userId: string;
-      let userRole: string;
-      
-      if (isAdminSession) {
-        // Admin session
-        userId = req.session.userId!;
-        const adminUser = await storage.getUser(userId);
-        userRole = adminUser?.role || 'admin';
-      } else {
-        // Regular user session
-        userId = req.user!.id;
-        userRole = req.user!.role;
-      }
-
       // Check if user has permission to view this ticket's messages
-      const isAdmin = userRole === 'admin' || userRole === 'super-admin';
-      const isTicketOwner = ticket.userId === userId;
-      const isAssignedVendor = ticket.assignedTo === userId;
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'super-admin';
+      const isTicketOwner = ticket.userId === req.user.id;
+      const isAssignedVendor = ticket.assignedTo === req.user.id;
 
       if (!isAdmin && !isTicketOwner && !isAssignedVendor) {
         return res.status(403).json({ error: "Unauthorized to view this ticket" });
