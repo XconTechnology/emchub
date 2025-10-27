@@ -13,6 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, LifeBuoy } from "lucide-react";
+import { Search, LifeBuoy, User as UserIcon, Mail } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
 
@@ -31,6 +38,7 @@ export default function AdminSupportTickets() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   // Fetch all tickets
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
@@ -40,6 +48,11 @@ export default function AdminSupportTickets() {
   // Fetch verified vendors for assignment dropdown
   const { data: vendors = [] } = useQuery<User[]>({
     queryKey: ['/api/admin/vendors'],
+  });
+
+  // Fetch all users to display usernames in ticket details
+  const { data: allUsers = [] } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
   });
 
   // Update status mutation
@@ -335,13 +348,7 @@ export default function AdminSupportTickets() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            // View ticket details - could open a dialog
-                            toast({
-                              title: ticket.subject,
-                              description: ticket.message,
-                            });
-                          }}
+                          onClick={() => setSelectedTicket(ticket)}
                           data-testid={`button-view-${ticket.id}`}
                         >
                           View
@@ -356,6 +363,110 @@ export default function AdminSupportTickets() {
           )}
         </CardContent>
       </Card>
+
+      {/* Ticket Details Dialog */}
+      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <DialogContent className="sm:max-w-[700px]" data-testid="dialog-ticket-details">
+          {selectedTicket && (() => {
+            const ticketUser = allUsers.find(u => u.id === selectedTicket.userId);
+            const assignedVendor = selectedTicket.assignedTo ? vendors.find(v => v.id === selectedTicket.assignedTo) : null;
+            
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle data-testid="title-ticket-detail">Support Ticket Details</DialogTitle>
+                  <DialogDescription>
+                    Ticket ID: {selectedTicket.id.slice(0, 8)}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  {/* User Information */}
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <UserIcon className="w-4 h-4" />
+                      User Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Username:</span>
+                        <p className="font-medium" data-testid="text-username">
+                          {ticketUser?.username || 'Unknown User'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Email:</span>
+                        <p className="font-medium flex items-center gap-1" data-testid="text-email">
+                          <Mail className="w-3 h-3" />
+                          {ticketUser?.email || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ticket Information */}
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3">Ticket Information</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-muted-foreground text-sm">Subject:</span>
+                        <p className="font-semibold text-lg" data-testid="text-subject">{selectedTicket.subject}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-sm">Message:</span>
+                        <p className="text-sm mt-1 whitespace-pre-wrap bg-muted/30 p-3 rounded-md" data-testid="text-message">
+                          {selectedTicket.message}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-muted-foreground text-sm">Status:</span>
+                          <div className="mt-1">
+                            <Badge variant={getStatusBadgeVariant(selectedTicket.status)} data-testid="badge-status">
+                              {selectedTicket.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-sm">Priority:</span>
+                          <div className="mt-1">
+                            <Badge variant={getPriorityBadgeVariant(selectedTicket.priority || "normal")} data-testid="badge-priority">
+                              {selectedTicket.priority || "normal"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Assignment & Dates */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Assigned To:</span>
+                      <p className="font-medium mt-1" data-testid="text-assigned-vendor">
+                        {assignedVendor 
+                          ? `${assignedVendor.username} (${(assignedVendor as any).businessName || 'Vendor'})` 
+                          : 'Unassigned'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Created:</span>
+                      <p className="font-medium mt-1" data-testid="text-created">
+                        {selectedTicket.createdAt ? format(new Date(selectedTicket.createdAt), "PPP 'at' p") : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Last Updated:</span>
+                      <p className="font-medium mt-1" data-testid="text-updated">
+                        {selectedTicket.updatedAt ? format(new Date(selectedTicket.updatedAt), "PPP 'at' p") : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
