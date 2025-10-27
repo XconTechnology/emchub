@@ -15,6 +15,7 @@ import {
   Filter
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
+import ReportButton from "@/components/ReportButton";
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,6 +132,21 @@ export default function ProductsPage() {
                             Low Stock
                           </Badge>
                         )}
+                        <div 
+                          className="absolute top-2 left-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
+                          <ReportButton 
+                            reportedItemId={product.id} 
+                            reportedItemType="product"
+                            variant="ghost"
+                            size="icon"
+                            className="bg-white/90 hover:bg-white h-8 w-8"
+                          />
+                        </div>
                       </div>
                     </CardHeader>
                     

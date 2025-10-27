@@ -1,8 +1,14 @@
-import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ContactSupportDialog from "@/components/ContactSupportDialog";
 import emcLogo from "@assets/image_1756989816731.png";
 
 export default function Footer() {
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  
   return (
+    <>
     <footer className="bg-foreground text-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -81,6 +87,16 @@ export default function Footer() {
                   About Us
                 </a>
               </li>
+              <li>
+                <button 
+                  onClick={() => setSupportDialogOpen(true)} 
+                  className="text-background/80 hover:text-primary transition-colors flex items-center gap-2"
+                  data-testid="button-footer-support"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Contact Support
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -124,5 +140,7 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    <ContactSupportDialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen} />
+    </>
   );
 }

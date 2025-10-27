@@ -14,6 +14,8 @@ import {
   Store,
   BarChart3,
   CreditCard,
+  MessageSquare,
+  Flag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -113,6 +115,16 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       url: "/admin/recycle-bin",
       icon: Trash2,
     },
+    {
+      title: "Support Tickets",
+      url: "/admin/support-tickets",
+      icon: MessageSquare,
+    },
+    {
+      title: "Reports",
+      url: "/admin/reports",
+      icon: Flag,
+    },
   ];
 
   return (
@@ -188,6 +200,8 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 {location === "/admin/listings/new" && "Add New Listing"}
                 {location === "/admin/users" && "Users"}
                 {location === "/admin/recycle-bin" && "Recycle Bin"}
+                {location === "/admin/support-tickets" && "Support Tickets"}
+                {location === "/admin/reports" && "Reports"}
               </h1>
             </div>
           </header>

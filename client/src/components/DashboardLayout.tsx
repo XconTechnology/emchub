@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
 import {
   LayoutDashboard,
   User,
@@ -6,6 +7,7 @@ import {
   List,
   LogOut,
   Home,
+  HelpCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,6 +27,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import ContactSupportDialog from "@/components/ContactSupportDialog";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -33,6 +36,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -158,6 +162,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
                 <Button
                   variant="outline"
+                  className="w-full mb-2"
+                  onClick={() => setSupportDialogOpen(true)}
+                  data-testid="button-contact-support"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Contact Support
+                </Button>
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={handleLogout}
                   data-testid="button-logout"
@@ -196,6 +209,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </SidebarInset>
       </div>
+      <ContactSupportDialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen} />
     </SidebarProvider>
   );
 }
