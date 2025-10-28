@@ -33,8 +33,8 @@ export default function StaffLogin() {
             title: "Login successful",
             description: `Welcome, ${user.username}!`,
           });
-          // Force full page reload to dashboard
-          window.location.href = "/dashboard";
+          // Force full page reload to staff dashboard
+          window.location.href = "/staff-dashboard";
         } else {
           toast({
             title: "Access denied",
