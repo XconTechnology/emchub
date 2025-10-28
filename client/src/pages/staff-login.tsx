@@ -25,13 +25,13 @@ export default function StaffLogin() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const user = await response.json();
         
         // Check if user is staff
-        if (data.user.role === 'staff') {
+        if (user.role === 'staff') {
           toast({
             title: "Login successful",
-            description: `Welcome, ${data.user.username}!`,
+            description: `Welcome, ${user.username}!`,
           });
           // Force full page reload to dashboard
           window.location.href = "/dashboard";
