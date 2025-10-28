@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin' | 'super-admin'
+  staffRole: varchar("staff_role"), // 'support' | 'sales' | 'mediator' | 'listings' | 'full_admin' (only for staff users)
   vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
   status: varchar("status").notNull().default("active"), // 'active' | 'suspended'
   timeDollarBalance: real("timedollar_balance").default(0), // TimeDollar balance (supports decimals for accurate combo payments)
@@ -565,6 +566,31 @@ export const insertSupportTicketMessageSchema = createInsertSchema(supportTicket
 
 export type SupportTicketMessage = typeof supportTicketMessages.$inferSelect;
 export type InsertSupportTicketMessage = z.infer<typeof insertSupportTicketMessageSchema>;
+
+// Staff Audit Logs table - for tracking all staff actions
+export const staffAuditLogs = pgTable("staff_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  staffId: varchar("staff_id").notNull().references(() => users.id),
+  staffUsername: varchar("staff_username").notNull(),
+  staffRole: varchar("staff_role").notNull(), // The staff's role at time of action
+  action: varchar("action").notNull(), // 'create' | 'update' | 'delete' | 'approve' | 'reject' | 'assign' | 'message'
+  entityType: varchar("entity_type").notNull(), // 'ticket' | 'listing' | 'refund' | 'dispute' | 'user' | 'coupon'
+  entityId: varchar("entity_id"),
+  entityTitle: varchar("entity_title"),
+  description: text("description").notNull(),
+  metadata: text("metadata"), // JSON string with additional details
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStaffAuditLogSchema = createInsertSchema(staffAuditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type StaffAuditLog = typeof staffAuditLogs.$inferSelect;
+export type InsertStaffAuditLog = z.infer<typeof insertStaffAuditLogSchema>;
 
 // Types
 export type Category = typeof categories.$inferSelect;
