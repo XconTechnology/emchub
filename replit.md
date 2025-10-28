@@ -79,6 +79,58 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Permission-based access: admins, ticket owners, and assigned vendors can message
         - Admin-only access for ticket management via isAdminAuthenticated middleware
 
+- **Staff Account System with Role-Based Access Control (RBAC)**:
+    - **Architecture**: Complete RBAC system for managing staff users with granular permissions
+    - **Staff Roles**:
+        - **Support**: Access to Support Tickets only
+        - **Sales**: Access to Refunds/Transactions only
+        - **Mediator**: Access to TimeDollar Disputes only
+        - **Listings**: Access to Listing Approvals and Categories only
+        - **Full Admin**: Access to all admin features except Super Admin settings (Support, Sales, Disputes, Listings, Users, Vendors, Coupons, Analytics)
+    - **Super Admin**: Can create and manage all staff users, view audit logs, full system access
+    - **Database Schema**:
+        - `users.staffRole` field: Stores staff-specific role (support, sales, mediator, listings, full_admin)
+        - `staff_audit_logs` table: Comprehensive audit trail with staffId, staffUsername, staffRole, action, entityType, entityId, description, metadata, ipAddress, userAgent, createdAt
+    - **RBAC Middleware** (server/rbac.ts):
+        - `isStaffAuthenticated`: Validates staff authentication
+        - `requireStaffAccess(resource)`: Resource-based permission checking
+        - `isSuperAdmin`: Restricts staff management to super-admin users only
+        - `getAccessibleMenuItems(staffRole)`: Returns role-specific menu items
+    - **API Endpoints** (Super Admin Only):
+        - POST /api/staff/create - Create new staff user
+        - GET /api/staff - List all staff users
+        - PUT /api/staff/:id/role - Update staff role
+        - DELETE /api/staff/:id - Delete staff user
+        - GET /api/staff/audit-logs - View all staff audit logs
+        - GET /api/staff/:id/audit-logs - View staff-specific audit logs
+    - **Authentication**:
+        - Staff login: /staff-login page for staff authentication
+        - Staff must use regular user accounts with role='staff' and assigned staffRole
+        - Super Admin access requires user account with role='super-admin' (NOT session-based admin)
+    - **Audit Logging**: All staff actions are automatically logged with:
+        - Who performed the action (staff ID, username, role)
+        - What action was performed (create, update, delete, approve, reject, assign, message)
+        - What entity was affected (ticket, listing, refund, dispute, user, coupon)
+        - When it happened (timestamp)
+        - From where (IP address, user agent)
+        - Additional context (metadata in JSON format)
+    - **Security**:
+        - Role-based resource access enforced at API level
+        - Super Admin actions restricted to actual super-admin user accounts
+        - All staff management operations logged in audit trail
+        - Session-based admin (admin/admin123) is for regular admin tasks only
+    - **Setup Instructions**:
+        1. Create a super-admin user account in database:
+           ```sql
+           INSERT INTO users (username, email, password, role, status)
+           VALUES ('superadmin', 'superadmin@example.com', 'hashed_password', 'super-admin', 'active');
+           ```
+        2. Login as super-admin user (not session-based admin)
+        3. Access staff management at /admin-staff (TODO: create UI)
+        4. Create staff accounts with appropriate roles
+        5. Staff members login at /staff-login
+        6. Staff see only their role-specific dashboard menus
+
 ## External Dependencies
 
 ### Database Services
