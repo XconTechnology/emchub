@@ -3452,6 +3452,18 @@ export function registerRoutes(app: Express): Server {
 
   // ==================== Support Ticket Routes ====================
 
+  // Get assignable staff (verified vendors + staff members) for ticket assignment
+  app.get("/api/admin/assignable-staff", isAdminAuthenticated, async (req, res) => {
+    try {
+      // Get verified vendors and staff members
+      const assignableUsers = await storage.getAssignableStaff();
+      res.json(assignableUsers);
+    } catch (error) {
+      console.error("Error getting assignable staff:", error);
+      res.status(500).json({ error: "Failed to get assignable staff" });
+    }
+  });
+
   // Create a new support ticket
   app.post("/api/support-tickets", isAuthenticated, async (req, res) => {
     try {
@@ -3575,14 +3587,14 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get vendor's assigned tickets
+  // Get vendor's assigned tickets (also accessible to staff members)
   app.get("/api/support-tickets/vendor/assigned", isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
       
-      // Check if user is a verified vendor
-      if (user.vendorStatus !== 'verified') {
-        return res.status(403).json({ error: "Only verified vendors can access this" });
+      // Check if user is a verified vendor OR staff member
+      if (user.vendorStatus !== 'verified' && user.role !== 'staff') {
+        return res.status(403).json({ error: "Only verified vendors and staff members can access this" });
       }
 
       const tickets = await storage.getVendorAssignedTickets(user.id);

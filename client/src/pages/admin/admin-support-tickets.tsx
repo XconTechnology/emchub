@@ -66,9 +66,9 @@ export default function AdminSupportTickets() {
     queryKey: ['/api/support-tickets'],
   });
 
-  // Fetch verified vendors for assignment dropdown
+  // Fetch assignable staff (verified vendors + staff members) for assignment dropdown
   const { data: vendors = [] } = useQuery<User[]>({
-    queryKey: ['/api/admin/vendors'],
+    queryKey: ['/api/admin/assignable-staff'],
   });
 
   // Fetch all users to display usernames in ticket details

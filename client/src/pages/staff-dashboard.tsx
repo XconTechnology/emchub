@@ -153,7 +153,7 @@ export default function StaffDashboard() {
                   <Card
                     key={ticket.id}
                     className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => navigate(`/vendor/support-ticket/${ticket.id}`)}
+                    onClick={() => navigate(`/dashboard/vendor-support-tickets/${ticket.id}`)}
                     data-testid={`card-ticket-${ticket.id}`}
                   >
                     <CardContent className="p-4">
@@ -187,7 +187,7 @@ export default function StaffDashboard() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/vendor/support-ticket/${ticket.id}`);
+                            navigate(`/dashboard/vendor-support-tickets/${ticket.id}`);
                           }}
                           data-testid={`button-view-${ticket.id}`}
                         >

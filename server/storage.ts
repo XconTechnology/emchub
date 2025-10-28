@@ -232,6 +232,7 @@ export interface IStorage {
   assignTicket(ticketId: string, assignedTo: string): Promise<any>;
   updateTicketPriority(ticketId: string, priority: string): Promise<any>;
   getVendorAssignedTickets(vendorId: string): Promise<any[]>;
+  getAssignableStaff(): Promise<User[]>;
   
   // Support Ticket Message operations
   createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any>;
@@ -2412,6 +2413,22 @@ export class DatabaseStorage implements IStorage {
       .from(supportTickets)
       .where(eq(supportTickets.assignedTo, vendorId))
       .orderBy(sql`${supportTickets.createdAt} DESC`);
+  }
+
+  async getAssignableStaff(): Promise<User[]> {
+    // Get both verified vendors and staff members
+    const assignableUsers = await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          eq(users.vendorStatus, 'verified'),
+          eq(users.role, 'staff')
+        )
+      )
+      .orderBy(users.username);
+    
+    return assignableUsers;
   }
 
   // Support Ticket Message operations
