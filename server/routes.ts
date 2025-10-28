@@ -964,11 +964,11 @@ export function registerRoutes(app: Express): Server {
   });
 
   // ========================================
-  // STAFF MANAGEMENT ROUTES (Super Admin Only)
+  // STAFF MANAGEMENT ROUTES (Admin Only)
   // ========================================
   
   // Create new staff user
-  app.post('/api/staff/create', isSuperAdmin, async (req: any, res) => {
+  app.post('/api/staff/create', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { username, email, password, staffRole, firstName, lastName } = req.body;
       
@@ -1035,7 +1035,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Get all staff users
-  app.get('/api/staff', isSuperAdmin, async (req: any, res) => {
+  app.get('/api/staff', isAdminAuthenticated, async (req: any, res) => {
     try {
       const staff = await storage.getAllStaff();
       const sanitized = staff.map(s => ({ ...s, password: undefined }));
@@ -1047,7 +1047,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Update staff role
-  app.put('/api/staff/:id/role', isSuperAdmin, async (req: any, res) => {
+  app.put('/api/staff/:id/role', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { staffRole } = req.body;
@@ -1098,7 +1098,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Delete staff user
-  app.delete('/api/staff/:id', isSuperAdmin, async (req: any, res) => {
+  app.delete('/api/staff/:id', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const staff = await storage.getStaffById(id);
@@ -1146,7 +1146,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Get staff audit logs
-  app.get('/api/staff/audit-logs', isSuperAdmin, async (req: any, res) => {
+  app.get('/api/staff/audit-logs', isAdminAuthenticated, async (req: any, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit) : 100;
       const logs = await storage.getStaffAuditLogs(limit);
@@ -1158,7 +1158,7 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Get audit logs for a specific staff member
-  app.get('/api/staff/:id/audit-logs', isSuperAdmin, async (req: any, res) => {
+  app.get('/api/staff/:id/audit-logs', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit) : 100;
