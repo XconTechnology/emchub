@@ -36,7 +36,7 @@ export default function StaffLogin() {
             title: "Login successful",
             description: `Welcome, ${data.user.username}!`,
           });
-          navigate("/staff-dashboard");
+          navigate("/dashboard");
         } else {
           toast({
             title: "Access denied",
