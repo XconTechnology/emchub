@@ -48,12 +48,13 @@ The platform utilizes a React and TypeScript frontend built on a component-based
     - **Staff Features**:
         - **Staff Dashboard** at /staff-dashboard showing only tickets assigned to logged-in staff member
         - View assigned tickets with subject, priority, status, and submitter information
-        - **Click on ticket to open chat interface** at /dashboard/vendor-support-tickets/:id
-        - **Chat directly with ticket submitter (user)** in real-time
+        - **Click on ticket to open chat in popup/modal dialog** (stays within staff dashboard)
+        - **Chat directly with ticket submitter (user)** in real-time within modal
         - Full conversation thread with message history
         - Auto-refreshing messages (polls every 3 seconds)
         - Send and receive messages in ticket thread
         - View original issue details and ticket metadata
+        - Modal interface keeps staff on dashboard while chatting
     - **Messaging System**:
         - **Three-way communication**: Admin, Staff, and User can all message within ticket threads
         - Message history with sender information and timestamps
