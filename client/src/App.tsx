@@ -21,6 +21,7 @@ import AboutUs from "@/pages/about-us";
 import Explore from "@/pages/explore";
 import AdminRouter from "@/pages/admin/admin-router";
 import UserDashboardRouter from "@/pages/user-dashboard/user-dashboard-router";
+import StaffLogin from "@/pages/staff-login";
 import AccessDenied from "@/pages/access-denied";
 import NotFound from "@/pages/not-found";
 import ForgotPassword from "@/pages/forgot-password";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
+      <Route path="/staff-login" component={StaffLogin} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/directory" component={DirectoryPage} />
