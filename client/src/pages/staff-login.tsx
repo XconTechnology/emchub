@@ -1,15 +1,12 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Shield } from "lucide-react";
 
 export default function StaffLogin() {
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -36,13 +33,16 @@ export default function StaffLogin() {
             title: "Login successful",
             description: `Welcome, ${data.user.username}!`,
           });
-          navigate("/dashboard");
+          // Force full page reload to dashboard
+          window.location.href = "/dashboard";
         } else {
           toast({
             title: "Access denied",
             description: "This login page is for staff members only.",
             variant: "destructive",
           });
+          // Logout non-staff users
+          await fetch("/api/logout", { method: "POST", credentials: "include" });
         }
       } else {
         const error = await response.json();
@@ -53,6 +53,7 @@ export default function StaffLogin() {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Error",
         description: "An error occurred during login",
