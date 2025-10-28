@@ -237,6 +237,37 @@ export interface IStorage {
   createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any>;
   getTicketMessages(ticketId: string): Promise<any[]>;
   
+  // Staff Management operations
+  createStaffUser(data: {
+    username: string;
+    email: string;
+    password: string;
+    staffRole: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<User>;
+  getAllStaff(): Promise<User[]>;
+  getStaffById(id: string): Promise<User | undefined>;
+  updateStaffRole(id: string, staffRole: string): Promise<User>;
+  deleteStaffUser(id: string): Promise<void>;
+  
+  // Staff Audit Log operations
+  createStaffAuditLog(data: {
+    staffId: string;
+    staffUsername: string;
+    staffRole: string;
+    action: string;
+    entityType: string;
+    entityId?: string;
+    entityTitle?: string;
+    description: string;
+    metadata?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<any>;
+  getStaffAuditLogs(limit?: number): Promise<any[]>;
+  getStaffUserAuditLogs(staffId: string, limit?: number): Promise<any[]>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -2418,6 +2449,96 @@ export class DatabaseStorage implements IStorage {
       .orderBy(supportTicketMessages.createdAt);
     
     return messages;
+  }
+  
+  // Staff Management operations
+  async createStaffUser(data: {
+    username: string;
+    email: string;
+    password: string;
+    staffRole: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        role: 'staff',
+        staffRole: data.staffRole,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      })
+      .returning();
+    return user;
+  }
+  
+  async getAllStaff(): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, 'staff')).orderBy(users.createdAt);
+  }
+  
+  async getStaffById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  
+  async updateStaffRole(id: string, staffRole: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ staffRole, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async deleteStaffUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+  
+  // Staff Audit Log operations
+  async createStaffAuditLog(data: {
+    staffId: string;
+    staffUsername: string;
+    staffRole: string;
+    action: string;
+    entityType: string;
+    entityId?: string;
+    entityTitle?: string;
+    description: string;
+    metadata?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<any> {
+    const { staffAuditLogs } = await import("@shared/schema");
+    
+    const [log] = await db
+      .insert(staffAuditLogs)
+      .values(data)
+      .returning();
+    return log;
+  }
+  
+  async getStaffAuditLogs(limit: number = 100): Promise<any[]> {
+    const { staffAuditLogs } = await import("@shared/schema");
+    
+    return db
+      .select()
+      .from(staffAuditLogs)
+      .orderBy(sql`${staffAuditLogs.createdAt} DESC`)
+      .limit(limit);
+  }
+  
+  async getStaffUserAuditLogs(staffId: string, limit: number = 100): Promise<any[]> {
+    const { staffAuditLogs } = await import("@shared/schema");
+    
+    return db
+      .select()
+      .from(staffAuditLogs)
+      .where(eq(staffAuditLogs.staffId, staffId))
+      .orderBy(sql`${staffAuditLogs.createdAt} DESC`)
+      .limit(limit);
   }
 }
 

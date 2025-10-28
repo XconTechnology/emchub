@@ -1,0 +1,131 @@
+// Role-Based Access Control (RBAC) for Staff
+
+import type { Request, Response, NextFunction } from 'express';
+
+// Define staff roles and their permissions
+export const StaffRoles = {
+  SUPPORT: 'support',
+  SALES: 'sales',
+  MEDIATOR: 'mediator',
+  LISTINGS: 'listings',
+  FULL_ADMIN: 'full_admin',
+} as const;
+
+// Define resource types that staff can access
+export const Resources = {
+  SUPPORT_TICKETS: 'support_tickets',
+  REFUNDS: 'refunds',
+  DISPUTES: 'disputes',
+  LISTINGS: 'listings',
+  USERS: 'users',
+  COUPONS: 'coupons',
+  VENDORS: 'vendors',
+  ANALYTICS: 'analytics',
+  ACTIVITY_LOGS: 'activity_logs',
+  CATEGORIES: 'categories',
+} as const;
+
+// Define which resources each staff role can access
+export const RolePermissions: Record<string, string[]> = {
+  [StaffRoles.SUPPORT]: [Resources.SUPPORT_TICKETS],
+  [StaffRoles.SALES]: [Resources.REFUNDS],
+  [StaffRoles.MEDIATOR]: [Resources.DISPUTES],
+  [StaffRoles.LISTINGS]: [Resources.LISTINGS, Resources.CATEGORIES],
+  [StaffRoles.FULL_ADMIN]: [
+    Resources.SUPPORT_TICKETS,
+    Resources.REFUNDS,
+    Resources.DISPUTES,
+    Resources.LISTINGS,
+    Resources.USERS,
+    Resources.COUPONS,
+    Resources.VENDORS,
+    Resources.ANALYTICS,
+    Resources.ACTIVITY_LOGS,
+    Resources.CATEGORIES,
+  ],
+};
+
+// Check if a staff role has access to a resource
+export function hasAccess(staffRole: string | null | undefined, resource: string): boolean {
+  if (!staffRole) return false;
+  const permissions = RolePermissions[staffRole];
+  return permissions ? permissions.includes(resource) : false;
+}
+
+// Middleware to check if user is staff with proper authentication
+export function isStaffAuthenticated(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user;
+  
+  if (!user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  if (user.role !== 'staff') {
+    return res.status(403).json({ message: "Staff access required" });
+  }
+  
+  if (!user.staffRole) {
+    return res.status(403).json({ message: "Invalid staff role" });
+  }
+  
+  next();
+}
+
+// Middleware factory to check if staff has access to a specific resource
+export function requireStaffAccess(resource: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    
+    if (!user || user.role !== 'staff') {
+      return res.status(403).json({ message: "Staff access required" });
+    }
+    
+    if (!hasAccess(user.staffRole, resource)) {
+      return res.status(403).json({ 
+        message: `Access denied. Your role (${user.staffRole}) does not have permission to access this resource.` 
+      });
+    }
+    
+    next();
+  };
+}
+
+// Middleware to check if user is Super Admin (can manage staff)
+export function isSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  const user = (req as any).user;
+  const isSessionAdmin = (req as any).session?.adminAuth === true;
+  
+  // Super admin via session or via user account
+  if (isSessionAdmin || user?.role === 'super-admin') {
+    return next();
+  }
+  
+  return res.status(403).json({ message: "Super Admin access required" });
+}
+
+// Get accessible menu items for a staff role
+export function getAccessibleMenuItems(staffRole: string | null | undefined): string[] {
+  if (!staffRole) return [];
+  
+  const menuMap: Record<string, string[]> = {
+    [StaffRoles.SUPPORT]: ['support-tickets'],
+    [StaffRoles.SALES]: ['refunds', 'transactions'],
+    [StaffRoles.MEDIATOR]: ['disputes'],
+    [StaffRoles.LISTINGS]: ['listings-approval', 'categories'],
+    [StaffRoles.FULL_ADMIN]: [
+      'support-tickets',
+      'refunds',
+      'transactions',
+      'disputes',
+      'listings-approval',
+      'users',
+      'vendors',
+      'coupons',
+      'analytics',
+      'activity-logs',
+      'categories',
+    ],
+  };
+  
+  return menuMap[staffRole] || [];
+}
