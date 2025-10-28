@@ -3452,12 +3452,12 @@ export function registerRoutes(app: Express): Server {
 
   // ==================== Support Ticket Routes ====================
 
-  // Get assignable staff (verified vendors + staff members) for ticket assignment
+  // Get assignable staff (staff members only) for ticket assignment
   app.get("/api/admin/assignable-staff", isAdminAuthenticated, async (req, res) => {
     try {
-      // Get verified vendors and staff members
-      const assignableUsers = await storage.getAssignableStaff();
-      res.json(assignableUsers);
+      // Get only staff members for ticket assignment
+      const staffUsers = await storage.getAssignableStaff();
+      res.json(staffUsers);
     } catch (error) {
       console.error("Error getting assignable staff:", error);
       res.status(500).json({ error: "Failed to get assignable staff" });
@@ -3587,20 +3587,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get vendor's assigned tickets (also accessible to staff members)
+  // Get staff's assigned tickets (staff members only)
   app.get("/api/support-tickets/vendor/assigned", isAuthenticated, async (req, res) => {
     try {
       const user = req.user;
       
-      // Check if user is a verified vendor OR staff member
-      if (user.vendorStatus !== 'verified' && user.role !== 'staff') {
-        return res.status(403).json({ error: "Only verified vendors and staff members can access this" });
+      // Check if user is a staff member
+      if (user.role !== 'staff') {
+        return res.status(403).json({ error: "Only staff members can access this" });
       }
 
       const tickets = await storage.getVendorAssignedTickets(user.id);
       res.json(tickets);
     } catch (error) {
-      console.error("Error getting vendor assigned tickets:", error);
+      console.error("Error getting staff assigned tickets:", error);
       res.status(500).json({ error: "Failed to get assigned tickets" });
     }
   });

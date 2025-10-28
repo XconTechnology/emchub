@@ -27,25 +27,25 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
 - **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
 - **Order-Based Chat**: "Chat with Vendor" button on each order in My Purchases page allows customers to message vendors about specific orders, automatically creating conversations with product context.
-- **C2Admin Support and Reporting System**: Complete support ticket system with real-time messaging for user inquiries with staff and vendor-assisted support:
+- **C2Admin Support and Reporting System**: Complete support ticket system with real-time messaging for user inquiries with staff-assisted support:
     - **User Features**:
         - "Contact Support" button in user dashboard and footer
         - Submit support tickets with subject, message, and priority (low, normal, high, urgent)
         - View own support ticket history with status updates
         - Track ticket status: open, pending, closed
-        - Chat directly with assigned staff members or vendors within ticket view
+        - Chat directly with assigned staff members within ticket view
     - **Admin Features**:
         - Admin Support Tickets dashboard to view all user support tickets
         - Search and filter by status and priority
-        - **Assign tickets to staff members OR verified vendors** with required initial message
-        - Message dialog when assigning: admin writes message to explain issue to assignee
+        - **Assign tickets to staff members** with required initial message
+        - Message dialog when assigning: admin writes message to explain issue to staff
         - View detailed ticket information in popup with user details
         - Quick Message button next to View button for assigned tickets (direct messaging without opening full details)
         - Dedicated quick message dialog with conversation history and real-time updates
         - Update ticket status (open → pending → closed)
         - Change ticket priority
         - Console logging for new tickets (ready for email notification integration)
-    - **Staff Features** (NEW):
+    - **Staff Features**:
         - **Staff Dashboard** at /staff-dashboard showing only tickets assigned to logged-in staff member
         - View assigned tickets with subject, priority, status, and submitter information
         - **Click on ticket to open chat interface** at /dashboard/vendor-support-tickets/:id
@@ -54,31 +54,23 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Auto-refreshing messages (polls every 3 seconds)
         - Send and receive messages in ticket thread
         - View original issue details and ticket metadata
-        - Same chat interface as vendors (shared route)
-    - **Vendor Features**:
-        - "Assigned Tickets" page in vendor dashboard to view tickets assigned by admins
-        - Real-time ticket chat interface for communicating with admins and users
-        - Full conversation thread with message history
-        - Auto-refreshing messages (polls every 3 seconds)
-        - Send and receive messages in ticket thread
-        - View original issue details and ticket metadata
     - **Messaging System**:
-        - **Three-way communication**: Admin, Staff/Vendor, and User can all message within ticket threads
+        - **Three-way communication**: Admin, Staff, and User can all message within ticket threads
         - Message history with sender information and timestamps
         - Visual distinction for admin messages (badge)
         - Real-time message display with auto-scroll
         - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
         - Disabled messaging for closed tickets
     - **Database Schema**:
-        - `support_tickets` table: id, userId, subject, message, status, priority, assignedTo (can be staff or vendor), createdAt, updatedAt
+        - `support_tickets` table: id, userId, subject, message, status, priority, assignedTo (staff member), createdAt, updatedAt
         - `support_ticket_messages` table: id, ticketId, senderId, message, createdAt
     - **Technical Implementation**:
         - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, **getAssignableStaff**, createTicketMessage, getTicketMessages
         - API endpoints: 
             - POST /api/support-tickets, GET /api/support-tickets, GET /api/support-tickets/my-tickets
             - PUT endpoints for status/assign/priority
-            - **GET /api/admin/assignable-staff** (returns both verified vendors AND staff members for assignment)
-            - **GET /api/support-tickets/vendor/assigned** (accessible by both verified vendors AND staff members)
+            - **GET /api/admin/assignable-staff** (returns staff members only for assignment)
+            - **GET /api/support-tickets/vendor/assigned** (accessible by staff members only)
             - POST /api/support-tickets/:ticketId/messages (create message)
             - GET /api/support-tickets/:ticketId/messages (get all messages for ticket)
         - Frontend components: 
@@ -86,10 +78,9 @@ The platform utilizes a React and TypeScript frontend built on a component-based
             - user-support-tickets page
             - admin-support-tickets page with detailed view dialog and assign message dialog
             - **staff-dashboard page** (shows assigned tickets for staff)
-            - vendor-support-tickets page (list of assigned tickets for vendors)
-            - vendor-support-ticket-chat page (full chat interface shared by both staff and vendors)
+            - vendor-support-ticket-chat page (chat interface for staff)
         - Real-time updates via TanStack Query with cache invalidation and polling
-        - **Permission-based access**: admins, ticket owners, assigned staff members, and assigned vendors can message
+        - **Permission-based access**: admins, ticket owners, and assigned staff members can message
         - Admin-only access for ticket management via isAdminAuthenticated middleware
 
 - **Staff Account System with Role-Based Access Control (RBAC)**:

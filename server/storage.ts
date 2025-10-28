@@ -2416,19 +2416,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAssignableStaff(): Promise<User[]> {
-    // Get both verified vendors and staff members
-    const assignableUsers = await db
+    // Get only staff members for ticket assignment
+    const staffUsers = await db
       .select()
       .from(users)
-      .where(
-        or(
-          eq(users.vendorStatus, 'verified'),
-          eq(users.role, 'staff')
-        )
-      )
+      .where(eq(users.role, 'staff'))
       .orderBy(users.username);
     
-    return assignableUsers;
+    return staffUsers;
   }
 
   // Support Ticket Message operations
