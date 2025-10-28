@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Ticket, AlertCircle, LogOut, Send, User as UserIcon, Clock } from "lucide-react";
+import { Loader2, Ticket, AlertCircle, LogOut, Send, User as UserIcon, Clock, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -51,7 +51,9 @@ export default function StaffDashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [quickMessageTicket, setQuickMessageTicket] = useState<SupportTicket | null>(null);
   const [message, setMessage] = useState("");
+  const [quickMessage, setQuickMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useQuery<User>({
@@ -77,7 +79,7 @@ export default function StaffDashboard() {
     refetchInterval: selectedTicket ? 3000 : false,
   });
 
-  // Send message mutation
+  // Send message mutation for full chat
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
       const response = await apiRequest("POST", `/api/support-tickets/${selectedTicket?.id}/messages`, { 
@@ -103,6 +105,32 @@ export default function StaffDashboard() {
     },
   });
 
+  // Send quick message mutation
+  const sendQuickMessageMutation = useMutation({
+    mutationFn: async ({ ticketId, messageText }: { ticketId: string; messageText: string }) => {
+      const response = await apiRequest("POST", `/api/support-tickets/${ticketId}/messages`, { 
+        message: messageText 
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
+      setQuickMessage("");
+      setQuickMessageTicket(null);
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent to the user.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (selectedTicket) {
@@ -113,6 +141,14 @@ export default function StaffDashboard() {
   const handleSendMessage = () => {
     if (!message.trim()) return;
     sendMessageMutation.mutate(message);
+  };
+
+  const handleSendQuickMessage = () => {
+    if (!quickMessage.trim() || !quickMessageTicket) return;
+    sendQuickMessageMutation.mutate({
+      ticketId: quickMessageTicket.id,
+      messageText: quickMessage,
+    });
   };
 
   const handleLogout = async () => {
@@ -253,8 +289,7 @@ export default function StaffDashboard() {
                   {assignedTickets.map((ticket) => (
                     <Card
                       key={ticket.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedTicket(ticket)}
+                      className="hover:shadow-md transition-shadow"
                       data-testid={`card-ticket-${ticket.id}`}
                     >
                       <CardContent className="p-4">
@@ -283,17 +318,31 @@ export default function StaffDashboard() {
                               Created: {new Date(ticket.createdAt).toLocaleString()}
                             </p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTicket(ticket);
-                            }}
-                            data-testid={`button-view-${ticket.id}`}
-                          >
-                            View Chat
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQuickMessageTicket(ticket);
+                              }}
+                              data-testid={`button-message-${ticket.id}`}
+                            >
+                              <MessageSquare className="w-4 h-4 mr-1" />
+                              Message
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTicket(ticket);
+                              }}
+                              data-testid={`button-view-${ticket.id}`}
+                            >
+                              View Chat
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -315,7 +364,66 @@ export default function StaffDashboard() {
         </div>
       </div>
 
-      {/* Chat Dialog Modal */}
+      {/* Quick Message Dialog */}
+      <Dialog open={!!quickMessageTicket} onOpenChange={(open) => !open && setQuickMessageTicket(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle data-testid="dialog-title-quick-message">Send Message to User</DialogTitle>
+          </DialogHeader>
+          {quickMessageTicket && (
+            <div className="space-y-4">
+              <div className="bg-muted p-3 rounded-lg">
+                <p className="text-sm font-semibold">{quickMessageTicket.subject}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  To: {quickMessageTicket.user?.username} ({quickMessageTicket.user?.email})
+                </p>
+              </div>
+              <Textarea
+                value={quickMessage}
+                onChange={(e) => setQuickMessage(e.target.value)}
+                placeholder="Type your message to the user..."
+                rows={4}
+                disabled={quickMessageTicket.status === 'closed' || sendQuickMessageMutation.isPending}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendQuickMessage();
+                  }
+                }}
+                data-testid="textarea-quick-message"
+                className="resize-none"
+              />
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">
+                  {quickMessageTicket.status === 'closed' 
+                    ? 'This ticket is closed. Messages cannot be sent.'
+                    : 'Press Enter to send, Shift+Enter for new line'
+                  }
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setQuickMessageTicket(null)}
+                    data-testid="button-cancel-quick-message"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSendQuickMessage}
+                    disabled={!quickMessage.trim() || quickMessageTicket.status === 'closed' || sendQuickMessageMutation.isPending}
+                    data-testid="button-send-quick-message"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {sendQuickMessageMutation.isPending ? "Sending..." : "Send"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Full Chat Dialog Modal */}
       <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

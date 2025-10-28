@@ -48,6 +48,9 @@ The platform utilizes a React and TypeScript frontend built on a component-based
     - **Staff Features**:
         - **Staff Dashboard** at /staff-dashboard showing only tickets assigned to logged-in staff member
         - View assigned tickets with subject, priority, status, and submitter information
+        - **Two messaging options for each ticket**:
+            - **"Message" button**: Quick message popup to send message directly to user without opening full chat
+            - **"View Chat" button**: Opens full chat dialog with conversation history and ticket details
         - **Click on ticket to open chat in popup/modal dialog** (stays within staff dashboard)
         - **Chat directly with ticket submitter (user)** in real-time within modal
         - Full conversation thread with message history
