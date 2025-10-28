@@ -20,10 +20,11 @@ export default function StaffLogin() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("/api/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
 
       if (response.ok) {
