@@ -93,14 +93,14 @@ export function requireStaffAccess(resource: string) {
 // Middleware to check if user is Super Admin (can manage staff)
 export function isSuperAdmin(req: Request, res: Response, next: NextFunction) {
   const user = (req as any).user;
-  const isSessionAdmin = (req as any).session?.adminAuth === true;
   
-  // Super admin via session or via user account
-  if (isSessionAdmin || user?.role === 'super-admin') {
+  // Only allow actual super-admin users, NOT regular admin session
+  // Session-based admin (admin/admin123) is NOT a super admin
+  if (user?.role === 'super-admin') {
     return next();
   }
   
-  return res.status(403).json({ message: "Super Admin access required" });
+  return res.status(403).json({ message: "Super Admin access required. Only Super Admin users can access this resource." });
 }
 
 // Get accessible menu items for a staff role

@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, hashPassword } from "./auth";
+import { isSuperAdmin, isStaffAuthenticated, requireStaffAccess, Resources, StaffRoles } from "./rbac";
 import { 
   insertBusinessListingSchema, 
   insertListingSchema,
@@ -959,6 +960,213 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error resetting password:", error);
       res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // ========================================
+  // STAFF MANAGEMENT ROUTES (Super Admin Only)
+  // ========================================
+  
+  // Create new staff user
+  app.post('/api/staff/create', isSuperAdmin, async (req: any, res) => {
+    try {
+      const { username, email, password, staffRole, firstName, lastName } = req.body;
+      
+      // Validate required fields
+      if (!username || !email || !password || !staffRole) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Validate staff role
+      const validRoles = Object.values(StaffRoles);
+      if (!validRoles.includes(staffRole)) {
+        return res.status(400).json({ message: "Invalid staff role" });
+      }
+      
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+      
+      // Create staff user
+      const staff = await storage.createStaffUser({
+        username,
+        email,
+        password: hashedPassword,
+        staffRole,
+        firstName,
+        lastName,
+      });
+      
+      // Get admin info for audit log
+      let adminId: string;
+      let adminUsername: string;
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else {
+        // Session admin - use system_admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : 'system';
+        adminUsername = adminUsers.length > 0 ? adminUsers[0].username : 'admin';
+      }
+      
+      // Log the staff creation
+      await storage.createStaffAuditLog({
+        staffId: adminId,
+        staffUsername: adminUsername,
+        staffRole: 'super_admin',
+        action: 'create',
+        entityType: 'staff',
+        entityId: staff.id,
+        entityTitle: staff.username,
+        description: `Created staff user: ${staff.username} with role: ${staff.staffRole}`,
+        metadata: JSON.stringify({ staffRole: staff.staffRole }),
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      
+      res.json({ ...staff, password: undefined });
+    } catch (error: any) {
+      console.error("Error creating staff:", error);
+      res.status(500).json({ message: "Failed to create staff user", error: error.message });
+    }
+  });
+  
+  // Get all staff users
+  app.get('/api/staff', isSuperAdmin, async (req: any, res) => {
+    try {
+      const staff = await storage.getAllStaff();
+      const sanitized = staff.map(s => ({ ...s, password: undefined }));
+      res.json(sanitized);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      res.status(500).json({ message: "Failed to fetch staff" });
+    }
+  });
+  
+  // Update staff role
+  app.put('/api/staff/:id/role', isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { staffRole } = req.body;
+      
+      // Validate staff role
+      const validRoles = Object.values(StaffRoles);
+      if (!validRoles.includes(staffRole)) {
+        return res.status(400).json({ message: "Invalid staff role" });
+      }
+      
+      const updated = await storage.updateStaffRole(id, staffRole);
+      
+      // Get admin info for audit log
+      let adminId: string;
+      let adminUsername: string;
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : 'system';
+        adminUsername = adminUsers.length > 0 ? adminUsers[0].username : 'admin';
+      }
+      
+      // Log the role update
+      await storage.createStaffAuditLog({
+        staffId: adminId,
+        staffUsername: adminUsername,
+        staffRole: 'super_admin',
+        action: 'update',
+        entityType: 'staff',
+        entityId: id,
+        entityTitle: updated.username,
+        description: `Updated staff role for ${updated.username} to: ${staffRole}`,
+        metadata: JSON.stringify({ newRole: staffRole }),
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      
+      res.json({ ...updated, password: undefined });
+    } catch (error) {
+      console.error("Error updating staff role:", error);
+      res.status(500).json({ message: "Failed to update staff role" });
+    }
+  });
+  
+  // Delete staff user
+  app.delete('/api/staff/:id', isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const staff = await storage.getStaffById(id);
+      
+      if (!staff) {
+        return res.status(404).json({ message: "Staff user not found" });
+      }
+      
+      await storage.deleteStaffUser(id);
+      
+      // Get admin info for audit log
+      let adminId: string;
+      let adminUsername: string;
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : 'system';
+        adminUsername = adminUsers.length > 0 ? adminUsers[0].username : 'admin';
+      }
+      
+      // Log the deletion
+      await storage.createStaffAuditLog({
+        staffId: adminId,
+        staffUsername: adminUsername,
+        staffRole: 'super_admin',
+        action: 'delete',
+        entityType: 'staff',
+        entityId: id,
+        entityTitle: staff.username,
+        description: `Deleted staff user: ${staff.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+      
+      res.json({ message: "Staff user deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+      res.status(500).json({ message: "Failed to delete staff user" });
+    }
+  });
+  
+  // Get staff audit logs
+  app.get('/api/staff/audit-logs', isSuperAdmin, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+      const logs = await storage.getStaffAuditLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+  
+  // Get audit logs for a specific staff member
+  app.get('/api/staff/:id/audit-logs', isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+      const logs = await storage.getStaffUserAuditLogs(id, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching staff audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch staff audit logs" });
     }
   });
 
