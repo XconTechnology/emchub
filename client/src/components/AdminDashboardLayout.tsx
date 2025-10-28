@@ -15,6 +15,7 @@ import {
   BarChart3,
   CreditCard,
   LifeBuoy,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -110,6 +111,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       icon: Users,
     },
     {
+      title: "Staff",
+      url: "/admin/staff",
+      icon: UserCog,
+    },
+    {
       title: "Recycle Bin",
       url: "/admin/recycle-bin",
       icon: Trash2,
@@ -188,6 +194,8 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 {location === "/admin/listings" && "All Listings"}
                 {location === "/admin/listings/new" && "Add New Listing"}
                 {location === "/admin/users" && "Users"}
+                {location === "/admin/staff" && "Staff Management"}
+                {location === "/admin/audit-logs" && "Staff Audit Logs"}
                 {location === "/admin/recycle-bin" && "Recycle Bin"}
               </h1>
             </div>

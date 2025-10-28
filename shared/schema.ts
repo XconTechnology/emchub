@@ -58,6 +58,28 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Staff account creation schema - extends insertUserSchema with required fields
+export const staffInsertSchema = insertUserSchema.extend({
+  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.literal("staff"),
+  staffRole: z.enum(["support", "sales", "mediator", "listings", "full_admin"]),
+}).omit({
+  vendorStatus: true,
+  timeDollarBalance: true,
+  tdCashSplitPercentage: true,
+});
+
+export type InsertStaff = z.infer<typeof staffInsertSchema>;
+
+// Staff role update schema
+export const staffRoleUpdateSchema = z.object({
+  staffRole: z.enum(["support", "sales", "mediator", "listings", "full_admin"]),
+});
+
+export type StaffRoleUpdate = z.infer<typeof staffRoleUpdateSchema>;
+
 // Vendor Requests table - for tracking vendor verification applications
 export const vendorRequests = pgTable("vendor_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
