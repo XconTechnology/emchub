@@ -27,13 +27,14 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Vendor Order Management**: Vendors can view, filter, and manage orders for their products, including accepting or rejecting pending orders.
 - **B2C Messaging System**: Real-time WebSocket-integrated messaging for vendor-customer communication, linking conversations to specific products and supporting multi-role users with unread message counts.
 - **Order-Based Chat**: "Chat with Vendor" button on each order in My Purchases page allows customers to message vendors about specific orders, automatically creating conversations with product context.
-- **C2Admin Support and Reporting System**: Complete support ticket system with real-time messaging for user inquiries with staff-assisted support:
+- **C2Admin Support and Reporting System**: Complete support ticket system with integrated B2C messaging for staff-user communication:
     - **User Features**:
         - "Contact Support" button in user dashboard and footer
         - Submit support tickets with subject, message, and priority (low, normal, high, urgent)
         - View own support ticket history with status updates
         - Track ticket status: open, pending, closed
-        - Chat directly with assigned staff members within ticket view
+        - **Receive staff messages directly in Messages tab** (labeled "Support")
+        - Reply to staff through standard messaging interface at /dashboard/messages
     - **Admin Features**:
         - Admin Support Tickets dashboard to view all user support tickets
         - Search and filter by status and priority
@@ -44,22 +45,28 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Dedicated quick message dialog with conversation history and real-time updates
         - Update ticket status (open → pending → closed)
         - Change ticket priority
+        - **View-only access** to all support conversations for oversight
         - Console logging for new tickets (ready for email notification integration)
     - **Staff Features**:
         - **Staff Dashboard** at /staff-dashboard showing only tickets assigned to logged-in staff member
         - View assigned tickets with subject, priority, status, and submitter information
         - **Two messaging options for each ticket**:
-            - **"Message" button**: Quick message popup to send message directly to user without opening full chat
+            - **"Message" button**: Quick message popup to send message directly to user's Messages tab
             - **"View Chat" button**: Opens full chat dialog with conversation history and ticket details
         - **Click on ticket to open chat in popup/modal dialog** (stays within staff dashboard)
-        - **Chat directly with ticket submitter (user)** in real-time within modal
+        - **Messages sent by staff automatically appear in user's Messages tab** with "Support" label
         - Full conversation thread with message history
         - Auto-refreshing messages (polls every 3 seconds)
         - Send and receive messages in ticket thread
         - View original issue details and ticket metadata
         - Modal interface keeps staff on dashboard while chatting
-    - **Messaging System**:
-        - **Three-way communication**: Admin, Staff, and User can all message within ticket threads
+    - **Integrated Messaging System**:
+        - **Support messages integrated with B2C messaging system**:
+            - Staff messages → User's Messages tab (labeled "Support")
+            - User replies → Staff's Messages tab and support ticket thread
+            - Conversation automatically created with productTitle: "Support"
+        - **Admin oversight**: All messages stored in support_ticket_messages for admin review
+        - **Three-way visibility**: Admin can view, Staff and User can chat
         - Message history with sender information and timestamps
         - Visual distinction for admin messages (badge)
         - Real-time message display with auto-scroll
@@ -67,24 +74,26 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Disabled messaging for closed tickets
     - **Database Schema**:
         - `support_tickets` table: id, userId, subject, message, status, priority, assignedTo (staff member), createdAt, updatedAt
-        - `support_ticket_messages` table: id, ticketId, senderId, message, createdAt
+        - `support_ticket_messages` table: id, ticketId, senderId, message, createdAt (for admin oversight)
+        - `conversations` table: Support conversations with productTitle="Support"
+        - `messages` table: Actual user-staff messages appear here
     - **Technical Implementation**:
-        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, **getAssignableStaff**, createTicketMessage, getTicketMessages
+        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, **getAssignableStaff**, createTicketMessage (dual-writes to both systems), getTicketMessages
         - API endpoints: 
             - POST /api/support-tickets, GET /api/support-tickets, GET /api/support-tickets/my-tickets
             - PUT endpoints for status/assign/priority
             - **GET /api/admin/assignable-staff** (returns staff members only for assignment)
             - **GET /api/support-tickets/vendor/assigned** (accessible by staff members only)
-            - POST /api/support-tickets/:ticketId/messages (create message)
+            - POST /api/support-tickets/:ticketId/messages (creates both support ticket message and B2C message)
             - GET /api/support-tickets/:ticketId/messages (get all messages for ticket)
         - Frontend components: 
             - ContactSupportForm (modal)
             - user-support-tickets page
             - admin-support-tickets page with detailed view dialog and assign message dialog
-            - **staff-dashboard page** (shows assigned tickets for staff)
-            - vendor-support-ticket-chat page (chat interface for staff)
+            - **staff-dashboard page** (shows assigned tickets for staff with quick message and full chat modals)
+            - User sees support conversations at /dashboard/messages with "Support" label
         - Real-time updates via TanStack Query with cache invalidation and polling
-        - **Permission-based access**: admins, ticket owners, and assigned staff members can message
+        - **Permission-based access**: admins (view-only), staff and users (bi-directional messaging)
         - Admin-only access for ticket management via isAdminAuthenticated middleware
 
 - **Staff Account System with Role-Based Access Control (RBAC)**:
