@@ -55,10 +55,7 @@ export default function AdminSupportTickets() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [assignDialog, setAssignDialog] = useState<{ ticket: SupportTicket; vendorId: string } | null>(null);
   const [assignMessage, setAssignMessage] = useState("");
-  const [newMessage, setNewMessage] = useState("");
   const [messageDialog, setMessageDialog] = useState<SupportTicket | null>(null);
-  const [quickMessage, setQuickMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const quickMessagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all tickets
@@ -76,22 +73,7 @@ export default function AdminSupportTickets() {
     queryKey: ['/api/admin/users'],
   });
 
-  // Fetch ticket messages when a ticket is selected
-  const { data: messages = [] } = useQuery<TicketMessage[]>({
-    queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'],
-    queryFn: async () => {
-      if (!selectedTicket?.id) return [];
-      const response = await fetch(`/api/support-tickets/${selectedTicket.id}/messages`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch messages');
-      return response.json();
-    },
-    enabled: !!selectedTicket?.id,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
-  });
-
-  // Fetch messages for quick message dialog
+  // Fetch messages for view-only quick message dialog
   const { data: quickMessages = [] } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', messageDialog?.id, 'messages'],
     queryFn: async () => {
@@ -105,11 +87,6 @@ export default function AdminSupportTickets() {
     enabled: !!messageDialog?.id,
     refetchInterval: 3000, // Poll every 3 seconds for new messages
   });
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   // Auto-scroll to bottom when new quick messages arrive
   useEffect(() => {
@@ -201,73 +178,6 @@ export default function AdminSupportTickets() {
     },
   });
 
-  // Send message mutation for admin messaging in ticket thread
-  const sendMessageMutation = useMutation({
-    mutationFn: async (messageText: string) => {
-      if (!selectedTicket?.id) throw new Error("No ticket selected");
-      const response = await apiRequest("POST", `/api/support-tickets/${selectedTicket.id}/messages`, { 
-        message: messageText 
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
-      setNewMessage("");
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent to the vendor.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Send quick message mutation
-  const sendQuickMessageMutation = useMutation({
-    mutationFn: async (messageText: string) => {
-      if (!messageDialog?.id) throw new Error("No ticket selected");
-      const response = await apiRequest("POST", `/api/support-tickets/${messageDialog.id}/messages`, { 
-        message: messageText 
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', messageDialog?.id, 'messages'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets/vendor/assigned'] });
-      setQuickMessage("");
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent to the vendor.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle sending admin message
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    sendMessageMutation.mutate(newMessage);
-  };
-
-  // Handle sending quick message
-  const handleSendQuickMessage = () => {
-    if (!quickMessage.trim()) return;
-    sendQuickMessageMutation.mutate(quickMessage);
-  };
 
   // Handle ticket assignment with message
   const handleAssignWithMessage = async () => {
@@ -547,13 +457,13 @@ export default function AdminSupportTickets() {
                           </Button>
                           {ticket.assignedTo && (
                             <Button
-                              variant="default"
+                              variant="outline"
                               size="sm"
                               onClick={() => setMessageDialog(ticket)}
-                              data-testid={`button-message-${ticket.id}`}
+                              data-testid={`button-view-messages-${ticket.id}`}
                             >
                               <MessageSquare className="w-4 h-4 mr-1" />
-                              Message
+                              View Messages
                             </Button>
                           )}
                         </div>
@@ -754,13 +664,10 @@ export default function AdminSupportTickets() {
         </DialogContent>
       </Dialog>
 
-      {/* Quick Message Dialog */}
+      {/* View Conversation Dialog */}
       <Dialog 
         open={!!messageDialog} 
-        onOpenChange={() => {
-          setMessageDialog(null);
-          setQuickMessage("");
-        }}
+        onOpenChange={() => setMessageDialog(null)}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col" data-testid="dialog-quick-message">
           {messageDialog && (() => {
@@ -771,10 +678,10 @@ export default function AdminSupportTickets() {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <MessageSquare className="w-5 h-5" />
-                    Message Vendor
+                    View Conversation
                   </DialogTitle>
                   <DialogDescription>
-                    Messaging {assignedVendor?.username} about ticket: {messageDialog.subject}
+                    Viewing conversation between user and {assignedVendor?.username} about: {messageDialog.subject}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -827,46 +734,12 @@ export default function AdminSupportTickets() {
                     </div>
                   </ScrollArea>
 
-                  {/* Message Input */}
-                  {messageDialog.status !== 'closed' && (
-                    <div className="mt-4 space-y-2">
-                      <Textarea
-                        value={quickMessage}
-                        onChange={(e) => setQuickMessage(e.target.value)}
-                        placeholder="Type your message to vendor..."
-                        rows={3}
-                        disabled={sendQuickMessageMutation.isPending}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendQuickMessage();
-                          }
-                        }}
-                        data-testid="textarea-quick-message"
-                        className="resize-none"
-                      />
-                      <div className="flex justify-between items-center">
-                        <p className="text-xs text-muted-foreground">
-                          Press Enter to send, Shift+Enter for new line
-                        </p>
-                        <Button
-                          onClick={handleSendQuickMessage}
-                          disabled={!quickMessage.trim() || sendQuickMessageMutation.isPending}
-                          data-testid="button-send-quick-message"
-                          size="sm"
-                        >
-                          <Send className="w-4 h-4 mr-2" />
-                          {sendQuickMessageMutation.isPending ? "Sending..." : "Send"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {messageDialog.status === 'closed' && (
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      This ticket is closed. Reopen it to send messages.
+                  {/* View-Only Information Banner */}
+                  <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                    <p className="text-xs text-blue-800 dark:text-blue-200 text-center">
+                      ℹ️ Administrators have view-only access to monitor conversations between users and staff.
                     </p>
-                  )}
+                  </div>
                 </div>
               </>
             );
