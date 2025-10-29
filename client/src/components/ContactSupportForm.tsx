@@ -145,7 +145,7 @@ export default function ContactSupportForm({ isOpen, onClose }: ContactSupportFo
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]" data-testid="dialog-contact-support">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="dialog-contact-support">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <LifeBuoy className="w-6 h-6 text-primary" />
@@ -176,12 +176,15 @@ export default function ContactSupportForm({ isOpen, onClose }: ContactSupportFo
                 <SelectValue placeholder="Select issue type" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="account-login" data-testid="option-issue-account-login">Account/Login Issue</SelectItem>
+                <SelectItem value="payment-billing" data-testid="option-issue-payment-billing">Payment & Billing</SelectItem>
+                <SelectItem value="order-service" data-testid="option-issue-order-service">Order or Service Issue</SelectItem>
+                <SelectItem value="timedollar-dispute" data-testid="option-issue-timedollar-dispute">TimeDollar (TD) Dispute</SelectItem>
+                <SelectItem value="listing-vendor" data-testid="option-issue-listing-vendor">Listing or Vendor Problem</SelectItem>
+                <SelectItem value="technical-bug" data-testid="option-issue-technical-bug">Technical/Bug Report</SelectItem>
+                <SelectItem value="coupon-reward" data-testid="option-issue-coupon-reward">Coupon or Reward Issue</SelectItem>
+                <SelectItem value="report-fraud" data-testid="option-issue-report-fraud">Report Fraud</SelectItem>
                 <SelectItem value="general" data-testid="option-issue-general">General Inquiry</SelectItem>
-                <SelectItem value="support" data-testid="option-issue-support">Support</SelectItem>
-                <SelectItem value="sales" data-testid="option-issue-sales">Sales</SelectItem>
-                <SelectItem value="listing" data-testid="option-issue-listing">Listing</SelectItem>
-                <SelectItem value="mediator" data-testid="option-issue-mediator">Mediator</SelectItem>
-                <SelectItem value="other" data-testid="option-issue-other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
