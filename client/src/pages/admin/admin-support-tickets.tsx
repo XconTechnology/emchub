@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, LifeBuoy, User as UserIcon, Mail, Send, Clock, MessageSquare } from "lucide-react";
+import { Search, LifeBuoy, User as UserIcon, Send, Clock, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
 
@@ -437,18 +437,11 @@ export default function AdminSupportTickets() {
                       <UserIcon className="w-4 h-4" />
                       User Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="text-sm">
                       <div>
                         <span className="text-muted-foreground">Username:</span>
                         <p className="font-medium" data-testid="text-username">
                           {ticketUser?.username || 'Unknown User'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Email:</span>
-                        <p className="font-medium flex items-center gap-1" data-testid="text-email">
-                          <Mail className="w-3 h-3" />
-                          {ticketUser?.email || 'N/A'}
                         </p>
                       </div>
                     </div>
