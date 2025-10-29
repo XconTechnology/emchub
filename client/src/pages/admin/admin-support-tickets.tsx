@@ -372,7 +372,7 @@ export default function AdminSupportTickets() {
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {vendors.map((vendor) => (
                               <SelectItem key={vendor.id} value={vendor.id}>
-                                {vendor.username} - {(vendor as any).businessName || 'Vendor'}
+                                {vendor.username}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -518,7 +518,7 @@ export default function AdminSupportTickets() {
                       <span className="text-muted-foreground">Assigned To:</span>
                       <p className="font-medium mt-1" data-testid="text-assigned-vendor">
                         {assignedVendor 
-                          ? `${assignedVendor.username} (${(assignedVendor as any).businessName || 'Vendor'})` 
+                          ? assignedVendor.username
                           : 'Unassigned'}
                       </p>
                     </div>
