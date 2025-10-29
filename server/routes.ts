@@ -3650,20 +3650,40 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Check if user has permission to message in this ticket
-      // Admins (both session-based and user-based) can always message
-      if (!isAdmin) {
-        const isTicketOwner = ticket.userId === userId;
-        const isAssignedVendor = ticket.assignedTo === userId;
+      // Check permissions and calculate receiverId
+      // Admin cannot send messages (view-only access)
+      if (isAdmin) {
+        return res.status(403).json({ error: "Admins can only view messages, not send them" });
+      }
 
-        if (!isTicketOwner && !isAssignedVendor) {
-          return res.status(403).json({ error: "Unauthorized to message in this ticket" });
-        }
+      const isTicketOwner = ticket.userId === userId;
+      const isAssignedStaff = ticket.assignedTo === userId;
+
+      if (!isTicketOwner && !isAssignedStaff) {
+        return res.status(403).json({ error: "Unauthorized to message in this ticket" });
+      }
+
+      // Ticket must be assigned before messaging
+      if (!ticket.assignedTo) {
+        return res.status(400).json({ error: "Cannot send messages to unassigned tickets" });
+      }
+
+      // Calculate receiver: 
+      // - If sender is staff → receiver is ticket owner (user)
+      // - If sender is user → receiver is assigned staff
+      let receiverId: string;
+      if (isAssignedStaff) {
+        receiverId = ticket.userId; // Staff sends to user
+      } else if (isTicketOwner) {
+        receiverId = ticket.assignedTo; // User sends to assigned staff
+      } else {
+        return res.status(403).json({ error: "Unauthorized to message in this ticket" });
       }
 
       const ticketMessage = await storage.createTicketMessage({
         ticketId,
         senderId: userId,
+        receiverId, // Direct receiver (user or staff, never admin)
         message,
       });
 
