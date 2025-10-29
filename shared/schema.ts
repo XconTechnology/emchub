@@ -554,6 +554,8 @@ export const supportTickets = pgTable("support_tickets", {
   userId: varchar("user_id").notNull().references(() => users.id), // User who submitted the ticket
   subject: varchar("subject").notNull(),
   message: text("message").notNull(),
+  issueType: varchar("issue_type").default("general"), // 'general' | 'support' | 'sales' | 'listing' | 'mediator' | 'other'
+  attachmentUrl: varchar("attachment_url"), // Optional file attachment (image or document)
   status: varchar("status").notNull().default("open"), // 'open' | 'assigned' | 'pending' | 'closed'
   priority: varchar("priority").default("normal"), // 'low' | 'normal' | 'high' | 'urgent'
   assignedTo: varchar("assigned_to").references(() => users.id), // Staff member assigned to handle ticket

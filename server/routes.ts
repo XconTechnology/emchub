@@ -17,6 +17,9 @@ import { eq, sql } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
 import Stripe from "stripe";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 // Initialize Stripe with test mode keys
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -3450,6 +3453,61 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ==================== Support Ticket Attachment Upload ====================
+
+  // Configure multer for support ticket attachments
+  const uploadDir = path.join(process.cwd(), 'public', 'support-attachments');
+  
+  // Ensure upload directory exists
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const supportAttachmentStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'attachment-' + uniqueSuffix + ext);
+    }
+  });
+
+  const upload = multer({
+    storage: supportAttachmentStorage,
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+      
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only images, PDF, and Word documents are allowed.'));
+      }
+    }
+  });
+
+  // Upload support attachment endpoint
+  app.post("/api/upload-support-attachment", isAuthenticated, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Return the public URL for the uploaded file
+      const fileUrl = `/support-attachments/${req.file.filename}`;
+      res.json({ url: fileUrl });
+    } catch (error) {
+      console.error("Error uploading support attachment:", error);
+      res.status(500).json({ error: "Failed to upload attachment" });
+    }
+  });
+
   // ==================== Support Ticket Routes ====================
 
   // Get assignable staff (staff members only) for ticket assignment
@@ -3467,7 +3525,7 @@ export function registerRoutes(app: Express): Server {
   // Create a new support ticket
   app.post("/api/support-tickets", isAuthenticated, async (req, res) => {
     try {
-      const { subject, message, priority } = req.body;
+      const { subject, message, issueType, attachmentUrl, priority } = req.body;
       
       if (!subject || !message) {
         return res.status(400).json({ error: "Subject and message are required" });
@@ -3477,6 +3535,8 @@ export function registerRoutes(app: Express): Server {
         userId: req.user.id,
         subject,
         message,
+        issueType: issueType || "general",
+        attachmentUrl: attachmentUrl || undefined,
         priority,
       });
 

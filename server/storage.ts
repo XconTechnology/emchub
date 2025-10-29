@@ -224,7 +224,7 @@ export interface IStorage {
   updateConversationLastMessage(conversationId: string, message: string): Promise<void>;
   
   // Support Ticket operations
-  createSupportTicket(data: { userId: string; subject: string; message: string; priority?: string }): Promise<any>;
+  createSupportTicket(data: { userId: string; subject: string; message: string; issueType?: string; attachmentUrl?: string; priority?: string }): Promise<any>;
   getAllSupportTickets(): Promise<any[]>;
   getUserSupportTickets(userId: string): Promise<any[]>;
   getSupportTicket(ticketId: string): Promise<any | undefined>;
@@ -2246,7 +2246,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Support Ticket operations
-  async createSupportTicket(data: { userId: string; subject: string; message: string; priority?: string }): Promise<any> {
+  async createSupportTicket(data: { userId: string; subject: string; message: string; issueType?: string; attachmentUrl?: string; priority?: string }): Promise<any> {
     const { supportTickets } = await import("@shared/schema");
     
     const [ticket] = await db
@@ -2255,6 +2255,8 @@ export class DatabaseStorage implements IStorage {
         userId: data.userId,
         subject: data.subject,
         message: data.message,
+        issueType: data.issueType || 'general',
+        attachmentUrl: data.attachmentUrl || null,
         priority: data.priority || 'normal',
         status: 'open',
       })
