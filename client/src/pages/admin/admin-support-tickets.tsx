@@ -463,11 +463,41 @@ export default function AdminSupportTickets() {
                         <p className="font-semibold text-lg" data-testid="text-subject">{selectedTicket.subject}</p>
                       </div>
                       <div>
+                        <span className="text-muted-foreground text-sm">Issue Type / Category:</span>
+                        <p className="font-medium mt-1" data-testid="text-issue-type">
+                          {selectedTicket.issueType ? 
+                            selectedTicket.issueType
+                              .split('-')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ')
+                            : 'General Inquiry'}
+                        </p>
+                      </div>
+                      <div>
                         <span className="text-muted-foreground text-sm">Message:</span>
                         <p className="text-sm mt-1 whitespace-pre-wrap bg-muted/30 p-3 rounded-md" data-testid="text-message">
                           {selectedTicket.message}
                         </p>
                       </div>
+                      {selectedTicket.attachmentUrl && (
+                        <div>
+                          <span className="text-muted-foreground text-sm">Attachment:</span>
+                          <div className="mt-1">
+                            <a
+                              href={selectedTicket.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-2"
+                              data-testid="link-attachment"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                              </svg>
+                              View Attachment
+                            </a>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <span className="text-muted-foreground text-sm">Status:</span>
