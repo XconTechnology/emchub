@@ -235,8 +235,9 @@ export interface IStorage {
   getAssignableStaff(): Promise<User[]>;
   
   // Support Ticket Message operations
-  createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any>;
+  createTicketMessage(data: { ticketId: string; senderId: string; receiverId: string; message: string }): Promise<any>;
   getTicketMessages(ticketId: string): Promise<any[]>;
+  getUserTicketMessages(userId: string): Promise<any[]>; // Get messages where user is sender or receiver
   
   // Staff Management operations
   createStaffUser(data: {
@@ -2382,6 +2383,7 @@ export class DatabaseStorage implements IStorage {
       .update(supportTickets)
       .set({
         assignedTo,
+        status: 'assigned', // Set status to 'assigned' when assigning to staff
         updatedAt: new Date(),
       })
       .where(eq(supportTickets.id, ticketId))
@@ -2427,94 +2429,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Support Ticket Message operations
-  async createTicketMessage(data: { ticketId: string; senderId: string; message: string }): Promise<any> {
-    const { supportTicketMessages, supportTickets, conversations, messages } = await import("@shared/schema");
+  // Direct messaging: staff messages go to ticket user, user messages go to assigned staff
+  async createTicketMessage(data: { ticketId: string; senderId: string; receiverId: string; message: string }): Promise<any> {
+    const { supportTicketMessages } = await import("@shared/schema");
     
-    // Create the support ticket message (for admin oversight)
-    const [message] = await db
+    // Create the support ticket message with direct receiver
+    const [newMessage] = await db
       .insert(supportTicketMessages)
       .values({
         ticketId: data.ticketId,
         senderId: data.senderId,
+        receiverId: data.receiverId, // Direct receiver (user or staff, never admin)
         message: data.message,
+        isRead: false,
       })
       .returning();
     
-    // Get the ticket details to find ticket creator and assigned staff
-    const [ticket] = await db
-      .select()
-      .from(supportTickets)
-      .where(eq(supportTickets.id, data.ticketId));
-    
-    if (!ticket) {
-      return message;
-    }
-    
-    // Get sender details to determine role
-    const [sender] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, data.senderId));
-    
-    if (!sender) {
-      return message;
-    }
-    
-    // If sender is staff, send message to user's Messages tab
-    if (sender.role === 'staff' && ticket.assignedTo === sender.id) {
-      // Find or create a "Support" conversation between staff and user
-      let conversation = await this.findConversation(
-        ticket.userId, // customer (ticket submitter)
-        sender.id,     // vendor (staff member)
-        undefined      // no product
-      );
-      
-      // Create conversation if it doesn't exist
-      if (!conversation) {
-        conversation = await this.createConversation({
-          customerId: ticket.userId,
-          vendorId: sender.id,
-          productTitle: 'Support', // Mark as support conversation
-        });
-      }
-      
-      // Send message in B2C messaging system
-      await this.sendMessage({
-        conversationId: conversation.id,
-        senderId: sender.id,
-        senderRole: 'vendor', // Staff acts as vendor in messaging system
-        message: data.message,
-      });
-    }
-    
-    // If sender is user, send message to staff's Messages tab
-    if (sender.role !== 'staff' && sender.role !== 'admin' && sender.role !== 'super-admin' && ticket.assignedTo) {
-      // Find or create a "Support" conversation between user and staff
-      let conversation = await this.findConversation(
-        sender.id,         // customer (user)
-        ticket.assignedTo, // vendor (staff member)
-        undefined          // no product
-      );
-      
-      // Create conversation if it doesn't exist
-      if (!conversation) {
-        conversation = await this.createConversation({
-          customerId: sender.id,
-          vendorId: ticket.assignedTo,
-          productTitle: 'Support', // Mark as support conversation
-        });
-      }
-      
-      // Send message in B2C messaging system
-      await this.sendMessage({
-        conversationId: conversation.id,
-        senderId: sender.id,
-        senderRole: 'customer', // User acts as customer in messaging system
-        message: data.message,
-      });
-    }
-    
-    return message;
+    return newMessage;
   }
 
   async getTicketMessages(ticketId: string): Promise<any[]> {
@@ -2525,7 +2456,9 @@ export class DatabaseStorage implements IStorage {
         id: supportTicketMessages.id,
         ticketId: supportTicketMessages.ticketId,
         senderId: supportTicketMessages.senderId,
+        receiverId: supportTicketMessages.receiverId,
         message: supportTicketMessages.message,
+        isRead: supportTicketMessages.isRead,
         createdAt: supportTicketMessages.createdAt,
         senderUsername: users.username,
         senderRole: users.role,
@@ -2533,6 +2466,39 @@ export class DatabaseStorage implements IStorage {
       .from(supportTicketMessages)
       .leftJoin(users, eq(supportTicketMessages.senderId, users.id))
       .where(eq(supportTicketMessages.ticketId, ticketId))
+      .orderBy(supportTicketMessages.createdAt);
+    
+    return messages;
+  }
+
+  // Get messages where user is sender or receiver (visibility rules)
+  async getUserTicketMessages(userId: string): Promise<any[]> {
+    const { supportTicketMessages, supportTickets, users } = await import("@shared/schema");
+    
+    // Get all messages where user is either sender or receiver
+    const messages = await db
+      .select({
+        id: supportTicketMessages.id,
+        ticketId: supportTicketMessages.ticketId,
+        senderId: supportTicketMessages.senderId,
+        receiverId: supportTicketMessages.receiverId,
+        message: supportTicketMessages.message,
+        isRead: supportTicketMessages.isRead,
+        createdAt: supportTicketMessages.createdAt,
+        senderUsername: users.username,
+        senderRole: users.role,
+        ticketSubject: supportTickets.subject,
+        ticketStatus: supportTickets.status,
+      })
+      .from(supportTicketMessages)
+      .leftJoin(users, eq(supportTicketMessages.senderId, users.id))
+      .leftJoin(supportTickets, eq(supportTicketMessages.ticketId, supportTickets.id))
+      .where(
+        or(
+          eq(supportTicketMessages.senderId, userId),
+          eq(supportTicketMessages.receiverId, userId)
+        )
+      )
       .orderBy(supportTicketMessages.createdAt);
     
     return messages;

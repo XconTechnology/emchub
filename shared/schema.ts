@@ -551,12 +551,12 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 // Support Tickets table - for user support and enquiries
 export const supportTickets = pgTable("support_tickets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id), // User who submitted the ticket
   subject: varchar("subject").notNull(),
   message: text("message").notNull(),
-  status: varchar("status").notNull().default("open"), // 'open' | 'pending' | 'closed'
+  status: varchar("status").notNull().default("open"), // 'open' | 'assigned' | 'pending' | 'closed'
   priority: varchar("priority").default("normal"), // 'low' | 'normal' | 'high' | 'urgent'
-  assignedTo: varchar("assigned_to").references(() => users.id), // Staff/admin assigned to handle ticket
+  assignedTo: varchar("assigned_to").references(() => users.id), // Staff member assigned to handle ticket
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -573,11 +573,14 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 
 // Support Ticket Messages table - for conversations within support tickets
+// Messages are sent directly between assigned staff and the ticket submitter
 export const supportTicketMessages = pgTable("support_ticket_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ticketId: varchar("ticket_id").notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
-  senderId: varchar("sender_id").notNull().references(() => users.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id), // Who sent the message
+  receiverId: varchar("receiver_id").notNull().references(() => users.id), // Who receives the message (user or staff, never admin)
   message: text("message").notNull(),
+  isRead: boolean("is_read").default(false), // Track if message has been read
   createdAt: timestamp("created_at").defaultNow(),
 });
 
