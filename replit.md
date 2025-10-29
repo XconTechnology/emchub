@@ -60,40 +60,38 @@ The platform utilizes a React and TypeScript frontend built on a component-based
         - Send and receive messages in ticket thread
         - View original issue details and ticket metadata
         - Modal interface keeps staff on dashboard while chatting
-    - **Integrated Messaging System**:
-        - **Support messages integrated with B2C messaging system**:
-            - Staff messages → User's Messages tab (labeled "Support")
-            - User replies → Staff's Messages tab and support ticket thread
-            - Conversation automatically created with productTitle: "Support"
-        - **Admin oversight**: All messages stored in support_ticket_messages for admin review
-        - **Three-way visibility**: Admin can view, Staff and User can chat
+    - **Direct Ticket Messaging System**:
+        - **Dedicated ticket_messages table** for user-staff communication (no B2C integration)
+        - **Automatic receiverId calculation**:
+            - Staff messages → ticket's userId (user receives)
+            - User messages → ticket's assignedTo (assigned staff receives)
+        - **Message visibility**:
+            - Users: See messages where sender_id OR receiver_id = user.id
+            - Staff: See messages for tickets assigned to them
+            - Admin: View-only access to all ticket messages (cannot send)
         - Message history with sender information and timestamps
-        - Visual distinction for admin messages (badge)
-        - Real-time message display with auto-scroll
+        - Real-time message display with auto-scroll (polling every 3 seconds)
         - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
         - Disabled messaging for closed tickets
     - **Database Schema**:
         - `support_tickets` table: id, userId, subject, message, status, priority, assignedTo (staff member), createdAt, updatedAt
-        - `support_ticket_messages` table: id, ticketId, senderId, message, createdAt (for admin oversight)
-        - `conversations` table: Support conversations with productTitle="Support"
-        - `messages` table: Actual user-staff messages appear here
+        - `support_ticket_messages` table: id, ticketId, senderId, receiverId, message, isRead, createdAt
     - **Technical Implementation**:
-        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, **getAssignableStaff**, createTicketMessage (dual-writes to both systems), getTicketMessages
+        - Storage methods: createSupportTicket, getAllSupportTickets, getUserSupportTickets, updateTicketStatus, assignTicket, updateTicketPriority, getVendorAssignedTickets, getAssignableStaff, createTicketMessage (direct to ticket_messages), getTicketMessages
         - API endpoints: 
             - POST /api/support-tickets, GET /api/support-tickets, GET /api/support-tickets/my-tickets
             - PUT endpoints for status/assign/priority
-            - **GET /api/admin/assignable-staff** (returns staff members only for assignment)
-            - **GET /api/support-tickets/vendor/assigned** (accessible by staff members only)
-            - POST /api/support-tickets/:ticketId/messages (creates both support ticket message and B2C message)
-            - GET /api/support-tickets/:ticketId/messages (get all messages for ticket)
+            - GET /api/admin/assignable-staff (returns staff members only for assignment)
+            - GET /api/support-tickets/vendor/assigned (accessible by staff members only)
+            - POST /api/support-tickets/:ticketId/messages (creates ticket message with automatic receiverId)
+            - GET /api/support-tickets/:ticketId/messages (get all messages for ticket with permission checks)
         - Frontend components: 
             - ContactSupportForm (modal)
-            - user-support-tickets page
-            - admin-support-tickets page with detailed view dialog and assign message dialog
-            - **staff-dashboard page** (shows assigned tickets for staff with quick message and full chat modals)
-            - User sees support conversations at /dashboard/messages with "Support" label
-        - Real-time updates via TanStack Query with cache invalidation and polling
-        - **Permission-based access**: admins (view-only), staff and users (bi-directional messaging)
+            - user-support-tickets page (view and reply to ticket messages)
+            - admin-support-tickets page (view-only message access, direct ticket assignment without messages)
+            - staff-dashboard page (shows assigned tickets with quick message and full chat modals)
+        - Real-time updates via TanStack Query with cache invalidation and polling (3-second intervals)
+        - **Permission-based access**: admins (view-only oversight), staff and users (bi-directional messaging)
         - Admin-only access for ticket management via isAdminAuthenticated middleware
 
 - **Staff Account System with Role-Based Access Control (RBAC)**:
