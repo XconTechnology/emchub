@@ -221,7 +221,9 @@ export default function AdminTransactions() {
                         {getStatusBadge(transaction.paymentStatus)}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-gray-500" data-testid={`text-payment-id-${transaction.id}`}>
-                        {transaction.stripePaymentIntentId.substring(0, 20)}...
+                        {transaction.stripePaymentIntentId 
+                          ? `${transaction.stripePaymentIntentId.substring(0, 20)}...`
+                          : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}
