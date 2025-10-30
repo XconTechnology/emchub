@@ -11,6 +11,7 @@ import {
   insertBookingSchema,
   insertVendorRequestSchema,
   insertEventRegistrationSchema,
+  eventRegistrationFormSchema,
   users as usersTable
 } from "@shared/schema";
 import { db } from "./db";
@@ -560,8 +561,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Event is at full capacity" });
       }
 
-      // Parse registration data
-      const registrationData = insertEventRegistrationSchema.parse(req.body);
+      // Parse registration data (only user-submitted fields)
+      const registrationData = eventRegistrationFormSchema.parse(req.body);
 
       // Check if already registered (by userId or email)
       const alreadyRegistered = await storage.checkUserRegisteredForEvent(

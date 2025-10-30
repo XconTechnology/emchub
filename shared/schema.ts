@@ -514,6 +514,13 @@ export const insertEventRegistrationSchema = createInsertSchema(eventRegistratio
   notes: z.string().optional(),
 });
 
+// Form schema for user registration (excludes server-set fields)
+export const eventRegistrationFormSchema = insertEventRegistrationSchema.omit({
+  eventId: true,
+  userId: true,
+  status: true,
+});
+
 export const insertCouponSchema = createInsertSchema(coupons).omit({
   id: true,
   usedCount: true,
