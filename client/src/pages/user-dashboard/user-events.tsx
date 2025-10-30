@@ -2,12 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Calendar, Plus, Edit, Trash2, Users, MapPin } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, Users, MapPin, Eye } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Listing } from "@shared/schema";
+import type { Listing, EventRegistration } from "@shared/schema";
 import AddEventModal from "@/components/AddEventModal";
 import {
   AlertDialog,
@@ -19,6 +19,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function UserEvents() {
   const { user } = useAuth();
@@ -26,10 +41,16 @@ export default function UserEvents() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Listing | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Listing | null>(null);
+  const [viewingRegistrations, setViewingRegistrations] = useState<Listing | null>(null);
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
+  });
+
+  const { data: registrations, isLoading: isLoadingRegistrations } = useQuery<EventRegistration[]>({
+    queryKey: ['/api/vendor/events', viewingRegistrations?.id, 'registrations'],
+    enabled: !!viewingRegistrations?.id,
   });
 
   const deleteEventMutation = useMutation({
@@ -91,6 +112,17 @@ export default function UserEvents() {
             </div>
           </div>
           <div className="flex gap-2">
+            {event.status === 'published' && (event.attendeeCount || 0) > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setViewingRegistrations(event)}
+                data-testid={`button-view-attendees-${event.id}`}
+                title="View Attendees"
+              >
+                <Eye className="w-4 h-4 text-blue-500" />
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="sm" 
@@ -233,6 +265,74 @@ export default function UserEvents() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Attendees Dialog */}
+      <Dialog open={!!viewingRegistrations} onOpenChange={(open) => !open && setViewingRegistrations(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Attendees</DialogTitle>
+            <DialogDescription>
+              Registered attendees for {viewingRegistrations?.title}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoadingRegistrations ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">Loading registrations...</p>
+            </div>
+          ) : registrations && registrations.length > 0 ? (
+            <div className="mt-4">
+              <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-sm font-semibold">
+                  Total Registrations: {registrations.length}
+                  {viewingRegistrations?.capacity && (
+                    <span className="ml-2 text-gray-600 dark:text-gray-400">
+                      / {viewingRegistrations.capacity} capacity
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Registered</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registrations.map((registration) => (
+                    <TableRow key={registration.id} data-testid={`row-registration-${registration.id}`}>
+                      <TableCell className="font-medium">{registration.fullName}</TableCell>
+                      <TableCell>{registration.email}</TableCell>
+                      <TableCell>{registration.phone}</TableCell>
+                      <TableCell className="max-w-xs truncate" title={registration.notes || ''}>
+                        {registration.notes || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={registration.status === 'confirmed' ? 'default' : 'secondary'}>
+                          {registration.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600">No registrations yet for this event</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

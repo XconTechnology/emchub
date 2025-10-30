@@ -76,10 +76,7 @@ export default function EventDetailPage() {
   const registerMutation = useMutation({
     mutationFn: async (data: RegistrationFormData) => {
       if (!eventId) throw new Error("Event ID is required");
-      const response = await apiRequest(`/api/events/${eventId}/register`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", `/api/events/${eventId}/register`, data);
       return response;
     },
     onSuccess: () => {
@@ -316,7 +313,7 @@ export default function EventDetailPage() {
                   size="lg" 
                   data-testid="button-register"
                   onClick={() => setIsRegisterDialogOpen(true)}
-                  disabled={event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity}
+                  disabled={!!(event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity)}
                 >
                   {event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity 
                     ? "Event Full" 
