@@ -23,6 +23,7 @@ export default function AdminEvents() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Listing | null>(null);
   const [action, setAction] = useState<"approve" | "reject">("approve");
 
@@ -81,6 +82,11 @@ export default function AdminEvents() {
     setSelectedEvent(event);
     setAction("reject");
     setApprovalDialogOpen(true);
+  };
+
+  const handleViewDetails = (event: Listing) => {
+    setSelectedEvent(event);
+    setViewDetailsOpen(true);
   };
 
   const confirmAction = () => {
@@ -177,6 +183,14 @@ export default function AdminEvents() {
             </div>
 
             <div className="flex flex-col gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewDetails(event)}
+                data-testid={`button-view-${event.id}`}
+              >
+                View Details
+              </Button>
               {event.status === 'pending' && (
                 <>
                   <Button 
@@ -313,6 +327,162 @@ export default function AdminEvents() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* View Details Dialog */}
+      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-event-details">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Event Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedEvent && (
+            <div className="space-y-6">
+              {/* Event Image */}
+              {selectedEvent.images && selectedEvent.images.length > 0 && (
+                <div className="rounded-lg overflow-hidden">
+                  <img 
+                    src={selectedEvent.images[0]} 
+                    alt={selectedEvent.title} 
+                    className="w-full h-64 object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Title and Status */}
+              <div>
+                <h3 className="text-2xl font-bold mb-2">{selectedEvent.title}</h3>
+                <div className="flex gap-2 mb-4">
+                  <Badge variant={
+                    selectedEvent.status === 'published' ? 'default' : 
+                    selectedEvent.status === 'pending' ? 'secondary' : 
+                    'destructive'
+                  }>
+                    {selectedEvent.status}
+                  </Badge>
+                  <Badge variant="outline">
+                    {getPriceDisplay(selectedEvent)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedEvent.description && (
+                <div>
+                  <h4 className="font-semibold mb-2">Description</h4>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {selectedEvent.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Event Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Date & Time */}
+                {selectedEvent.eventDate && (
+                  <div className="space-y-1">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Date & Time
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {format(new Date(selectedEvent.eventDate), "EEEE, MMMM dd, yyyy")}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {format(new Date(selectedEvent.eventDate), "h:mm a")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Location */}
+                <div className="space-y-1">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    {selectedEvent.isOnlineOnly ? (
+                      <Globe className="w-4 h-4" />
+                    ) : (
+                      <MapPin className="w-4 h-4" />
+                    )}
+                    Location
+                  </h4>
+                  {selectedEvent.isOnlineOnly ? (
+                    <>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">Online Event</p>
+                      {selectedEvent.website && (
+                        <a 
+                          href={selectedEvent.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {selectedEvent.website}
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {selectedEvent.address || "Location TBA"}
+                    </p>
+                  )}
+                </div>
+
+                {/* Capacity */}
+                {selectedEvent.capacity && (
+                  <div className="space-y-1">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Capacity
+                    </h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {selectedEvent.capacity} attendees
+                    </p>
+                  </div>
+                )}
+
+                {/* Price & Payment */}
+                <div className="space-y-1">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Price & Payment
+                  </h4>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {getPriceDisplay(selectedEvent)}
+                  </p>
+                  {selectedEvent.paymentType && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                      {selectedEvent.paymentType.replace(/_/g, ' ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              {selectedEvent.status === 'pending' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button 
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => {
+                      setViewDetailsOpen(false);
+                      handleApprove(selectedEvent);
+                    }}
+                  >
+                    Approve Event
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => {
+                      setViewDetailsOpen(false);
+                      handleReject(selectedEvent);
+                    }}
+                  >
+                    Reject Event
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
