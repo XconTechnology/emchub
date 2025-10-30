@@ -10,6 +10,7 @@ import {
   insertCategorySchema,
   insertBookingSchema,
   insertVendorRequestSchema,
+  insertEventRegistrationSchema,
   users as usersTable
 } from "@shared/schema";
 import { db } from "./db";
@@ -533,6 +534,102 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching listing bookings:", error);
       res.status(500).json({ message: "Failed to fetch bookings" });
+    }
+  });
+
+  // Event Registration endpoints
+  app.post('/api/events/:eventId/register', async (req: any, res) => {
+    try {
+      const { eventId } = req.params;
+      const userId = req.user?.id || null;
+
+      // Get event to check capacity and vendor
+      const event = await storage.getListing(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      if (event.type !== 'event') {
+        return res.status(400).json({ message: "Not an event listing" });
+      }
+      if (event.status !== 'published') {
+        return res.status(400).json({ message: "Event is not available for registration" });
+      }
+
+      // Check capacity
+      if (event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity) {
+        return res.status(400).json({ message: "Event is at full capacity" });
+      }
+
+      // Parse registration data
+      const registrationData = insertEventRegistrationSchema.parse(req.body);
+
+      // Check if already registered (by userId or email)
+      const alreadyRegistered = await storage.checkUserRegisteredForEvent(
+        eventId, 
+        userId, 
+        registrationData.email
+      );
+      if (alreadyRegistered) {
+        return res.status(400).json({ message: "You are already registered for this event" });
+      }
+
+      // Create registration
+      const registration = await storage.createEventRegistration({
+        ...registrationData,
+        eventId,
+        vendorId: event.userId,
+        userId,
+      });
+
+      res.json(registration);
+    } catch (error: any) {
+      console.error("Error creating event registration:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid registration data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to register for event" });
+    }
+  });
+
+  app.get('/api/vendor/events/:eventId/registrations', isAuthenticated, async (req: any, res) => {
+    try {
+      const { eventId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Verify event ownership
+      const event = await storage.getListing(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      if (event.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to view these registrations" });
+      }
+
+      const registrations = await storage.getEventRegistrationsByEvent(eventId);
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching event registrations:", error);
+      res.status(500).json({ message: "Failed to fetch event registrations" });
+    }
+  });
+
+  app.get('/api/vendor/all-registrations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const registrations = await storage.getVendorEventRegistrations(userId);
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching vendor event registrations:", error);
+      res.status(500).json({ message: "Failed to fetch event registrations" });
     }
   });
 
