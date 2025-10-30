@@ -88,6 +88,7 @@ export default function EventDetailPage() {
       form.reset();
       // Invalidate events query to update attendee count
       queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
     },
     onError: (error: any) => {
       toast({
