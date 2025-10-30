@@ -142,8 +142,8 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
       const tdPercentage = data.timedollarPercentage ? parseInt(data.timedollarPercentage) : null;
       const cashPercentage = tdPercentage ? 100 - tdPercentage : null;
       
-      // Combine date and time into eventDate timestamp
-      const eventDateTime = `${data.eventDate}T${data.eventTime}:00`;
+      // Combine date and time into eventDate timestamp and convert to Date object
+      const eventDateTime = new Date(`${data.eventDate}T${data.eventTime}:00`);
       
       const eventData: any = {
         ...data,
@@ -408,22 +408,9 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
                 />
               </div>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status *</Label>
-            <Select 
-              value={form.watch("status") || "draft"} 
-              onValueChange={(value) => form.setValue("status", value as "draft" | "published")}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Publish</SelectItem>
-              </SelectContent>
-            </Select>
+            {uploadImageMutation.isPending && (
+              <p className="text-sm text-gray-600">Uploading image...</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
