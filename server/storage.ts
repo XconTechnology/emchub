@@ -4,6 +4,7 @@ import {
   categories,
   listings,
   bookings,
+  eventRegistrations,
   orders,
   orderItems,
   coupons,
@@ -22,6 +23,8 @@ import {
   type InsertListing,
   type Booking,
   type InsertBooking,
+  type EventRegistration,
+  type InsertEventRegistration,
   type Coupon,
   type InsertCoupon,
   type CouponUsage,
@@ -75,6 +78,13 @@ export interface IStorage {
   getUserBookings(userId: string): Promise<Booking[]>;
   getListingBookings(listingId: string): Promise<Booking[]>;
   updateBooking(id: string, updates: Partial<Booking>): Promise<Booking>;
+  
+  // Event Registration operations
+  createEventRegistration(registration: InsertEventRegistration & { userId: string | null; vendorId: string; eventId: string }): Promise<EventRegistration>;
+  getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]>;
+  getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]>;
+  updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration>;
+  checkUserRegisteredForEvent(eventId: string, userId: string | null, email: string): Promise<boolean>;
   
   // Coupon operations
   getCoupon(code: string): Promise<Coupon | undefined>;
@@ -653,6 +663,68 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bookings.id, id))
       .returning();
     return booking;
+  }
+
+  // Event Registration operations
+  async createEventRegistration(registrationData: InsertEventRegistration & { userId: string | null; vendorId: string; eventId: string }): Promise<EventRegistration> {
+    // Insert registration
+    const [registration] = await db
+      .insert(eventRegistrations)
+      .values(registrationData)
+      .returning();
+    
+    // Update attendee count on event
+    await db
+      .update(listings)
+      .set({ 
+        attendeeCount: sql`${listings.attendeeCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(listings.id, registrationData.eventId));
+    
+    return registration;
+  }
+
+  async getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]> {
+    return db
+      .select()
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.eventId, eventId))
+      .orderBy(eventRegistrations.createdAt);
+  }
+
+  async getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]> {
+    return db
+      .select()
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.vendorId, vendorId))
+      .orderBy(eventRegistrations.createdAt);
+  }
+
+  async updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration> {
+    const [registration] = await db
+      .update(eventRegistrations)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(eventRegistrations.id, id))
+      .returning();
+    return registration;
+  }
+
+  async checkUserRegisteredForEvent(eventId: string, userId: string | null, email: string): Promise<boolean> {
+    const conditions = userId 
+      ? or(
+          and(eq(eventRegistrations.eventId, eventId), eq(eventRegistrations.userId, userId)),
+          and(eq(eventRegistrations.eventId, eventId), eq(eventRegistrations.email, email))
+        )
+      : and(eq(eventRegistrations.eventId, eventId), eq(eventRegistrations.email, email));
+    
+    const existing = await db
+      .select()
+      .from(eventRegistrations)
+      .where(conditions!)
+      .limit(1);
+    
+    return existing.length > 0;
   }
 
   // Coupon operations
