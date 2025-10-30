@@ -16,6 +16,7 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Enhanced Dashboards**: Improved UI/UX for user and vendor dashboards, including fixed navbars and reorganized navigation.
 - **Listing Management**: Authenticated users can create and manage product and service listings.
 - **Public Products Marketplace**: A dedicated section for browsing and purchasing products with search and product detail pages.
+- **Events Module**: Complete event management system where vendors can create events (with date/time, location type, capacity, pricing), requiring admin approval before appearing on the public Events page. Supports in-person, online, and hybrid events with flexible payment options.
 - **Advanced Pricing System**: Supports Cash Only, TimeDollar Only, Both, and Combo Split payment options.
 - **Comprehensive Coupon System**: Two-tier system with vendor and admin-issued coupons, including discount and cash coupons, with approval workflows, usage limits, and analytics.
 - **Admin Dashboards**:

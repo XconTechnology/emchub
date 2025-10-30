@@ -75,6 +75,9 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/products" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-products">
                 Products
               </Link>
+              <Link href="/events" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-events">
+                Events
+              </Link>
               <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
                 Map of Listings
               </Link>
@@ -246,6 +249,14 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               data-testid="mobile-nav-products"
             >
               Products
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/events'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-events"
+            >
+              Events
             </Button>
             <Button 
               variant="ghost" 

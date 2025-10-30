@@ -13,6 +13,7 @@ import AuthPage from "@/pages/auth-page";
 import DirectoryPage from "@/pages/directory-page";
 import MapPage from "@/pages/map-page";
 import ProductsPage from "@/pages/products-page";
+import EventsPage from "@/pages/events-page";
 import BusinessDetail from "@/pages/business-detail";
 import ProductDetailPage from "@/pages/product-detail-page";
 import CategoryPage from "@/pages/category-page";
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/directory" component={DirectoryPage} />
       <Route path="/map" component={MapPage} />
       <Route path="/products" component={ProductsPage} />
+      <Route path="/events" component={EventsPage} />
       <Route path="/explore" component={Explore} />
       <Route path="/about-us" component={AboutUs} />
       <Route path="/categories" component={AllCategoriesPage} />

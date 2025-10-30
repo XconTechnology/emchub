@@ -16,6 +16,7 @@ import {
   CreditCard,
   LifeBuoy,
   UserCog,
+  Calendar,
 } from "lucide-react";
 import {
   Sidebar,
@@ -104,6 +105,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "All Listings",
       url: "/admin/listings",
       icon: List,
+    },
+    {
+      title: "Events",
+      url: "/admin/events",
+      icon: Calendar,
     },
     {
       title: "Users",

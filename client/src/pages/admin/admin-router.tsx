@@ -16,6 +16,7 @@ import AdminActivityLogs from "./admin-activity-logs";
 import AdminSupportTickets from "./admin-support-tickets";
 import AdminStaff from "./admin-staff";
 import AdminAuditLogs from "./admin-audit-logs";
+import AdminEvents from "./admin-events";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,7 @@ export default function AdminRouter() {
         <Route path="/admin/listings/new" component={AdminAddListing} />
         <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
         <Route path="/admin/listings" component={AdminListings} />
+        <Route path="/admin/events" component={AdminEvents} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/recycle-bin" component={AdminRecycleBin} />
         <Route path="/admin" component={AdminOverview} />

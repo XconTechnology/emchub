@@ -46,9 +46,10 @@ export default function MapPage() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([22.3193, 114.1694]);
   const [mapZoom, setMapZoom] = useState(12);
 
-  // Fetch approved listings
+  // Fetch approved business listings only (not products, services, or events)
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings'],
+    select: (data) => data.filter(item => item.type === 'business' && item.status === 'published'),
   });
 
   // Define the specific categories to display (hard-coded)
