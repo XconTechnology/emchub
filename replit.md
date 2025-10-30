@@ -98,14 +98,15 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Staff Account System with Role-Based Access Control (RBAC)**:
     - **Architecture**: Complete RBAC system for managing staff users with granular permissions
     - **Staff Roles**:
+        - **Individual**: Access to User Management only
+        - **Business**: Access to Vendor Management and Coupons only
         - **Support**: Access to Support Tickets only
         - **Sales**: Access to Refunds/Transactions only
         - **Mediator**: Access to TimeDollar Disputes only
-        - **Listings**: Access to Listing Approvals and Categories only
-        - **Full Admin**: Access to all admin features except Super Admin settings (Support, Sales, Disputes, Listings, Users, Vendors, Coupons, Analytics)
+        - **Full Admin**: Access to all admin features except Super Admin settings (Support, Sales, Disputes, Users, Vendors, Coupons, Analytics)
     - **Super Admin**: Can create and manage all staff users, view audit logs, full system access
     - **Database Schema**:
-        - `users.staffRole` field: Stores staff-specific role (support, sales, mediator, listings, full_admin)
+        - `users.staffRole` field: Stores staff-specific role (individual, business, support, sales, mediator, full_admin)
         - `staff_audit_logs` table: Comprehensive audit trail with staffId, staffUsername, staffRole, action, entityType, entityId, description, metadata, ipAddress, userAgent, createdAt
     - **RBAC Middleware** (server/rbac.ts):
         - `isStaffAuthenticated`: Validates staff authentication

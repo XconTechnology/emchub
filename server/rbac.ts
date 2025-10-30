@@ -4,10 +4,11 @@ import type { Request, Response, NextFunction } from 'express';
 
 // Define staff roles and their permissions
 export const StaffRoles = {
+  INDIVIDUAL: 'individual',
+  BUSINESS: 'business',
   SUPPORT: 'support',
   SALES: 'sales',
   MEDIATOR: 'mediator',
-  LISTINGS: 'listings',
   FULL_ADMIN: 'full_admin',
 } as const;
 
@@ -27,21 +28,20 @@ export const Resources = {
 
 // Define which resources each staff role can access
 export const RolePermissions: Record<string, string[]> = {
+  [StaffRoles.INDIVIDUAL]: [Resources.USERS],
+  [StaffRoles.BUSINESS]: [Resources.VENDORS, Resources.COUPONS],
   [StaffRoles.SUPPORT]: [Resources.SUPPORT_TICKETS],
   [StaffRoles.SALES]: [Resources.REFUNDS],
   [StaffRoles.MEDIATOR]: [Resources.DISPUTES],
-  [StaffRoles.LISTINGS]: [Resources.LISTINGS, Resources.CATEGORIES],
   [StaffRoles.FULL_ADMIN]: [
     Resources.SUPPORT_TICKETS,
     Resources.REFUNDS,
     Resources.DISPUTES,
-    Resources.LISTINGS,
     Resources.USERS,
     Resources.COUPONS,
     Resources.VENDORS,
     Resources.ANALYTICS,
     Resources.ACTIVITY_LOGS,
-    Resources.CATEGORIES,
   ],
 };
 
@@ -108,22 +108,21 @@ export function getAccessibleMenuItems(staffRole: string | null | undefined): st
   if (!staffRole) return [];
   
   const menuMap: Record<string, string[]> = {
+    [StaffRoles.INDIVIDUAL]: ['users'],
+    [StaffRoles.BUSINESS]: ['vendors', 'coupons'],
     [StaffRoles.SUPPORT]: ['support-tickets'],
     [StaffRoles.SALES]: ['refunds', 'transactions'],
     [StaffRoles.MEDIATOR]: ['disputes'],
-    [StaffRoles.LISTINGS]: ['listings-approval', 'categories'],
     [StaffRoles.FULL_ADMIN]: [
       'support-tickets',
       'refunds',
       'transactions',
       'disputes',
-      'listings-approval',
       'users',
       'vendors',
       'coupons',
       'analytics',
       'activity-logs',
-      'categories',
     ],
   };
   

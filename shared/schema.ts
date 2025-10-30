@@ -38,7 +38,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("consumer"), // 'consumer' | 'vendor' | 'staff' | 'admin' | 'super-admin'
-  staffRole: varchar("staff_role"), // 'support' | 'sales' | 'mediator' | 'listings' | 'full_admin' (only for staff users)
+  staffRole: varchar("staff_role"), // 'individual' | 'business' | 'support' | 'sales' | 'mediator' | 'full_admin' (only for staff users)
   vendorStatus: varchar("vendor_status").notNull().default("none"), // 'none' | 'pending' | 'verified' | 'rejected'
   status: varchar("status").notNull().default("active"), // 'active' | 'suspended'
   timeDollarBalance: real("timedollar_balance").default(0), // TimeDollar balance (supports decimals for accurate combo payments)
@@ -64,7 +64,7 @@ export const staffInsertSchema = insertUserSchema.extend({
   email: z.string().email("Valid email is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.literal("staff"),
-  staffRole: z.enum(["support", "sales", "mediator", "listings", "full_admin"]),
+  staffRole: z.enum(["individual", "business", "support", "sales", "mediator", "full_admin"]),
 }).omit({
   vendorStatus: true,
   timeDollarBalance: true,
@@ -75,7 +75,7 @@ export type InsertStaff = z.infer<typeof staffInsertSchema>;
 
 // Staff role update schema
 export const staffRoleUpdateSchema = z.object({
-  staffRole: z.enum(["support", "sales", "mediator", "listings", "full_admin"]),
+  staffRole: z.enum(["individual", "business", "support", "sales", "mediator", "full_admin"]),
 });
 
 export type StaffRoleUpdate = z.infer<typeof staffRoleUpdateSchema>;
