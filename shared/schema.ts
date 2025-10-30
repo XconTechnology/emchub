@@ -470,6 +470,10 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   // Status field - pending (awaiting approval), published (approved and live), rejected (not approved)
   status: z.enum(["pending", "published", "rejected"]).optional().default("pending"),
   
+  // Event date fields - accept ISO strings and transform to Date objects
+  eventDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  eventEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  
   // Optional arrays
   tags: z.array(z.string()).optional(),
   images: z.array(z.string()).optional(),

@@ -2359,8 +2359,8 @@ export function registerRoutes(app: Express): Server {
     res.json({ message: "This is a protected route", userId });
   });
 
-  // Object Storage routes - for listing images
-  app.post("/api/objects/upload", isAdminAuthenticated, async (req, res) => {
+  // Object Storage routes - for listing images (accessible to all authenticated users)
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
