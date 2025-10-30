@@ -53,6 +53,12 @@ export default function UserEvents() {
     enabled: !!viewingRegistrations?.id,
   });
 
+  // Fetch all registrations for vendor
+  const { data: allRegistrations, isLoading: isLoadingAllRegistrations } = useQuery<any[]>({
+    queryKey: ['/api/vendor/all-registrations'],
+    enabled: !!user && user.vendorStatus === 'verified',
+  });
+
   const deleteEventMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest('DELETE', `/api/listings/${id}`);
@@ -232,6 +238,67 @@ export default function UserEvents() {
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Event
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* All Registrations Section */}
+      {allRegistrations && allRegistrations.length > 0 && (
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-xl">All Event Registrations</CardTitle>
+            <p className="text-sm text-gray-600">View and manage all registrations across your events</p>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAllRegistrations ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Loading registrations...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Event</TableHead>
+                      <TableHead>Attendee Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Registered Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allRegistrations.map((registration) => (
+                      <TableRow key={registration.id} data-testid={`row-all-registration-${registration.id}`}>
+                        <TableCell className="font-medium">
+                          {registration.eventTitle || 'Unknown Event'}
+                          {registration.eventDate && (
+                            <div className="text-xs text-gray-500">
+                              {new Date(registration.eventDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{registration.fullName}</TableCell>
+                        <TableCell>{registration.email}</TableCell>
+                        <TableCell>{registration.phone || '-'}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={registration.notes || ''}>
+                          {registration.notes || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={registration.status === 'confirmed' ? 'default' : 'secondary'}>
+                            {registration.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

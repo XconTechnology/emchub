@@ -36,7 +36,7 @@ import {
   type Transaction,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ilike, inArray, sql } from "drizzle-orm";
+import { eq, or, and, ilike, inArray, sql, desc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -693,12 +693,27 @@ export class DatabaseStorage implements IStorage {
       .orderBy(eventRegistrations.createdAt);
   }
 
-  async getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]> {
+  async getVendorEventRegistrations(vendorId: string): Promise<any[]> {
     return db
-      .select()
+      .select({
+        id: eventRegistrations.id,
+        eventId: eventRegistrations.eventId,
+        vendorId: eventRegistrations.vendorId,
+        userId: eventRegistrations.userId,
+        fullName: eventRegistrations.fullName,
+        email: eventRegistrations.email,
+        phone: eventRegistrations.phone,
+        notes: eventRegistrations.notes,
+        status: eventRegistrations.status,
+        createdAt: eventRegistrations.createdAt,
+        updatedAt: eventRegistrations.updatedAt,
+        eventTitle: listings.title,
+        eventDate: listings.eventDate,
+      })
       .from(eventRegistrations)
+      .leftJoin(listings, eq(eventRegistrations.eventId, listings.id))
       .where(eq(eventRegistrations.vendorId, vendorId))
-      .orderBy(eventRegistrations.createdAt);
+      .orderBy(desc(eventRegistrations.createdAt));
   }
 
   async updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration> {
