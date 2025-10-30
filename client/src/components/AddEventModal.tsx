@@ -18,6 +18,7 @@ import { Upload, X } from "lucide-react";
 
 const eventSchema = insertListingSchema.extend({
   title: z.string().min(1, "Event title is required"),
+  categoryId: z.string().optional(),
   eventDate: z.string().min(1, "Event date is required"),
   eventTime: z.string().min(1, "Event time is required"),
   locationType: z.enum(["in_person", "online", "hybrid"], {
@@ -55,7 +56,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
       type: "event",
       title: "",
       description: "",
-      categoryId: "",
+      categoryId: undefined,
       eventDate: "",
       eventTime: "",
       locationType: "in_person",
@@ -76,7 +77,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         type: "event",
         title: editEvent.title || "",
         description: editEvent.description || "",
-        categoryId: editEvent.categoryId || "",
+        categoryId: undefined,
         eventDate: eventDateTime ? eventDateTime.toISOString().split('T')[0] : "",
         eventTime: eventDateTime ? eventDateTime.toISOString().split('T')[1].substring(0, 5) : "",
         locationType: editEvent.isOnlineOnly ? "online" : (editEvent.address ? "in_person" : "in_person"),
@@ -94,7 +95,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         type: "event",
         title: "",
         description: "",
-        categoryId: "",
+        categoryId: undefined,
         eventDate: "",
         eventTime: "",
         locationType: "in_person",
@@ -224,25 +225,6 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
             {form.formState.errors.title && (
               <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Category *</Label>
-            <Select 
-              value={form.watch("categoryId") || ""} 
-              onValueChange={(value) => form.setValue("categoryId", value)}
-            >
-              <SelectTrigger data-testid="select-category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

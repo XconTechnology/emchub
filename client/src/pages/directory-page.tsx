@@ -225,7 +225,7 @@ export default function DirectoryPage() {
               <div>
                 <label className="text-sm font-medium mb-3 block">Type</label>
                 <div className="space-y-2">
-                  {['business', 'product', 'service', 'event'].map((type) => (
+                  {['business', 'product', 'service'].map((type) => (
                     <div key={type} className="flex items-center space-x-2">
                       <Checkbox
                         id={`type-${type}`}
