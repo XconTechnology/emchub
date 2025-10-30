@@ -1,10 +1,32 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar, 
   MapPin,
@@ -17,16 +39,71 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Listing } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Registration form schema
+const registrationSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().min(1, "Phone number is required"),
+  notes: z.string().optional(),
+});
+
+type RegistrationFormData = z.infer<typeof registrationSchema>;
 
 export default function EventDetailPage() {
   const [, params] = useRoute("/event/:id");
   const eventId = params?.id;
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const { data: events, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings'],
   });
 
   const event = events?.find(e => e.id === eventId && e.type === 'event');
+
+  const form = useForm<RegistrationFormData>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      notes: "",
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegistrationFormData) => {
+      if (!eventId) throw new Error("Event ID is required");
+      const response = await apiRequest(`/api/events/${eventId}/register`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Registration Successful!",
+        description: "You've successfully registered for this event. Check your email for confirmation.",
+      });
+      setIsRegisterDialogOpen(false);
+      form.reset();
+      // Invalidate events query to update attendee count
+      queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Unable to register for this event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: RegistrationFormData) => {
+    registerMutation.mutate(data);
+  };
 
   if (isLoading) {
     return (
@@ -234,8 +311,17 @@ export default function EventDetailPage() {
                 </div>
 
                 {/* Register Button */}
-                <Button className="w-full" size="lg" data-testid="button-register">
-                  Register for Event
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  data-testid="button-register"
+                  onClick={() => setIsRegisterDialogOpen(true)}
+                  disabled={event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity}
+                >
+                  {event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity 
+                    ? "Event Full" 
+                    : "Register for Event"
+                  }
                 </Button>
 
                 <p className="text-xs text-center text-gray-500 dark:text-gray-400">
@@ -246,6 +332,117 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Registration Dialog */}
+      <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register for Event</DialogTitle>
+            <DialogDescription>
+              Fill in your details to register for {event?.title}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="John Doe" 
+                        {...field} 
+                        data-testid="input-fullname"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="john@example.com" 
+                        {...field} 
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="tel"
+                        placeholder="+852 1234 5678" 
+                        {...field} 
+                        data-testid="input-phone"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any special requirements or questions..."
+                        className="resize-none"
+                        {...field}
+                        data-testid="input-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsRegisterDialogOpen(false)}
+                  data-testid="button-cancel"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={registerMutation.isPending}
+                  data-testid="button-submit-registration"
+                >
+                  {registerMutation.isPending ? "Registering..." : "Complete Registration"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
