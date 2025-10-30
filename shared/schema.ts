@@ -205,6 +205,21 @@ export const bookings = pgTable("bookings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Event Registrations table - users can register for events
+export const eventRegistrations = pgTable("event_registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => listings.id), // Event (listing with type='event')
+  vendorId: varchar("vendor_id").notNull().references(() => users.id), // Event owner/vendor
+  userId: varchar("user_id").references(() => users.id), // Registered user (nullable for guest registrations)
+  fullName: varchar("full_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone"),
+  notes: text("notes"), // Additional notes from registrant
+  status: varchar("status").notNull().default("confirmed"), // 'confirmed', 'cancelled', 'attended'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Enhanced coupon codes system
 export const coupons = pgTable("coupons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -487,6 +502,18 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
   updatedAt: true,
 });
 
+export const insertEventRegistrationSchema = createInsertSchema(eventRegistrations).omit({
+  id: true,
+  vendorId: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const insertCouponSchema = createInsertSchema(coupons).omit({
   id: true,
   usedCount: true,
@@ -632,6 +659,9 @@ export type InsertListing = z.infer<typeof insertListingSchema>;
 
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+
+export type EventRegistration = typeof eventRegistrations.$inferSelect;
+export type InsertEventRegistration = z.infer<typeof insertEventRegistrationSchema>;
 
 export type Coupon = typeof coupons.$inferSelect;
 export type InsertCoupon = z.infer<typeof insertCouponSchema>;
