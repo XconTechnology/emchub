@@ -286,33 +286,37 @@ export default function AdminSupportTickets() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[80px]">ID</TableHead>
+                    <TableHead className="w-[90px]">User</TableHead>
+                    <TableHead className="min-w-[200px] max-w-[300px]">Subject</TableHead>
+                    <TableHead className="w-[110px]">Status</TableHead>
+                    <TableHead className="w-[100px]">Priority</TableHead>
+                    <TableHead className="w-[150px]">Assigned To</TableHead>
+                    <TableHead className="w-[110px]">Created</TableHead>
+                    <TableHead className="w-[200px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTickets.map((ticket) => {
                     const assignedVendor = ticket.assignedTo ? vendors.find(v => v.id === ticket.assignedTo) : null;
+                    const ticketUser = allUsers.find(u => u.id === ticket.userId);
+                    
                     return (
                     <TableRow key={ticket.id} data-testid={`row-ticket-${ticket.id}`}>
                       <TableCell className="font-mono text-xs" data-testid={`cell-id-${ticket.id}`}>
                         {ticket.id.slice(0, 8)}
                       </TableCell>
-                      <TableCell data-testid={`cell-user-${ticket.id}`}>
+                      <TableCell className="font-mono text-xs" data-testid={`cell-user-${ticket.id}`} title={ticketUser?.username || ticket.userId}>
                         {ticket.userId.slice(0, 8)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate" data-testid={`cell-subject-${ticket.id}`}>
-                        {ticket.subject}
+                      <TableCell className="max-w-[300px]" data-testid={`cell-subject-${ticket.id}`}>
+                        <div className="truncate" title={ticket.subject}>
+                          {ticket.subject}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Select
@@ -321,13 +325,14 @@ export default function AdminSupportTickets() {
                             updateStatusMutation.mutate({ ticketId: ticket.id, status: value })
                           }
                         >
-                          <SelectTrigger className="w-32" data-testid={`select-status-${ticket.id}`}>
-                            <Badge variant={getStatusBadgeVariant(ticket.status)}>
+                          <SelectTrigger className="w-[100px]" data-testid={`select-status-${ticket.id}`}>
+                            <Badge variant={getStatusBadgeVariant(ticket.status)} className="text-xs">
                               {ticket.status}
                             </Badge>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="assigned">Assigned</SelectItem>
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="closed">Closed</SelectItem>
                           </SelectContent>
@@ -340,8 +345,8 @@ export default function AdminSupportTickets() {
                             updatePriorityMutation.mutate({ ticketId: ticket.id, priority: value })
                           }
                         >
-                          <SelectTrigger className="w-32" data-testid={`select-priority-${ticket.id}`}>
-                            <Badge variant={getPriorityBadgeVariant(ticket.priority || "normal")}>
+                          <SelectTrigger className="w-[90px]" data-testid={`select-priority-${ticket.id}`}>
+                            <Badge variant={getPriorityBadgeVariant(ticket.priority || "normal")} className="text-xs">
                               {ticket.priority || "normal"}
                             </Badge>
                           </SelectTrigger>
@@ -363,9 +368,11 @@ export default function AdminSupportTickets() {
                             });
                           }}
                         >
-                          <SelectTrigger className="w-48" data-testid={`select-assign-${ticket.id}`}>
+                          <SelectTrigger className="w-[140px]" data-testid={`select-assign-${ticket.id}`}>
                             <SelectValue placeholder="Unassigned">
-                              {assignedVendor ? `${assignedVendor.username}` : "Unassigned"}
+                              <span className="truncate">
+                                {assignedVendor ? assignedVendor.username : "Unassigned"}
+                              </span>
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -378,11 +385,11 @@ export default function AdminSupportTickets() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="text-sm" data-testid={`cell-created-${ticket.id}`}>
-                        {ticket.createdAt ? format(new Date(ticket.createdAt), "PP") : 'N/A'}
+                      <TableCell className="text-xs whitespace-nowrap" data-testid={`cell-created-${ticket.id}`}>
+                        {ticket.createdAt ? format(new Date(ticket.createdAt), "MMM d, yyyy") : 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 flex-nowrap">
                           <Button
                             variant="outline"
                             size="sm"
@@ -397,9 +404,9 @@ export default function AdminSupportTickets() {
                               size="sm"
                               onClick={() => setMessageDialog(ticket)}
                               data-testid={`button-view-messages-${ticket.id}`}
+                              title="View Messages"
                             >
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              View Messages
+                              <MessageSquare className="w-4 h-4" />
                             </Button>
                           )}
                         </div>
