@@ -5,13 +5,14 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// CORS configuration - allow both custom domain and replit domains
+// CORS configuration - allow both custom domains and replit domains
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
+      "https://emchub.com.hk",
       "https://testingprojects.site",
       "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev"
     ];
