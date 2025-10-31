@@ -44,6 +44,55 @@ function broadcastEvent(event: { type: string; data: any }) {
   });
 }
 
+// Debug endpoint to test domain
+function setupDebugRoutes(app: Express) {
+  app.get('/api/debug', (req, res) => {
+    res.json({
+      domain: req.hostname,
+      headers: req.headers,
+      protocol: req.protocol,
+      url: req.url,
+      originalUrl: req.originalUrl,
+      timestamp: new Date().toISOString(),
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        PORT: process.env.PORT
+      }
+    });
+  });
+
+  app.get('/debug.html', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <title>Domain Debug - ${req.hostname}</title>
+    <style>
+        body { font-family: Arial; padding: 50px; background: #f0f0f0; }
+        .success { color: green; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        .info { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="success">✅ Server is Responding!</div>
+    <div class="info">
+        <h2>Domain Information:</h2>
+        <p><strong>Current Domain:</strong> <code id="domain"></code></p>
+        <p><strong>JavaScript Status:</strong> <span id="js-status" style="color:green">✅ Working</span></p>
+        <p><strong>Server Time:</strong> ${new Date().toISOString()}</p>
+        <p><strong>Client Time:</strong> <span id="time"></span></p>
+    </div>
+    <script>
+        document.getElementById('domain').textContent = window.location.hostname;
+        document.getElementById('time').textContent = new Date().toLocaleString();
+        console.log('✅ JavaScript executing on:', window.location.hostname);
+        console.log('✅ Page loaded successfully');
+    </script>
+</body>
+</html>`);
+  });
+}
+
 // Admin middleware for session-based admin authentication
 const isAdminAuthenticated = async (req: any, res: any, next: any) => {
   console.log('Admin auth check:', { 
@@ -96,6 +145,9 @@ const requireVendorOrAbove = requireRole(['vendor', 'staff', 'admin']);
 export function registerRoutes(app: Express): Server {
   // Setup authentication middleware and routes (from blueprint: javascript_auth_all_persistance)
   setupAuth(app);
+
+  // Setup debug routes for troubleshooting domain issues
+  setupDebugRoutes(app);
 
   // Categories routes
   app.get('/api/categories', async (req, res) => {
