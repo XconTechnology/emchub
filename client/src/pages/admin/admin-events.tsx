@@ -269,8 +269,11 @@ export default function AdminEvents() {
       </div>
 
       {/* Tabs for filtering */}
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3" data-testid="tabs-event-status">
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4" data-testid="tabs-event-status">
+          <TabsTrigger value="all" data-testid="tab-all">
+            All Events ({filteredEvents.length})
+          </TabsTrigger>
           <TabsTrigger value="pending" data-testid="tab-pending">
             Pending ({pendingEvents.length})
           </TabsTrigger>
@@ -281,6 +284,21 @@ export default function AdminEvents() {
             Rejected ({rejectedEvents.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all" className="space-y-4">
+          {filteredEvents.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-600 dark:text-gray-400" data-testid="text-no-events">
+                  No events found
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredEvents.map(event => renderEventCard(event))
+          )}
+        </TabsContent>
 
         <TabsContent value="pending" className="space-y-4">
           {pendingEvents.length === 0 ? (
