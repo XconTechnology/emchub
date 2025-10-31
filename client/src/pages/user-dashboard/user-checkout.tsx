@@ -21,7 +21,9 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { TD_TO_HKD_RATE, convertTDtoHKD } from "@/../../shared/constants";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+  : null;
 
 // Stripe Payment Form Component
 function StripePaymentForm({ onPaymentSuccess, amount, disabled }: { 
@@ -755,7 +757,14 @@ export default function UserCheckout() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {createPaymentIntentMutation.isPending ? (
+                  {!stripePromise ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <AlertDescription>
+                        Stripe payment is not configured. Please contact support.
+                      </AlertDescription>
+                    </Alert>
+                  ) : createPaymentIntentMutation.isPending ? (
                     <div className="text-center py-8">
                       <p className="text-gray-600">Initializing payment...</p>
                     </div>
