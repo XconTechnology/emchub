@@ -108,7 +108,6 @@ export default function UserDashboardRouter() {
     { name: "Messages", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "Transactions", path: "/dashboard/vendor-transactions", icon: Receipt, testId: "nav-vendor-transactions" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
-    { name: "Assigned Tickets", path: "/dashboard/vendor-support-tickets", icon: LifeBuoy, testId: "nav-vendor-assigned-tickets" },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
