@@ -70,7 +70,7 @@ export default function AdminEvents() {
 
   const pendingEvents = filteredEvents.filter(e => e.status === 'pending');
   const approvedEvents = filteredEvents.filter(e => e.status === 'published');
-  const rejectedEvents = filteredEvents.filter(e => e.status === 'draft');
+  const rejectedEvents = filteredEvents.filter(e => e.status === 'rejected');
 
   const handleApprove = (event: Listing) => {
     setSelectedEvent(event);
@@ -93,7 +93,7 @@ export default function AdminEvents() {
     if (selectedEvent) {
       updateStatusMutation.mutate({
         id: selectedEvent.id,
-        status: action === "approve" ? "published" : "draft"
+        status: action === "approve" ? "published" : "rejected"
       });
     }
   };
@@ -141,7 +141,8 @@ export default function AdminEvents() {
                       variant={
                         event.status === 'published' ? 'default' : 
                         event.status === 'pending' ? 'secondary' : 
-                        'destructive'
+                        event.status === 'rejected' ? 'destructive' :
+                        'outline'
                       }
                       data-testid={`badge-status-${event.id}`}
                     >
@@ -221,7 +222,7 @@ export default function AdminEvents() {
                   Unpublish
                 </Button>
               )}
-              {event.status === 'draft' && (
+              {(event.status === 'rejected' || event.status === 'draft') && (
                 <Button 
                   variant="default"
                   size="sm"
@@ -373,7 +374,8 @@ export default function AdminEvents() {
                   <Badge variant={
                     selectedEvent.status === 'published' ? 'default' : 
                     selectedEvent.status === 'pending' ? 'secondary' : 
-                    'destructive'
+                    selectedEvent.status === 'rejected' ? 'destructive' :
+                    'outline'
                   }>
                     {selectedEvent.status}
                   </Badge>
@@ -512,7 +514,7 @@ export default function AdminEvents() {
             <DialogDescription>
               {action === "approve" 
                 ? "Are you sure you want to approve this event? It will be visible to the public."
-                : "Are you sure you want to reject this event? It will be moved to draft status."}
+                : "Are you sure you want to reject this event? It will be marked as rejected and hidden from the public."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
