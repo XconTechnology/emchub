@@ -117,11 +117,45 @@ export default function ProductDetailPage() {
     },
   });
 
+  const handleAddToCart = () => {
+    if (!currentUser) {
+      // Save return URL and redirect to login
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to add items to your cart",
+      });
+      return;
+    }
+    
+    addToCartMutation.mutate();
+  };
+
+  const handleBuyNow = () => {
+    if (!currentUser) {
+      // Save return URL and redirect to login
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to purchase items",
+      });
+      return;
+    }
+    
+    buyNowMutation.mutate();
+  };
+
   const handleMessageVendor = () => {
     if (!currentUser) {
       // Save return URL and redirect to login
       const returnUrl = `/product/${productId}`;
       setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to message vendors",
+      });
       return;
     }
 
@@ -467,7 +501,7 @@ export default function ProductDetailPage() {
                       <Button 
                         className="w-full bg-[#8FC24C] hover:bg-[#7AB23C] text-white"
                         size="lg"
-                        onClick={() => addToCartMutation.mutate()}
+                        onClick={handleAddToCart}
                         disabled={addToCartMutation.isPending}
                         data-testid="button-add-to-cart"
                       >
@@ -479,7 +513,7 @@ export default function ProductDetailPage() {
                         className="w-full"
                         variant="outline"
                         size="lg"
-                        onClick={() => buyNowMutation.mutate()}
+                        onClick={handleBuyNow}
                         disabled={buyNowMutation.isPending}
                         data-testid="button-buy-now"
                       >
