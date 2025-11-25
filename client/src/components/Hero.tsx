@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,9 +8,31 @@ import { Search, GraduationCap, Globe, Store, MapPin, Wrench, ChefHat, Palette, 
 import type { Category } from "@shared/schema";
 
 export default function Hero() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [, setLocation] = useLocation();
+
   const { data: categories, isLoading } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
   });
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchTerm.trim()) {
+      params.set("search", searchTerm.trim());
+    }
+    if (selectedCategory && selectedCategory !== "all") {
+      params.set("category", selectedCategory);
+    }
+    const queryString = params.toString();
+    setLocation(`/explore${queryString ? `?${queryString}` : ""}`);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const getCategoryIcon = (categoryName: string) => {
     const iconMap: Record<string, any> = {
@@ -48,26 +71,33 @@ export default function Hero() {
                   <Input
                     type="text"
                     placeholder="Search businesses, cuisines, services..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base shadow-sm"
                     data-testid="input-search"
                   />
                 </div>
                 <div className="relative min-w-[200px]">
-                  <Select>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 shadow-sm" data-testid="select-category">
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="food">Food & Dining</SelectItem>
-                      <SelectItem value="shopping">Shopping</SelectItem>
-                      <SelectItem value="services">Services</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="accommodation">Accommodation</SelectItem>
+                      {categories?.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="bg-white text-black px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl" data-testid="button-search">
+                <Button 
+                  onClick={handleSearch}
+                  className="bg-white text-black px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl" 
+                  data-testid="button-search"
+                >
                   Search
                 </Button>
               </div>
