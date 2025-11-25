@@ -143,9 +143,9 @@ export default function MapPage() {
     <div className="min-h-screen flex flex-col bg-white">
       <Header forceSolid={true} />
       
-      <div className="flex-1 pt-16 flex flex-col md:flex-row h-[calc(100vh-4rem)]">
+      <div className="flex-1 pt-16 flex flex-col md:flex-row">
         {/* Mobile Toggle Buttons */}
-        <div className="md:hidden flex border-b border-gray-200 bg-white">
+        <div className="md:hidden flex border-b border-gray-200 bg-white sticky top-16 z-30">
           <button
             onClick={() => setMobileView('list')}
             className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
@@ -173,7 +173,7 @@ export default function MapPage() {
         </div>
 
         {/* Left Sidebar - Hidden on mobile when map view is active */}
-        <div className={`w-full md:w-96 border-r border-gray-200 flex flex-col bg-white h-full ${mobileView === 'map' ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-96 border-r border-gray-200 flex flex-col bg-white md:h-[calc(100vh-4rem)] ${mobileView === 'map' ? 'hidden md:flex' : 'flex'}`}>
           {/* Locations Found Count */}
           <div className="px-4 py-3 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700" data-testid="text-locations-count">
@@ -308,7 +308,7 @@ export default function MapPage() {
         </div>
 
         {/* Right Map - Show on mobile when map view is active */}
-        <div className={`flex-1 relative ${mobileView === 'list' ? 'hidden md:block' : 'block h-[calc(100vh-120px)] md:h-auto'}`}>
+        <div className={`relative ${mobileView === 'list' ? 'hidden md:block md:flex-1 md:h-[calc(100vh-4rem)]' : 'block w-full h-[400px] md:flex-1 md:h-[calc(100vh-4rem)]'}`}>
           {/* Map Type Toggle */}
           <div className="absolute top-4 left-4 z-40 bg-white rounded-lg shadow-md overflow-hidden flex">
             <button
@@ -414,10 +414,7 @@ export default function MapPage() {
           )}
         </div>
       </div>
-      {/* Hide footer on mobile when map view is active */}
-      <div className={`${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }
