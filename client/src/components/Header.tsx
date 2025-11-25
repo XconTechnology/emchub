@@ -216,7 +216,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-foreground hover:text-primary"
+                className={`transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`}
                 data-testid="button-mobile-menu"
               >
                 {isMobileMenuOpen ? (
@@ -232,7 +232,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden fixed top-16 left-0 right-0 z-[1100] max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
             <Button 
               variant="ghost" 
