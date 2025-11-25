@@ -68,34 +68,34 @@ export default function Header({ forceSolid = false }: HeaderProps) {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
+            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
+              <Link href="/" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-home">
                 Home
               </Link>
-              <Link href="/products" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-products">
+              <Link href="/products" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-products">
                 Products
               </Link>
-              <Link href="/events" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-events">
+              <Link href="/events" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-events">
                 Events
               </Link>
-              <Link href="/map" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
-                Map of Listings
+              <Link href="/map" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-map">
+                Map
               </Link>
-              <Link href="/explore" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-explore">
+              <Link href="/explore" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-explore">
                 Explore
               </Link>
-              <Link href="/about-us" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
+              <Link href="/about-us" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </Link>
               {user?.isAdmin && (
-                <Link href="/admin" className={`nav-link font-medium transition-colors ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
+                <Link href="/admin" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
                   Admin
                 </Link>
               )}
             </div>
 
             {/* User Actions */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
               {isLoading ? (
                 <div className="animate-pulse">
                   <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -211,7 +211,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -232,7 +232,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed top-16 left-0 right-0 z-[1100] max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="lg:hidden fixed top-16 left-0 right-0 z-[1100] max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
             <Button 
               variant="ghost" 
