@@ -119,12 +119,14 @@ export default function ProductsPage() {
                     <CardHeader className="p-0">
                       <div className="relative overflow-hidden rounded-t-lg">
                         {hasImage ? (
-                          <img
-                            src={mainImage}
-                            alt={product.title || 'Product'}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                            data-testid={`img-product-${product.id}`}
-                          />
+                          <div className="w-full h-48 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                            <img
+                              src={mainImage}
+                              alt={product.title || 'Product'}
+                              className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                              data-testid={`img-product-${product.id}`}
+                            />
+                          </div>
                         ) : (
                           <div 
                             className="w-full h-48 bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center"
