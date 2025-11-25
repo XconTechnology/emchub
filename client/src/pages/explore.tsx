@@ -135,26 +135,26 @@ export default function Explore() {
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-3">
                 <div className="flex flex-col md:flex-row gap-3">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 z-10" />
                     <Input
                       type="text"
                       placeholder="Search businesses, cuisines, services..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
+                      className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base text-gray-900 placeholder:text-gray-500"
                       data-testid="explore-input-search"
                     />
                   </div>
                   <div className="relative min-w-[180px]">
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl" data-testid="explore-select-category">
-                        <SelectValue placeholder="All Categories" />
+                      <SelectTrigger className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 h-auto" data-testid="explore-select-category">
+                        <SelectValue placeholder="All Categories" className="text-gray-900" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="all" className="text-gray-900">All Categories</SelectItem>
                         {categories?.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
+                          <SelectItem key={category.id} value={category.id} className="text-gray-900">
                             {category.name}
                           </SelectItem>
                         ))}
@@ -163,7 +163,7 @@ export default function Explore() {
                   </div>
                   <Button 
                     onClick={handleSearch}
-                    className="bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors" 
+                    className="bg-[hsl(86,49%,53%)] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[hsl(86,49%,48%)] transition-colors h-auto" 
                     data-testid="explore-button-search"
                   >
                     Search
@@ -172,7 +172,7 @@ export default function Explore() {
                     <Button 
                       onClick={handleClearSearch}
                       variant="outline"
-                      className="px-4 py-3 rounded-xl border-gray-300" 
+                      className="px-4 py-3 rounded-xl border-gray-300 bg-white text-gray-900 h-auto" 
                       data-testid="explore-button-clear"
                     >
                       <X className="w-5 h-5" />
