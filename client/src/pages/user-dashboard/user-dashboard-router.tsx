@@ -69,6 +69,7 @@ import UserSupportTickets from "./user-support-tickets";
 import VendorSupportTickets from "./vendor-support-tickets";
 import VendorSupportTicketChat from "./vendor-support-ticket-chat";
 import UserSavedItems from "./user-saved-items";
+import VendorReviews from "../vendor-dashboard/vendor-reviews";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -278,7 +279,9 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/profile" component={Profile} />
             <Route path="/dashboard/settings" component={UserSettings} />
             <Route path="/dashboard/browse" component={UserBrowse} />
-            <Route path="/dashboard/reviews" component={UserReviews} />
+            <Route path="/dashboard/reviews">
+              {user?.vendorStatus === 'verified' ? <VendorReviews /> : <UserReviews />}
+            </Route>
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
             <Route path="/dashboard/services" component={UserServices} />
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />

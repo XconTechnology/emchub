@@ -213,6 +213,13 @@ export interface IStorage {
   isItemSaved(userId: string, listingId: string): Promise<boolean>;
   syncSavedItems(userId: string, listingIds: string[]): Promise<any[]>;
   
+  // Reviews operations
+  createReview(data: { userId: string; listingId: string; vendorId: string; rating: number; comment?: string }): Promise<any>;
+  getListingReviews(listingId: string): Promise<any[]>;
+  getVendorReviews(vendorId: string): Promise<any[]>;
+  deleteReview(reviewId: string, vendorId: string): Promise<void>;
+  hasUserReviewed(userId: string, listingId: string): Promise<boolean>;
+  
   // Order operations
   createOrder(userId: string, orderData: any): Promise<any>;
   getUserOrders(userId: string): Promise<any[]>;
@@ -1817,6 +1824,124 @@ export class DatabaseStorage implements IStorage {
     }
     
     return results;
+  }
+  
+  // Reviews operations implementation
+  async createReview(data: { userId: string; listingId: string; vendorId: string; rating: number; comment?: string }): Promise<any> {
+    const { reviews, users } = await import("@shared/schema");
+    
+    // Check if user already reviewed this listing
+    const existing = await db
+      .select()
+      .from(reviews)
+      .where(and(eq(reviews.userId, data.userId), eq(reviews.listingId, data.listingId)));
+    
+    if (existing.length > 0) {
+      throw new Error("You have already reviewed this product");
+    }
+    
+    const [review] = await db
+      .insert(reviews)
+      .values({
+        userId: data.userId,
+        listingId: data.listingId,
+        vendorId: data.vendorId,
+        rating: data.rating,
+        comment: data.comment || null,
+      })
+      .returning();
+    
+    // Get user details for the review
+    const [user] = await db.select().from(users).where(eq(users.id, data.userId));
+    
+    return {
+      ...review,
+      user: user ? { id: user.id, username: user.username, profileImageUrl: user.profileImageUrl } : null,
+    };
+  }
+  
+  async getListingReviews(listingId: string): Promise<any[]> {
+    const { reviews, users } = await import("@shared/schema");
+    
+    const results = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        listingId: reviews.listingId,
+        vendorId: reviews.vendorId,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        },
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .where(eq(reviews.listingId, listingId))
+      .orderBy(reviews.createdAt);
+    
+    return results;
+  }
+  
+  async getVendorReviews(vendorId: string): Promise<any[]> {
+    const { reviews, users, listings } = await import("@shared/schema");
+    
+    const results = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        listingId: reviews.listingId,
+        vendorId: reviews.vendorId,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        },
+        listing: {
+          id: listings.id,
+          title: listings.title,
+        },
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .leftJoin(listings, eq(reviews.listingId, listings.id))
+      .where(eq(reviews.vendorId, vendorId))
+      .orderBy(reviews.createdAt);
+    
+    return results;
+  }
+  
+  async deleteReview(reviewId: string, vendorId: string): Promise<void> {
+    const { reviews } = await import("@shared/schema");
+    
+    // Verify the review belongs to the vendor's product
+    const [review] = await db
+      .select()
+      .from(reviews)
+      .where(and(eq(reviews.id, reviewId), eq(reviews.vendorId, vendorId)));
+    
+    if (!review) {
+      throw new Error("Review not found or you don't have permission to delete it");
+    }
+    
+    await db.delete(reviews).where(eq(reviews.id, reviewId));
+  }
+  
+  async hasUserReviewed(userId: string, listingId: string): Promise<boolean> {
+    const { reviews } = await import("@shared/schema");
+    const existing = await db
+      .select()
+      .from(reviews)
+      .where(and(eq(reviews.userId, userId), eq(reviews.listingId, listingId)));
+    return existing.length > 0;
   }
   
   // Order operations implementation

@@ -134,7 +134,7 @@ export default function UserSavedItems() {
                   <Heart className="w-5 h-5 fill-red-500 text-red-500" />
                 </Button>
 
-                {listing.status !== 'approved' && (
+                {listing.status !== 'published' && (
                   <Badge 
                     variant="secondary" 
                     className="absolute top-2 left-2"
@@ -165,7 +165,7 @@ export default function UserSavedItems() {
                 </div>
 
                 <div className="flex gap-2">
-                  {listing.type === 'product' && listing.status === 'approved' && (
+                  {listing.type === 'product' && listing.status === 'published' && (
                     <Button 
                       size="sm" 
                       className="flex-1 bg-[#8FC24C] hover:bg-[#7AB23C]"

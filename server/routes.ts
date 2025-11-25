@@ -3503,6 +3503,93 @@ export function registerRoutes(app: Express): Server {
   });
   
   // ========================================
+  // REVIEWS ROUTES
+  // ========================================
+  
+  // Get reviews for a listing (public)
+  app.get("/api/reviews/listing/:listingId", async (req, res) => {
+    try {
+      const reviews = await storage.getListingReviews(req.params.listingId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error getting listing reviews:", error);
+      res.status(500).json({ error: "Failed to get reviews" });
+    }
+  });
+  
+  // Check if user has reviewed a listing
+  app.get("/api/reviews/check/:listingId", isAuthenticated, async (req, res) => {
+    try {
+      const hasReviewed = await storage.hasUserReviewed(req.user.id, req.params.listingId);
+      res.json({ hasReviewed });
+    } catch (error) {
+      console.error("Error checking review:", error);
+      res.status(500).json({ error: "Failed to check review status" });
+    }
+  });
+  
+  // Submit a review (authenticated users only)
+  app.post("/api/reviews", isAuthenticated, async (req, res) => {
+    try {
+      const { listingId, rating, comment } = req.body;
+      
+      if (!listingId) {
+        return res.status(400).json({ error: "Listing ID is required" });
+      }
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+      
+      // Get the listing to find the vendor
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      const review = await storage.createReview({
+        userId: req.user.id,
+        listingId,
+        vendorId: listing.userId,
+        rating: parseInt(rating),
+        comment: comment || null,
+      });
+      
+      res.json(review);
+    } catch (error: any) {
+      console.error("Error creating review:", error);
+      if (error.message === "You have already reviewed this product") {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+  
+  // Get vendor's reviews (for vendor dashboard)
+  app.get("/api/vendor/reviews", isAuthenticated, async (req, res) => {
+    try {
+      const reviews = await storage.getVendorReviews(req.user.id);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error getting vendor reviews:", error);
+      res.status(500).json({ error: "Failed to get reviews" });
+    }
+  });
+  
+  // Delete a review (vendor only - for their own products)
+  app.delete("/api/vendor/reviews/:reviewId", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteReview(req.params.reviewId, req.user.id);
+      res.json({ message: "Review deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting review:", error);
+      if (error.message === "Review not found or you don't have permission to delete it") {
+        return res.status(403).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to delete review" });
+    }
+  });
+  
+  // ========================================
   // ORDER ROUTES
   // ========================================
   

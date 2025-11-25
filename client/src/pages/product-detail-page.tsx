@@ -93,6 +93,67 @@ export default function ProductDetailPage() {
     enabled: !!currentUser && !!productId,
   });
 
+  // Query for product reviews
+  interface ReviewWithUser {
+    id: string;
+    userId: string;
+    listingId: string;
+    vendorId: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    user: {
+      id: string;
+      username: string;
+      profileImageUrl: string | null;
+    } | null;
+  }
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery<ReviewWithUser[]>({
+    queryKey: ['/api/reviews/listing', productId],
+    enabled: !!productId,
+  });
+
+  // Check if user has already reviewed
+  const { data: reviewCheck } = useQuery<{ hasReviewed: boolean }>({
+    queryKey: ['/api/reviews/check', productId],
+    enabled: !!currentUser && !!productId,
+  });
+
+  // Calculate average rating
+  const averageRating = reviews.length > 0 
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+    : 0;
+
+  // Submit review mutation
+  const submitReviewMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/reviews', {
+        listingId: productId,
+        rating: reviewRating,
+        comment: reviewText || null,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Review submitted!",
+        description: "Thank you for your feedback",
+      });
+      setShowReviewForm(false);
+      setReviewText("");
+      setReviewRating(5);
+      queryClient.invalidateQueries({ queryKey: ['/api/reviews/listing', productId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reviews/check', productId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit review",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Effect to set isSaved state based on login status and saved data
   useEffect(() => {
     if (!productId) return;
@@ -353,23 +414,7 @@ export default function ProductDetailPage() {
   };
 
   const handleSubmitReview = () => {
-    if (!reviewText.trim()) {
-      toast({
-        title: "Review required",
-        description: "Please write a review before submitting",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // TODO: Implement actual review submission to backend
-    toast({
-      title: "Review submitted!",
-      description: "Thank you for your feedback",
-    });
-    setShowReviewForm(false);
-    setReviewText("");
-    setReviewRating(5);
+    submitReviewMutation.mutate();
   };
 
   const handleContactSeller = () => {
@@ -853,22 +898,33 @@ export default function ProductDetailPage() {
         <div className="mt-8">
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Customer Reviews</h2>
+              <h2 className="text-2xl font-bold mb-4" data-testid="text-reviews-title">Customer Reviews</h2>
               <div className="flex items-center gap-4 mb-6">
                 <div className="text-center">
-                  <div className="text-4xl font-bold">4.5</div>
+                  <div className="text-4xl font-bold" data-testid="text-average-rating">
+                    {reviews.length > 0 ? averageRating.toFixed(1) : '0.0'}
+                  </div>
                   <div className="flex items-center gap-1 my-2">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                      <Star 
+                        key={star} 
+                        className={`w-5 h-5 ${star <= Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                      />
                     ))}
                   </div>
-                  <div className="text-sm text-gray-600">Based on 45 reviews</div>
+                  <div className="text-sm text-gray-600" data-testid="text-review-count">
+                    Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+                  </div>
                 </div>
                 <Separator orientation="vertical" className="h-24" />
                 <div className="flex-1">
-                  <Button onClick={handleWriteReview} data-testid="button-write-review">
-                    Write a Review
-                  </Button>
+                  {currentUser && reviewCheck?.hasReviewed ? (
+                    <p className="text-sm text-gray-500">You have already reviewed this product</p>
+                  ) : (
+                    <Button onClick={handleWriteReview} data-testid="button-write-review">
+                      Write a Review
+                    </Button>
+                  )}
                 </div>
               </div>
               
@@ -907,7 +963,7 @@ export default function ProductDetailPage() {
                   
                   {/* Review Text */}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">Your Review</label>
+                    <label className="block text-sm font-medium mb-2">Your Review (optional)</label>
                     <Textarea
                       placeholder="Share your experience with this product..."
                       value={reviewText}
@@ -921,16 +977,75 @@ export default function ProductDetailPage() {
                   <Button 
                     onClick={handleSubmitReview} 
                     className="bg-[#8FC24C] hover:bg-[#7AB23C]"
+                    disabled={submitReviewMutation.isPending}
                     data-testid="button-submit-review"
                   >
-                    Submit Review
+                    {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
                   </Button>
                 </div>
               )}
               
-              <div className="text-center py-8 text-gray-500">
-                <p>No reviews yet. Be the first to review this product!</p>
-              </div>
+              {/* Reviews List */}
+              {reviewsLoading ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Loading reviews...</p>
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No reviews yet. Be the first to review this product!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b pb-4 last:border-b-0" data-testid={`review-item-${review.id}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          {review.user?.profileImageUrl ? (
+                            <img 
+                              src={review.user.profileImageUrl} 
+                              alt={review.user.username} 
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-500 font-medium">
+                              {review.user?.username?.charAt(0).toUpperCase() || '?'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium" data-testid={`review-username-${review.id}`}>
+                                {review.user?.username || 'Anonymous'}
+                              </span>
+                              <div className="flex items-center gap-1 mt-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star 
+                                    key={star} 
+                                    className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-sm text-gray-500" data-testid={`review-date-${review.id}`}>
+                              {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                          {review.comment && (
+                            <p className="mt-2 text-gray-700" data-testid={`review-comment-${review.id}`}>
+                              {review.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
