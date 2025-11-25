@@ -17,6 +17,7 @@ import {
   LifeBuoy,
   UserCog,
   Calendar,
+  ExternalLink,
 } from "lucide-react";
 import {
   Sidebar,
@@ -184,27 +185,43 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
         </Sidebar>
 
         <SidebarInset className="flex-1">
-          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+          <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center border-b bg-background px-4">
             <SidebarTrigger data-testid="sidebar-toggle" />
-            <Separator orientation="vertical" className="h-8" />
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">
-                {location === "/admin" && "Dashboard Overview"}
-                {location === "/admin/analytics" && "Platform Analytics"}
-                {location === "/admin/pending-approvals" && "Pending Approvals"}
-                {location === "/admin/vendor-requests" && "Vendor Requests"}
-                {location === "/admin/vendors" && "Verified Vendors"}
-                {location === "/admin/coupons" && "Coupon Management"}
-                {location === "/admin/activity-logs" && "Activity Logs"}
-                {location === "/admin/support-tickets" && "Support Tickets"}
-                {location === "/admin/listings" && "All Listings"}
-                {location === "/admin/listings/new" && "Add New Listing"}
-                {location === "/admin/users" && "Users"}
-                {location === "/admin/staff" && "Staff Management"}
-                {location === "/admin/audit-logs" && "Staff Audit Logs"}
-                {location === "/admin/recycle-bin" && "Recycle Bin"}
-              </h1>
-            </div>
+            <Separator orientation="vertical" className="h-8 mx-2" />
+            
+            {/* Centered heading */}
+            <h1 className="flex-1 text-lg font-semibold text-center">
+              {location === "/admin" && "Dashboard Overview"}
+              {location === "/admin/analytics" && "Platform Analytics"}
+              {location === "/admin/pending-approvals" && "Pending Approvals"}
+              {location === "/admin/vendor-requests" && "Vendor Requests"}
+              {location === "/admin/vendors" && "Verified Vendors"}
+              {location === "/admin/coupons" && "Coupon Management"}
+              {location === "/admin/activity-logs" && "Activity Logs"}
+              {location === "/admin/support-tickets" && "Support Tickets"}
+              {location === "/admin/listings" && "All Listings"}
+              {location === "/admin/listings/new" && "Add New Listing"}
+              {location === "/admin/events" && "Events Management"}
+              {location === "/admin/timedollars" && "TimeDollars Management"}
+              {location === "/admin/disputes" && "Disputes"}
+              {location === "/admin/users" && "Users"}
+              {location === "/admin/staff" && "Staff Management"}
+              {location === "/admin/audit-logs" && "Staff Audit Logs"}
+              {location === "/admin/recycle-bin" && "Recycle Bin"}
+              {location === "/admin/transactions" && "Transactions"}
+            </h1>
+            
+            {/* View Site button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open("/", "_blank")}
+              className="gap-1.5 ml-2"
+              data-testid="button-admin-view-site"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">View Site</span>
+            </Button>
           </header>
           <div className="flex-1 p-6">
             {children}

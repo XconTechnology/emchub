@@ -29,7 +29,8 @@ import {
   BadgeDollarSign,
   Truck,
   LifeBuoy,
-  Heart
+  Heart,
+  ExternalLink
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -219,8 +220,12 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 pl-16 lg:pl-8 pr-4 lg:pr-8 py-4 flex justify-between items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
-          <h1 className="text-xl font-semibold text-white truncate">
+        <header className="sticky top-0 z-30 px-4 lg:px-8 py-4 flex items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
+          {/* Left spacer for mobile menu */}
+          <div className="w-10 lg:w-0 flex-shrink-0"></div>
+          
+          {/* Centered heading */}
+          <h1 className="flex-1 text-xl font-semibold text-white text-center truncate">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/purchases" && "My Purchases"}
             {location === "/dashboard/activity" && "My Activity"}
@@ -252,12 +257,25 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/saved-items" && "Saved Items"}
           </h1>
           
+          {/* Right side buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* View Live Site button */}
+            <Button
+              onClick={() => window.open("/", "_blank")}
+              size="sm"
+              className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-2.5"
+              data-testid="button-view-site"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">View Site</span>
+            </Button>
+            
             {/* Show Become a Vendor button for normal users only */}
             {user?.vendorStatus !== 'verified' && (
               <Button
                 onClick={() => setLocation("/dashboard/become-vendor")}
-                className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-3"
+                size="sm"
+                className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-2.5"
                 data-testid="button-become-vendor-navbar"
               >
                 <BadgeDollarSign className="w-4 h-4" />
