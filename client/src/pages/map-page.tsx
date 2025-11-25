@@ -308,7 +308,7 @@ export default function MapPage() {
         </div>
 
         {/* Right Map - Show on mobile when map view is active */}
-        <div className={`flex-1 relative ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+        <div className={`flex-1 relative ${mobileView === 'list' ? 'hidden md:block' : 'block h-[calc(100vh-120px)] md:h-auto'}`}>
           {/* Map Type Toggle */}
           <div className="absolute top-4 left-4 z-40 bg-white rounded-lg shadow-md overflow-hidden flex">
             <button
@@ -414,7 +414,10 @@ export default function MapPage() {
           )}
         </div>
       </div>
-      <Footer />
+      {/* Hide footer on mobile when map view is active */}
+      <div className={`${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
+        <Footer />
+      </div>
     </div>
   );
 }
