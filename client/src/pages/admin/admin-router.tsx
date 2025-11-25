@@ -17,6 +17,8 @@ import AdminSupportTickets from "./admin-support-tickets";
 import AdminStaff from "./admin-staff";
 import AdminAuditLogs from "./admin-audit-logs";
 import AdminEvents from "./admin-events";
+import AdminTimeDollars from "./admin-timedollars";
+import AdminDisputes from "./admin-disputes";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +52,8 @@ export default function AdminRouter() {
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
         <Route path="/admin/staff" component={AdminStaff} />
         <Route path="/admin/audit-logs" component={AdminAuditLogs} />
+        <Route path="/admin/timedollars" component={AdminTimeDollars} />
+        <Route path="/admin/disputes" component={AdminDisputes} />
         <Route path="/admin/listings/new" component={AdminAddListing} />
         <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
         <Route path="/admin/listings" component={AdminListings} />

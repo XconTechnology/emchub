@@ -3183,6 +3183,22 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ error: "Unauthorized to create dispute for this order" });
       }
       
+      // Verify order involves TimeDollar payment
+      if (order.paymentMethod !== 'timedollar' && order.paymentMethod !== 'both') {
+        return res.status(400).json({ error: "Disputes can only be created for orders paid with TimeDollars" });
+      }
+      
+      // Verify order is delivered (TD has been paid to seller)
+      if (order.status !== 'delivered') {
+        return res.status(400).json({ error: "Disputes can only be created for delivered orders" });
+      }
+      
+      // Check if dispute already exists for this order
+      const existingDisputes = await storage.getTdDisputes({ orderId });
+      if (existingDisputes && existingDisputes.length > 0) {
+        return res.status(400).json({ error: "A dispute already exists for this order" });
+      }
+      
       // Calculate deadline (20 working days from now)
       const deadline = new Date();
       let workingDaysAdded = 0;
@@ -3294,6 +3310,67 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error getting all disputes:", error);
       res.status(500).json({ error: "Failed to get disputes" });
+    }
+  });
+
+  // ========================================
+  // ADMIN TIMEDOLLAR MANAGEMENT ROUTES
+  // ========================================
+
+  // Get all TD wallets with user info (admin only)
+  app.get("/api/admin/td/wallets", isAdminAuthenticated, async (req, res) => {
+    try {
+      const wallets = await storage.getAllTdWallets();
+      res.json(wallets);
+    } catch (error) {
+      console.error("Error getting TD wallets:", error);
+      res.status(500).json({ error: "Failed to get TD wallets" });
+    }
+  });
+
+  // Get all TD transactions with user info (admin only)
+  app.get("/api/admin/td/transactions", isAdminAuthenticated, async (req, res) => {
+    try {
+      const transactions = await storage.getAllTdTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error getting TD transactions:", error);
+      res.status(500).json({ error: "Failed to get TD transactions" });
+    }
+  });
+
+  // Get all TD conversions with user info (admin only)
+  app.get("/api/admin/td/conversions", isAdminAuthenticated, async (req, res) => {
+    try {
+      const conversions = await storage.getAllTdConversions();
+      res.json(conversions);
+    } catch (error) {
+      console.error("Error getting TD conversions:", error);
+      res.status(500).json({ error: "Failed to get TD conversions" });
+    }
+  });
+
+  // Adjust user TD balance (admin only)
+  app.post("/api/admin/td/adjust-balance", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { userId, amount, notes } = req.body;
+
+      if (!userId || amount === undefined || !notes) {
+        return res.status(400).json({ error: "User ID, amount, and notes are required" });
+      }
+
+      if (amount === 0) {
+        return res.status(400).json({ error: "Amount must be non-zero" });
+      }
+
+      // Execute atomic admin adjustment using database transaction
+      // This ensures both transaction record and wallet update happen together or not at all
+      const result = await storage.adminAdjustTdBalance(userId, amount, notes);
+
+      res.json({ success: true, newBalance: result.newBalance });
+    } catch (error) {
+      console.error("Error adjusting TD balance:", error);
+      res.status(500).json({ error: error.message || "Failed to adjust TD balance" });
     }
   });
 

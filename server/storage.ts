@@ -285,11 +285,14 @@ export interface IStorage {
   createTdWallet(userId: string): Promise<any>;
   getOrCreateTdWallet(userId: string): Promise<any>;
   updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend'): Promise<any>;
+  updateTdWalletBalanceDirect(userId: string, amount: number): Promise<any>;
+  adminAdjustTdBalance(userId: string, amount: number, notes: string): Promise<{ newBalance: number }>;
+  getAllTdWallets(): Promise<any[]>;
   
   // TimeDollar Transaction operations
   createTdTransaction(data: {
     userId: string;
-    type: 'earn' | 'spend';
+    type: 'earn' | 'spend' | 'admin_adjustment';
     amount: number;
     listingId?: string;
     orderId?: string;
@@ -307,6 +310,7 @@ export interface IStorage {
     couponId?: string;
   }): Promise<any>;
   getTdConversions(userId: string): Promise<any[]>;
+  getAllTdConversions(): Promise<any[]>;
   
   // TimeDollar Dispute operations
   createTdDispute(data: {
@@ -317,7 +321,7 @@ export interface IStorage {
     deadline?: Date;
     mediatorId?: string;
   }): Promise<any>;
-  getTdDisputes(filters?: { status?: string; userId?: string }): Promise<any[]>;
+  getTdDisputes(filters?: { status?: string; userId?: string; orderId?: string }): Promise<any[]>;
   getUserDisputes(userId: string): Promise<any[]>;
   getTdDispute(id: string): Promise<any>;
   updateTdDispute(id: string, data: {
@@ -1917,7 +1921,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserOrders(userId: string): Promise<any[]> {
-    const { orders, orderItems, users } = await import("@shared/schema");
+    const { orders, orderItems, users, tdDisputes } = await import("@shared/schema");
     
     // Get all orders for this user
     const userOrders = await db
@@ -1926,7 +1930,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.userId, userId))
       .orderBy(sql`${orders.createdAt} DESC`);
     
-    // Get order items and vendor details for each order
+    // Get order items, vendor details, and dispute for each order
     const ordersWithDetails = await Promise.all(
       userOrders.map(async (order: any) => {
         // Get order items
@@ -1945,10 +1949,17 @@ export class DatabaseStorage implements IStorage {
           .from(users)
           .where(eq(users.id, order.vendorId));
         
+        // Get dispute if exists
+        const [dispute] = await db
+          .select()
+          .from(tdDisputes)
+          .where(eq(tdDisputes.orderId, order.id));
+        
         return {
           ...order,
           items,
           vendor,
+          dispute: dispute || undefined,
         };
       })
     );
@@ -2814,10 +2825,81 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
   
+  async updateTdWalletBalanceDirect(userId: string, amount: number): Promise<any> {
+    const { tdWallet } = await import("@shared/schema");
+    const wallet = await this.getOrCreateTdWallet(userId);
+    
+    const currentBalance = parseFloat(wallet.tdBalance);
+    const newBalance = currentBalance + amount;
+    
+    if (newBalance < 0) {
+      throw new Error("Insufficient balance for this operation");
+    }
+    
+    const [updated] = await db
+      .update(tdWallet)
+      .set({
+        tdBalance: newBalance.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(tdWallet.userId, userId))
+      .returning();
+    
+    return updated;
+  }
+  
+  async adminAdjustTdBalance(userId: string, amount: number, notes: string): Promise<{ newBalance: number }> {
+    const { tdWallet, tdTransactions } = await import("@shared/schema");
+    
+    // Execute entire adjustment in a database transaction for atomicity
+    const result = await db.transaction(async (tx) => {
+      // 1. Get wallet with FOR UPDATE lock to prevent race conditions
+      const [wallet] = await tx
+        .select()
+        .from(tdWallet)
+        .where(eq(tdWallet.userId, userId))
+        .for('update');
+      
+      if (!wallet) {
+        throw new Error("User wallet not found");
+      }
+      
+      // 2. Validate balance
+      const currentBalance = parseFloat(wallet.tdBalance || '0');
+      const newBalance = currentBalance + amount;
+      
+      if (newBalance < 0) {
+        throw new Error(`Insufficient balance. Current: ${currentBalance} TD, Adjustment: ${amount} TD`);
+      }
+      
+      // 3. Create transaction record
+      await tx.insert(tdTransactions).values({
+        userId,
+        type: 'admin_adjustment',
+        amount: Math.abs(amount).toString(),
+        note: notes,
+      });
+      
+      // 4. Update wallet balance
+      const [updated] = await tx
+        .update(tdWallet)
+        .set({
+          tdBalance: newBalance.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(tdWallet.userId, userId))
+        .returning();
+      
+      return { newBalance: parseFloat(updated.tdBalance) };
+    });
+    
+    return result;
+  }
+  
   // TimeDollar Transaction operations
   async createTdTransaction(data: {
     userId: string;
-    type: 'earn' | 'spend';
+    type: 'earn' | 'spend' | 'admin_adjustment';
     amount: number;
     listingId?: string;
     orderId?: string;
@@ -2836,8 +2918,11 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     
-    // Update wallet balance
-    await this.updateTdWalletBalance(data.userId, data.amount, data.type);
+    // Update wallet balance only for earn/spend, not for admin adjustments
+    // Admin adjustments update the wallet separately in a transaction
+    if (data.type === 'earn' || data.type === 'spend') {
+      await this.updateTdWalletBalance(data.userId, data.amount, data.type);
+    }
     
     return transaction;
   }
@@ -2857,10 +2942,22 @@ export class DatabaseStorage implements IStorage {
   
   async getAllTdTransactions(): Promise<any[]> {
     const { tdTransactions } = await import("@shared/schema");
-    return db
-      .select()
+    // Join with users table to get user info
+    const transactions = await db
+      .select({
+        id: tdTransactions.id,
+        userId: tdTransactions.userId,
+        type: tdTransactions.type,
+        amount: tdTransactions.amount,
+        notes: tdTransactions.note,
+        createdAt: tdTransactions.createdAt,
+        username: users.username,
+        email: users.email,
+      })
       .from(tdTransactions)
+      .leftJoin(users, eq(tdTransactions.userId, users.id))
       .orderBy(sql`${tdTransactions.createdAt} DESC`);
+    return transactions;
   }
   
   // TimeDollar Conversion operations
@@ -2892,6 +2989,45 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`${tdConversions.createdAt} DESC`);
   }
   
+  async getAllTdWallets(): Promise<any[]> {
+    const { tdWallet } = await import("@shared/schema");
+    // Join with users table to get user info
+    const wallets = await db
+      .select({
+        id: tdWallet.id,
+        userId: tdWallet.userId,
+        balance: tdWallet.balance,
+        totalEarned: tdWallet.totalEarned,
+        totalSpent: tdWallet.totalSpent,
+        username: users.username,
+        email: users.email,
+      })
+      .from(tdWallet)
+      .leftJoin(users, eq(tdWallet.userId, users.id))
+      .orderBy(sql`${tdWallet.balance} DESC`);
+    return wallets;
+  }
+  
+  async getAllTdConversions(): Promise<any[]> {
+    const { tdConversions } = await import("@shared/schema");
+    // Join with users table to get user info
+    const conversions = await db
+      .select({
+        id: tdConversions.id,
+        userId: tdConversions.userId,
+        tdAmount: tdConversions.tdSpent,
+        cashAmount: sql<number>`${tdConversions.tdSpent}::numeric * 60`,
+        couponId: tdConversions.couponId,
+        createdAt: tdConversions.createdAt,
+        username: users.username,
+        email: users.email,
+      })
+      .from(tdConversions)
+      .leftJoin(users, eq(tdConversions.userId, users.id))
+      .orderBy(sql`${tdConversions.createdAt} DESC`);
+    return conversions;
+  }
+  
   // TimeDollar Dispute operations
   async createTdDispute(data: {
     orderId: string;
@@ -2917,7 +3053,7 @@ export class DatabaseStorage implements IStorage {
     return dispute;
   }
   
-  async getTdDisputes(filters?: { status?: string; userId?: string }): Promise<any[]> {
+  async getTdDisputes(filters?: { status?: string; userId?: string; orderId?: string }): Promise<any[]> {
     const { tdDisputes } = await import("@shared/schema");
     
     if (!filters) {
@@ -2938,6 +3074,10 @@ export class DatabaseStorage implements IStorage {
           eq(tdDisputes.mediatorId, filters.userId)
         )
       );
+    }
+    
+    if (filters.orderId) {
+      conditions.push(eq(tdDisputes.orderId, filters.orderId));
     }
     
     if (conditions.length === 0) {
@@ -2997,10 +3137,34 @@ export class DatabaseStorage implements IStorage {
   
   async getAllTdDisputes(): Promise<any[]> {
     const { tdDisputes } = await import("@shared/schema");
-    return db
-      .select()
+    // Create aliases for the users table to join buyer, seller, and mediator
+    const buyer = alias(users, 'buyer');
+    const seller = alias(users, 'seller');
+    const mediator = alias(users, 'mediator');
+    
+    const disputes = await db
+      .select({
+        id: tdDisputes.id,
+        orderId: tdDisputes.orderId,
+        buyerId: tdDisputes.buyerId,
+        sellerId: tdDisputes.sellerId,
+        mediatorId: tdDisputes.mediatorId,
+        reason: tdDisputes.reason,
+        status: tdDisputes.status,
+        resolutionNote: tdDisputes.resolutionNote,
+        deadline: tdDisputes.deadline,
+        createdAt: tdDisputes.createdAt,
+        buyerName: buyer.username,
+        sellerName: seller.username,
+        mediatorName: mediator.username,
+      })
       .from(tdDisputes)
+      .leftJoin(buyer, eq(tdDisputes.buyerId, buyer.id))
+      .leftJoin(seller, eq(tdDisputes.sellerId, seller.id))
+      .leftJoin(mediator, eq(tdDisputes.mediatorId, mediator.id))
       .orderBy(sql`${tdDisputes.createdAt} DESC`);
+    
+    return disputes;
   }
   
   async getStaffUsers(): Promise<any[]> {
