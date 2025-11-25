@@ -341,6 +341,22 @@ export const insertCartItemSchema = createInsertSchema(cartItems).omit({
 export type CartItem = typeof cartItems.$inferSelect;
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 
+// Saved Items / Wishlist - for users to save products they're interested in
+export const savedItems = pgTable("saved_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  listingId: varchar("listing_id").notNull().references(() => listings.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSavedItemSchema = createInsertSchema(savedItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type SavedItem = typeof savedItems.$inferSelect;
+export type InsertSavedItem = z.infer<typeof insertSavedItemSchema>;
+
 // Orders table for completed purchases
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
