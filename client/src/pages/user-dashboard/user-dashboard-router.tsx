@@ -219,8 +219,8 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 px-4 lg:px-8 py-4 flex justify-between items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
-          <h1 className="text-xl font-semibold text-white">
+        <header className="sticky top-0 z-30 pl-16 lg:pl-8 pr-4 lg:pr-8 py-4 flex justify-between items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
+          <h1 className="text-xl font-semibold text-white truncate">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/purchases" && "My Purchases"}
             {location === "/dashboard/activity" && "My Activity"}
@@ -252,16 +252,16 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/saved-items" && "Saved Items"}
           </h1>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Show Become a Vendor button for normal users only */}
             {user?.vendorStatus !== 'verified' && (
               <Button
                 onClick={() => setLocation("/dashboard/become-vendor")}
-                className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0"
+                className="gap-2 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-3"
                 data-testid="button-become-vendor-navbar"
               >
                 <BadgeDollarSign className="w-4 h-4" />
-                Become a Vendor
+                <span className="hidden sm:inline">Become a Vendor</span>
               </Button>
             )}
           </div>
