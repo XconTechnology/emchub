@@ -12,7 +12,8 @@ import {
   Search, 
   ShoppingCart, 
   BadgeCheck,
-  Filter
+  Filter,
+  Coins
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
 
@@ -163,24 +164,31 @@ export default function ProductsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-2xl font-bold text-[#8FC24C]" data-testid={`text-price-${product.id}`}>
                             ${product.price}
                           </p>
+                          {product.tdEligible && product.tdValue && (
+                            <Badge className="bg-brand-green text-white text-xs" data-testid={`badge-td-${product.id}`}>
+                              <Coins className="w-3 h-3 mr-1" />
+                              {product.tdValue} TD
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
                           {product.inventory !== null && (
                             <p className="text-xs text-gray-500">
                               {product.inventory} in stock
                             </p>
                           )}
+                          {product.isVerified && (
+                            <BadgeCheck 
+                              className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" 
+                              data-testid={`badge-verified-${product.id}`}
+                            />
+                          )}
                         </div>
-                        
-                        {product.isVerified && (
-                          <BadgeCheck 
-                            className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" 
-                            data-testid={`badge-verified-${product.id}`}
-                          />
-                        )}
                       </div>
                     </CardContent>
 

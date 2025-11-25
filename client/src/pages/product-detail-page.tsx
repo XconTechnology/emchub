@@ -348,10 +348,16 @@ export default function ProductDetailPage() {
 
               {/* Price */}
               <div>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-3xl font-bold text-gray-900" data-testid="product-price">
                     ${price.toFixed(2)}
                   </span>
+                  {product.tdEligible && product.tdValue && (
+                    <Badge className="bg-brand-green hover:bg-brand-green/90 text-white px-3 py-1" data-testid="badge-td-value">
+                      <Coins className="w-4 h-4 mr-1" />
+                      {product.tdValue} TD
+                    </Badge>
+                  )}
                   {product.inventory && (
                     <span className="text-sm text-gray-500">
                       ({product.inventory} in stock)
@@ -368,6 +374,28 @@ export default function ProductDetailPage() {
                   </div>
                 )}
               </div>
+
+              <Separator />
+              
+              {/* TD Eligible Info */}
+              {product.tdEligible && product.tdValue && (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
+                      <Coins className="w-5 h-5 text-brand-green" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">TimeDollar Eligible</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        Earn <span className="font-bold text-brand-green">{product.tdValue} TD</span> when this order is delivered
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        You can also pay with TimeDollars if you have enough balance (1 TD = HK$60)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
