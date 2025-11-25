@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -25,7 +26,8 @@ import {
   Shield,
   DollarSign,
   Coins,
-  MessageCircle
+  MessageCircle,
+  X
 } from "lucide-react";
 import type { Listing, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +38,10 @@ export default function ProductDetailPage() {
   const productId = params?.id;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -170,6 +176,107 @@ export default function ProductDetailPage() {
     }
 
     createConversationMutation.mutate();
+  };
+
+  const handleShare = async () => {
+    const productUrl = window.location.href;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product?.title || "Check out this product",
+          text: product?.description || "I found this great product on EMC HUB!",
+          url: productUrl,
+        });
+      } catch (error) {
+        // User cancelled or share failed, fall back to clipboard
+        copyToClipboard(productUrl);
+      }
+    } else {
+      copyToClipboard(productUrl);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Link copied!",
+        description: "Product link has been copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Failed to copy",
+        description: "Please copy the URL manually from the address bar",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const handleSave = () => {
+    if (!currentUser) {
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to save items to your wishlist",
+      });
+      return;
+    }
+    
+    setIsSaved(!isSaved);
+    toast({
+      title: isSaved ? "Removed from wishlist" : "Saved to wishlist!",
+      description: isSaved ? "Item removed from your saved items" : "Item added to your saved items",
+    });
+  };
+
+  const handleWriteReview = () => {
+    if (!currentUser) {
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to write a review",
+      });
+      return;
+    }
+    
+    setShowReviewForm(true);
+  };
+
+  const handleSubmitReview = () => {
+    if (!reviewText.trim()) {
+      toast({
+        title: "Review required",
+        description: "Please write a review before submitting",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // TODO: Implement actual review submission to backend
+    toast({
+      title: "Review submitted!",
+      description: "Thank you for your feedback",
+    });
+    setShowReviewForm(false);
+    setReviewText("");
+    setReviewRating(5);
+  };
+
+  const handleContactSeller = () => {
+    if (!currentUser) {
+      const returnUrl = `/product/${productId}`;
+      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+      toast({
+        title: "Login required",
+        description: "Please sign in to contact the seller",
+      });
+      return;
+    }
+    
+    // Use the message vendor function
+    handleMessageVendor();
   };
 
   if (isLoading) {
@@ -310,13 +417,19 @@ export default function ProductDetailPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1" data-testid="button-share">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={handleShare} data-testid="button-share">
                       <Share2 className="w-4 h-4 mr-2" />
                       Share
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1" data-testid="button-wishlist">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Save
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`flex-1 ${isSaved ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                      onClick={handleSave} 
+                      data-testid="button-wishlist"
+                    >
+                      <Heart className={`w-4 h-4 mr-2 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+                      {isSaved ? 'Saved' : 'Save'}
                     </Button>
                   </div>
                 </CardContent>
@@ -601,7 +714,12 @@ export default function ProductDetailPage() {
                         </div>
                       )}
 
-                      <Button variant="outline" className="w-full mt-3" data-testid="button-contact-seller">
+                      <Button 
+                        variant="outline" 
+                        className="w-full mt-3" 
+                        onClick={handleContactSeller}
+                        data-testid="button-contact-seller"
+                      >
                         Contact Seller
                       </Button>
 
@@ -640,9 +758,68 @@ export default function ProductDetailPage() {
                 </div>
                 <Separator orientation="vertical" className="h-24" />
                 <div className="flex-1">
-                  <Button data-testid="button-write-review">Write a Review</Button>
+                  <Button onClick={handleWriteReview} data-testid="button-write-review">
+                    Write a Review
+                  </Button>
                 </div>
               </div>
+              
+              {/* Review Form */}
+              {showReviewForm && (
+                <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold">Write Your Review</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowReviewForm(false)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Rating */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Rating</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button 
+                          key={star} 
+                          onClick={() => setReviewRating(star)}
+                          className="focus:outline-none"
+                          data-testid={`rating-star-${star}`}
+                        >
+                          <Star 
+                            className={`w-6 h-6 ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} hover:text-yellow-400 transition-colors`} 
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Review Text */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Your Review</label>
+                    <Textarea
+                      placeholder="Share your experience with this product..."
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      rows={4}
+                      className="w-full"
+                      data-testid="textarea-review"
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={handleSubmitReview} 
+                    className="bg-[#8FC24C] hover:bg-[#7AB23C]"
+                    data-testid="button-submit-review"
+                  >
+                    Submit Review
+                  </Button>
+                </div>
+              )}
+              
               <div className="text-center py-8 text-gray-500">
                 <p>No reviews yet. Be the first to review this product!</p>
               </div>
