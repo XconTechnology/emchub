@@ -3436,6 +3436,73 @@ export function registerRoutes(app: Express): Server {
   });
   
   // ========================================
+  // SAVED ITEMS / WISHLIST ROUTES
+  // ========================================
+  
+  // Get user's saved items
+  app.get("/api/saved-items", isAuthenticated, async (req, res) => {
+    try {
+      const savedItems = await storage.getUserSavedItems(req.user.id);
+      res.json(savedItems);
+    } catch (error) {
+      console.error("Error getting saved items:", error);
+      res.status(500).json({ error: "Failed to get saved items" });
+    }
+  });
+  
+  // Check if an item is saved
+  app.get("/api/saved-items/check/:listingId", isAuthenticated, async (req, res) => {
+    try {
+      const isSaved = await storage.isItemSaved(req.user.id, req.params.listingId);
+      res.json({ isSaved });
+    } catch (error) {
+      console.error("Error checking saved item:", error);
+      res.status(500).json({ error: "Failed to check saved item" });
+    }
+  });
+  
+  // Save an item
+  app.post("/api/saved-items", isAuthenticated, async (req, res) => {
+    try {
+      const { listingId } = req.body;
+      if (!listingId) {
+        return res.status(400).json({ error: "Listing ID is required" });
+      }
+      const savedItem = await storage.saveItem(req.user.id, listingId);
+      res.json(savedItem);
+    } catch (error) {
+      console.error("Error saving item:", error);
+      res.status(500).json({ error: "Failed to save item" });
+    }
+  });
+  
+  // Unsave an item
+  app.delete("/api/saved-items/:listingId", isAuthenticated, async (req, res) => {
+    try {
+      await storage.unsaveItem(req.user.id, req.params.listingId);
+      res.json({ message: "Item removed from saved items" });
+    } catch (error) {
+      console.error("Error unsaving item:", error);
+      res.status(500).json({ error: "Failed to unsave item" });
+    }
+  });
+  
+  // Sync saved items from localStorage (for guests who logged in)
+  app.post("/api/saved-items/sync", isAuthenticated, async (req, res) => {
+    try {
+      const { listingIds } = req.body;
+      if (!listingIds || !Array.isArray(listingIds)) {
+        return res.status(400).json({ error: "listingIds array is required" });
+      }
+      const syncedItems = await storage.syncSavedItems(req.user.id, listingIds);
+      res.json(syncedItems);
+    } catch (error) {
+      console.error("Error syncing saved items:", error);
+      res.status(500).json({ error: "Failed to sync saved items" });
+    }
+  });
+  
+  // ========================================
   // ORDER ROUTES
   // ========================================
   

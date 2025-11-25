@@ -206,6 +206,13 @@ export interface IStorage {
   removeCartItem(itemId: string): Promise<void>;
   clearCart(userId: string): Promise<void>;
   
+  // Saved items / Wishlist operations
+  getUserSavedItems(userId: string): Promise<any[]>;
+  saveItem(userId: string, listingId: string): Promise<any>;
+  unsaveItem(userId: string, listingId: string): Promise<void>;
+  isItemSaved(userId: string, listingId: string): Promise<boolean>;
+  syncSavedItems(userId: string, listingIds: string[]): Promise<any[]>;
+  
   // Order operations
   createOrder(userId: string, orderData: any): Promise<any>;
   getUserOrders(userId: string): Promise<any[]>;
@@ -1731,6 +1738,85 @@ export class DatabaseStorage implements IStorage {
   async clearCart(userId: string): Promise<void> {
     const { cartItems } = await import("@shared/schema");
     await db.delete(cartItems).where(eq(cartItems.userId, userId));
+  }
+  
+  // Saved items / Wishlist operations implementation
+  async getUserSavedItems(userId: string): Promise<any[]> {
+    const { savedItems, listings } = await import("@shared/schema");
+    const items = await db
+      .select({
+        id: savedItems.id,
+        userId: savedItems.userId,
+        listingId: savedItems.listingId,
+        createdAt: savedItems.createdAt,
+        listing: listings,
+      })
+      .from(savedItems)
+      .leftJoin(listings, eq(savedItems.listingId, listings.id))
+      .where(eq(savedItems.userId, userId))
+      .orderBy(savedItems.createdAt);
+    return items;
+  }
+  
+  async saveItem(userId: string, listingId: string): Promise<any> {
+    const { savedItems } = await import("@shared/schema");
+    
+    // Check if item is already saved
+    const existing = await db
+      .select()
+      .from(savedItems)
+      .where(and(eq(savedItems.userId, userId), eq(savedItems.listingId, listingId)));
+    
+    if (existing.length > 0) {
+      return existing[0]; // Already saved, return existing
+    }
+    
+    const [item] = await db
+      .insert(savedItems)
+      .values({ userId, listingId })
+      .returning();
+    return item;
+  }
+  
+  async unsaveItem(userId: string, listingId: string): Promise<void> {
+    const { savedItems } = await import("@shared/schema");
+    await db
+      .delete(savedItems)
+      .where(and(eq(savedItems.userId, userId), eq(savedItems.listingId, listingId)));
+  }
+  
+  async isItemSaved(userId: string, listingId: string): Promise<boolean> {
+    const { savedItems } = await import("@shared/schema");
+    const items = await db
+      .select()
+      .from(savedItems)
+      .where(and(eq(savedItems.userId, userId), eq(savedItems.listingId, listingId)));
+    return items.length > 0;
+  }
+  
+  async syncSavedItems(userId: string, listingIds: string[]): Promise<any[]> {
+    const { savedItems } = await import("@shared/schema");
+    const results = [];
+    
+    for (const listingId of listingIds) {
+      // Check if already saved
+      const existing = await db
+        .select()
+        .from(savedItems)
+        .where(and(eq(savedItems.userId, userId), eq(savedItems.listingId, listingId)));
+      
+      if (existing.length === 0) {
+        const [item] = await db
+          .insert(savedItems)
+          .values({ userId, listingId })
+          .returning();
+        results.push(item);
+      } else {
+        results.push(existing[0]);
+      }
+    }
+    
+    return results;
   }
   
   // Order operations implementation
