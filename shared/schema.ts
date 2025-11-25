@@ -174,6 +174,10 @@ export const listings = pgTable("listings", {
   attendeeCount: integer("attendee_count").default(0),
   eventPrice: decimal("event_price", { precision: 10, scale: 2 }),
   
+  // TimeDollar eligibility fields
+  tdEligible: boolean("td_eligible").default(false), // Whether listing is eligible for TD transactions
+  tdValue: integer("td_value"), // TimeDollar value for services (integer)
+  
   // Status and verification
   isActive: boolean("is_active").default(true),
   isVerified: boolean("is_verified").default(false),
@@ -656,6 +660,86 @@ export const insertStaffAuditLogSchema = createInsertSchema(staffAuditLogs).omit
 
 export type StaffAuditLog = typeof staffAuditLogs.$inferSelect;
 export type InsertStaffAuditLog = z.infer<typeof insertStaffAuditLogSchema>;
+
+// TimeDollar Wallet table - each user has one wallet
+export const tdWallet = pgTable("td_wallet", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  tdBalance: decimal("td_balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  tdEarned: decimal("td_earned", { precision: 10, scale: 2 }).notNull().default("0"),
+  tdSpent: decimal("td_spent", { precision: 10, scale: 2 }).notNull().default("0"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTdWalletSchema = createInsertSchema(tdWallet).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type TdWallet = typeof tdWallet.$inferSelect;
+export type InsertTdWallet = z.infer<typeof insertTdWalletSchema>;
+
+// TimeDollar Transactions table - tracks all TD earnings and spending
+export const tdTransactions = pgTable("td_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'earn' | 'spend'
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  listingId: varchar("listing_id").references(() => listings.id),
+  orderId: varchar("order_id").references(() => orders.id),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTdTransactionSchema = createInsertSchema(tdTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TdTransaction = typeof tdTransactions.$inferSelect;
+export type InsertTdTransaction = z.infer<typeof insertTdTransactionSchema>;
+
+// TimeDollar Conversions table - tracks TD to coupon conversions
+export const tdConversions = pgTable("td_conversions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tdSpent: decimal("td_spent", { precision: 10, scale: 2 }).notNull(),
+  couponCode: varchar("coupon_code").notNull(),
+  couponId: varchar("coupon_id").references(() => coupons.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTdConversionSchema = createInsertSchema(tdConversions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TdConversion = typeof tdConversions.$inferSelect;
+export type InsertTdConversion = z.infer<typeof insertTdConversionSchema>;
+
+// TimeDollar Disputes table - for handling TD transaction disputes
+export const tdDisputes = pgTable("td_disputes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => orders.id),
+  buyerId: varchar("buyer_id").notNull().references(() => users.id),
+  sellerId: varchar("seller_id").notNull().references(() => users.id),
+  mediatorId: varchar("mediator_id").references(() => users.id), // Staff member assigned to mediate
+  status: varchar("status").notNull().default("open"), // 'open' | 'in_review' | 'resolved' | 'closed'
+  reason: text("reason").notNull(),
+  deadline: timestamp("deadline"),
+  resolutionNote: text("resolution_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTdDisputeSchema = createInsertSchema(tdDisputes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type TdDispute = typeof tdDisputes.$inferSelect;
+export type InsertTdDispute = z.infer<typeof insertTdDisputeSchema>;
 
 // Types
 export type Category = typeof categories.$inferSelect;
