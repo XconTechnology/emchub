@@ -9,6 +9,34 @@ import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+const SAVED_ITEMS_KEY = 'emchub_saved_items';
+
+function getLocalSavedItems(): string[] {
+  try {
+    const saved = localStorage.getItem(SAVED_ITEMS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function clearLocalSavedItems() {
+  localStorage.removeItem(SAVED_ITEMS_KEY);
+}
+
+async function syncSavedItemsToServer() {
+  const localItems = getLocalSavedItems();
+  if (localItems.length > 0) {
+    try {
+      await apiRequest('POST', '/api/saved-items/sync', { listingIds: localItems });
+      clearLocalSavedItems();
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-items'] });
+    } catch (error) {
+      console.error('Failed to sync saved items:', error);
+    }
+  }
+}
+
 type AuthContextType = {
   user: (SelectUser & { isAdmin?: boolean }) | null;
   isLoading: boolean;
@@ -39,12 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
       queryClient.setQueryData(["/api/me"], user);
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
+      // Sync any saved items from localStorage to server
+      await syncSavedItemsToServer();
     },
     onError: (error: Error) => {
       toast({
@@ -60,12 +90,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
       queryClient.setQueryData(["/api/me"], user);
       toast({
         title: "Welcome to EMC HUB!",
         description: "Your account has been created successfully.",
       });
+      // Sync any saved items from localStorage to server
+      await syncSavedItemsToServer();
     },
     onError: (error: Error) => {
       toast({
