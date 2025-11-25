@@ -9,7 +9,7 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Listing, Category } from "@shared/schema";
-import { MapPin, ExternalLink, Search } from "lucide-react";
+import { MapPin, ExternalLink, Search, List, Map } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 // Custom marker icon
@@ -45,6 +45,7 @@ export default function MapPage() {
   const [focusedListing, setFocusedListing] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([22.3193, 114.1694]);
   const [mapZoom, setMapZoom] = useState(12);
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list');
 
   // Fetch approved business listings only (not products, services, or events)
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
@@ -142,9 +143,37 @@ export default function MapPage() {
     <div className="min-h-screen flex flex-col bg-white">
       <Header forceSolid={true} />
       
-      <div className="flex-1 pt-16 flex h-[calc(100vh-4rem)]">
-        {/* Left Sidebar */}
-        <div className="w-full md:w-96 border-r border-gray-200 flex flex-col bg-white h-full">
+      <div className="flex-1 pt-16 flex flex-col md:flex-row h-[calc(100vh-4rem)]">
+        {/* Mobile Toggle Buttons */}
+        <div className="md:hidden flex border-b border-gray-200 bg-white">
+          <button
+            onClick={() => setMobileView('list')}
+            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+              mobileView === 'list'
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            data-testid="button-mobile-list"
+          >
+            <List className="w-4 h-4" />
+            List View
+          </button>
+          <button
+            onClick={() => setMobileView('map')}
+            className={`flex-1 py-3 px-4 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+              mobileView === 'map'
+                ? 'bg-primary text-white'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+            data-testid="button-mobile-map"
+          >
+            <Map className="w-4 h-4" />
+            Map View
+          </button>
+        </div>
+
+        {/* Left Sidebar - Hidden on mobile when map view is active */}
+        <div className={`w-full md:w-96 border-r border-gray-200 flex flex-col bg-white h-full ${mobileView === 'map' ? 'hidden md:flex' : 'flex'}`}>
           {/* Locations Found Count */}
           <div className="px-4 py-3 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700" data-testid="text-locations-count">
@@ -185,7 +214,7 @@ export default function MapPage() {
           </div>
 
           {/* Listings */}
-          <div className="flex-1 overflow-y-scroll min-h-0 max-h-[calc(100vh-280px)]" style={{
+          <div className="flex-1 overflow-y-scroll min-h-0 max-h-[calc(100vh-320px)] md:max-h-[calc(100vh-280px)]" style={{
             scrollbarWidth: 'thin',
             scrollbarColor: '#cbd5e0 transparent'
           }}>
@@ -278,8 +307,8 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Right Map */}
-        <div className="flex-1 relative hidden md:block">
+        {/* Right Map - Show on mobile when map view is active */}
+        <div className={`flex-1 relative ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
           {/* Map Type Toggle */}
           <div className="absolute top-4 left-4 z-40 bg-white rounded-lg shadow-md overflow-hidden flex">
             <button
