@@ -13,7 +13,8 @@ import {
   ShoppingCart, 
   BadgeCheck,
   Filter,
-  Coins
+  Coins,
+  ImageOff
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
 
@@ -104,24 +105,42 @@ export default function ProductsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => {
               const images = product.images || [];
-              const mainImage = images[0] || 'https://via.placeholder.com/300x300?text=No+Image';
+              const mainImage = images[0];
+              const hasImage = mainImage && mainImage.trim() !== '';
               const categories = product.customCategory?.split(',').map(c => c.trim()).filter(Boolean) || [];
               const inStock = (product.inventory || 0) > 0;
 
               return (
                 <Link key={product.id} href={`/product/${product.id}`}>
                   <Card 
-                    className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                    className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer group flex flex-col"
                     data-testid={`card-product-${product.id}`}
                   >
                     <CardHeader className="p-0">
                       <div className="relative overflow-hidden rounded-t-lg">
-                        <img
-                          src={mainImage}
-                          alt={product.title || 'Product'}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                          data-testid={`img-product-${product.id}`}
-                        />
+                        {hasImage ? (
+                          <img
+                            src={mainImage}
+                            alt={product.title || 'Product'}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                            data-testid={`img-product-${product.id}`}
+                          />
+                        ) : (
+                          <div 
+                            className="w-full h-48 bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center"
+                            data-testid={`img-placeholder-${product.id}`}
+                          >
+                            <div className="w-16 h-16 mb-2 flex items-center justify-center">
+                              <svg viewBox="0 0 100 100" className="w-full h-full text-gray-400">
+                                <rect x="10" y="10" width="80" height="80" fill="none" stroke="currentColor" strokeWidth="4"/>
+                                <polygon points="30,70 45,50 55,60 75,35 75,70" fill="currentColor"/>
+                                <circle cx="35" cy="35" r="8" fill="currentColor"/>
+                              </svg>
+                            </div>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No image</p>
+                            <p className="text-gray-400 dark:text-gray-500 text-xs">available</p>
+                          </div>
+                        )}
                         {!inStock && (
                           <Badge className="absolute top-2 right-2 bg-red-500">
                             Out of Stock
@@ -135,7 +154,7 @@ export default function ProductsPage() {
                       </div>
                     </CardHeader>
                     
-                    <CardContent className="p-4">
+                    <CardContent className="p-4 flex-1 flex flex-col">
                       <h3 
                         className="font-semibold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#8FC24C] transition-colors"
                         data-testid={`text-product-title-${product.id}`}
@@ -143,28 +162,24 @@ export default function ProductsPage() {
                         {product.title}
                       </h3>
                       
-                      {product.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                          {product.description}
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3 min-h-[2.5rem]">
+                        {product.description || '\u00A0'}
+                      </p>
 
-                      {categories.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {categories.slice(0, 2).map((cat, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {cat}
-                            </Badge>
-                          ))}
-                          {categories.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{categories.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-1 mb-3 min-h-[1.5rem]">
+                        {categories.slice(0, 2).map((cat, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {cat}
+                          </Badge>
+                        ))}
+                        {categories.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{categories.length - 2}
+                          </Badge>
+                        )}
+                      </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-2 mt-auto">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-2xl font-bold text-[#8FC24C]" data-testid={`text-price-${product.id}`}>
                             ${product.price}
