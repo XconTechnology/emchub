@@ -280,6 +280,48 @@ export interface IStorage {
   getStaffAuditLogs(limit?: number): Promise<any[]>;
   getStaffUserAuditLogs(staffId: string, limit?: number): Promise<any[]>;
   
+  // TimeDollar Wallet operations
+  getTdWallet(userId: string): Promise<any | undefined>;
+  createTdWallet(userId: string): Promise<any>;
+  getOrCreateTdWallet(userId: string): Promise<any>;
+  updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend'): Promise<any>;
+  
+  // TimeDollar Transaction operations
+  createTdTransaction(data: {
+    userId: string;
+    type: 'earn' | 'spend';
+    amount: number;
+    listingId?: string;
+    orderId?: string;
+    note?: string;
+  }): Promise<any>;
+  getTdTransactions(userId: string): Promise<any[]>;
+  getAllTdTransactions(): Promise<any[]>;
+  
+  // TimeDollar Conversion operations
+  createTdConversion(data: {
+    userId: string;
+    tdSpent: number;
+    couponCode: string;
+    couponId?: string;
+  }): Promise<any>;
+  getTdConversions(userId: string): Promise<any[]>;
+  
+  // TimeDollar Dispute operations
+  createTdDispute(data: {
+    orderId: string;
+    buyerId: string;
+    sellerId: string;
+    reason: string;
+    deadline?: Date;
+  }): Promise<any>;
+  getTdDisputes(filters?: { status?: string; userId?: string }): Promise<any[]>;
+  updateTdDispute(id: string, data: {
+    mediatorId?: string;
+    status?: string;
+    resolutionNote?: string;
+  }): Promise<any>;
+  
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -2681,6 +2723,217 @@ export class DatabaseStorage implements IStorage {
       .where(eq(staffAuditLogs.staffId, staffId))
       .orderBy(sql`${staffAuditLogs.createdAt} DESC`)
       .limit(limit);
+  }
+  
+  // TimeDollar Wallet operations
+  async getTdWallet(userId: string): Promise<any | undefined> {
+    const { tdWallet } = await import("@shared/schema");
+    const [wallet] = await db.select().from(tdWallet).where(eq(tdWallet.userId, userId));
+    return wallet;
+  }
+  
+  async createTdWallet(userId: string): Promise<any> {
+    const { tdWallet } = await import("@shared/schema");
+    const [wallet] = await db
+      .insert(tdWallet)
+      .values({
+        userId,
+        tdBalance: "0",
+        tdEarned: "0",
+        tdSpent: "0",
+      })
+      .returning();
+    return wallet;
+  }
+  
+  async getOrCreateTdWallet(userId: string): Promise<any> {
+    const wallet = await this.getTdWallet(userId);
+    if (wallet) {
+      return wallet;
+    }
+    return this.createTdWallet(userId);
+  }
+  
+  async updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend'): Promise<any> {
+    const { tdWallet } = await import("@shared/schema");
+    const wallet = await this.getOrCreateTdWallet(userId);
+    
+    const currentBalance = parseFloat(wallet.tdBalance);
+    const currentEarned = parseFloat(wallet.tdEarned);
+    const currentSpent = parseFloat(wallet.tdSpent);
+    
+    let newBalance = currentBalance;
+    let newEarned = currentEarned;
+    let newSpent = currentSpent;
+    
+    if (type === 'earn') {
+      newBalance = currentBalance + amount;
+      newEarned = currentEarned + amount;
+    } else {
+      newBalance = currentBalance - amount;
+      newSpent = currentSpent + amount;
+    }
+    
+    const [updated] = await db
+      .update(tdWallet)
+      .set({
+        tdBalance: newBalance.toString(),
+        tdEarned: newEarned.toString(),
+        tdSpent: newSpent.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(tdWallet.userId, userId))
+      .returning();
+    
+    return updated;
+  }
+  
+  // TimeDollar Transaction operations
+  async createTdTransaction(data: {
+    userId: string;
+    type: 'earn' | 'spend';
+    amount: number;
+    listingId?: string;
+    orderId?: string;
+    note?: string;
+  }): Promise<any> {
+    const { tdTransactions } = await import("@shared/schema");
+    const [transaction] = await db
+      .insert(tdTransactions)
+      .values({
+        userId: data.userId,
+        type: data.type,
+        amount: data.amount.toString(),
+        listingId: data.listingId,
+        orderId: data.orderId,
+        note: data.note,
+      })
+      .returning();
+    
+    // Update wallet balance
+    await this.updateTdWalletBalance(data.userId, data.amount, data.type);
+    
+    return transaction;
+  }
+  
+  async getTdTransactions(userId: string): Promise<any[]> {
+    const { tdTransactions } = await import("@shared/schema");
+    return db
+      .select()
+      .from(tdTransactions)
+      .where(eq(tdTransactions.userId, userId))
+      .orderBy(sql`${tdTransactions.createdAt} DESC`);
+  }
+  
+  async getAllTdTransactions(): Promise<any[]> {
+    const { tdTransactions } = await import("@shared/schema");
+    return db
+      .select()
+      .from(tdTransactions)
+      .orderBy(sql`${tdTransactions.createdAt} DESC`);
+  }
+  
+  // TimeDollar Conversion operations
+  async createTdConversion(data: {
+    userId: string;
+    tdSpent: number;
+    couponCode: string;
+    couponId?: string;
+  }): Promise<any> {
+    const { tdConversions } = await import("@shared/schema");
+    const [conversion] = await db
+      .insert(tdConversions)
+      .values({
+        userId: data.userId,
+        tdSpent: data.tdSpent.toString(),
+        couponCode: data.couponCode,
+        couponId: data.couponId,
+      })
+      .returning();
+    return conversion;
+  }
+  
+  async getTdConversions(userId: string): Promise<any[]> {
+    const { tdConversions } = await import("@shared/schema");
+    return db
+      .select()
+      .from(tdConversions)
+      .where(eq(tdConversions.userId, userId))
+      .orderBy(sql`${tdConversions.createdAt} DESC`);
+  }
+  
+  // TimeDollar Dispute operations
+  async createTdDispute(data: {
+    orderId: string;
+    buyerId: string;
+    sellerId: string;
+    reason: string;
+    deadline?: Date;
+  }): Promise<any> {
+    const { tdDisputes } = await import("@shared/schema");
+    const [dispute] = await db
+      .insert(tdDisputes)
+      .values({
+        orderId: data.orderId,
+        buyerId: data.buyerId,
+        sellerId: data.sellerId,
+        reason: data.reason,
+        deadline: data.deadline,
+        status: 'open',
+      })
+      .returning();
+    return dispute;
+  }
+  
+  async getTdDisputes(filters?: { status?: string; userId?: string }): Promise<any[]> {
+    const { tdDisputes } = await import("@shared/schema");
+    
+    if (!filters) {
+      return db.select().from(tdDisputes).orderBy(sql`${tdDisputes.createdAt} DESC`);
+    }
+    
+    const conditions = [];
+    
+    if (filters.status) {
+      conditions.push(eq(tdDisputes.status, filters.status));
+    }
+    
+    if (filters.userId) {
+      conditions.push(
+        or(
+          eq(tdDisputes.buyerId, filters.userId),
+          eq(tdDisputes.sellerId, filters.userId),
+          eq(tdDisputes.mediatorId, filters.userId)
+        )
+      );
+    }
+    
+    if (conditions.length === 0) {
+      return db.select().from(tdDisputes).orderBy(sql`${tdDisputes.createdAt} DESC`);
+    }
+    
+    return db
+      .select()
+      .from(tdDisputes)
+      .where(and(...conditions))
+      .orderBy(sql`${tdDisputes.createdAt} DESC`);
+  }
+  
+  async updateTdDispute(id: string, data: {
+    mediatorId?: string;
+    status?: string;
+    resolutionNote?: string;
+  }): Promise<any> {
+    const { tdDisputes } = await import("@shared/schema");
+    const [updated] = await db
+      .update(tdDisputes)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(tdDisputes.id, id))
+      .returning();
+    return updated;
   }
 }
 
