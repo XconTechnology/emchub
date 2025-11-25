@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 interface AdminAuthContextType {
   isAdminAuthenticated: boolean;
+  isLoading: boolean;
   adminLogin: () => void;
   adminLogout: () => void;
   checkAdminAuth: () => Promise<boolean>;
@@ -11,8 +12,10 @@ const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const checkAdminAuth = async (): Promise<boolean> => {
+    setIsLoading(true);
     try {
       // Check both admin session and user role
       const [adminResponse, userResponse] = await Promise.all([
@@ -25,6 +28,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       // 2. Is a user with admin or super-admin role
       if (adminResponse.ok) {
         setIsAdminAuthenticated(true);
+        setIsLoading(false);
         return true;
       }
       
@@ -32,13 +36,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         const user = await userResponse.json();
         const isAdminRole = user.role === 'admin' || user.role === 'super-admin';
         setIsAdminAuthenticated(isAdminRole);
+        setIsLoading(false);
         return isAdminRole;
       }
       
       setIsAdminAuthenticated(false);
+      setIsLoading(false);
       return false;
     } catch {
       setIsAdminAuthenticated(false);
+      setIsLoading(false);
       return false;
     }
   };
@@ -66,6 +73,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AdminAuthContext.Provider value={{ 
       isAdminAuthenticated, 
+      isLoading,
       adminLogin, 
       adminLogout, 
       checkAdminAuth 

@@ -1,7 +1,7 @@
 // Blueprint: javascript_auth_all_persistance - Authentication page with signup and signin
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, Link } from "wouter";
+import { Redirect, Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ArrowLeft, Loader2, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -29,8 +38,9 @@ type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("signin");
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -59,13 +69,67 @@ export default function AuthPage() {
     registerMutation.mutate(data);
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[hsl(86,49%,53%)] mx-auto mb-4" />
+          <p className="text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Redirect if already logged in
   if (user) {
     return <Redirect to="/dashboard" />;
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Mobile Header with back navigation */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
+        <button 
+          onClick={() => setLocation("/")} 
+          className="flex items-center text-gray-600 hover:text-gray-900"
+          data-testid="button-back"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back
+        </button>
+        
+        {/* Info button to show promotional content as popup */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2" data-testid="button-info">
+              <Info className="w-4 h-4" />
+              About EMC HUB
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[hsl(86,49%,53%)] text-white border-none max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-white">
+                Discover Halal Businesses in Hong Kong
+              </DialogTitle>
+              <DialogDescription className="text-white/90 text-base">
+                Connect with authentic halal restaurants, shops, and services across Hong Kong's vibrant ethnic minority community.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+              <div className="bg-white/20 rounded-lg p-4">
+                <h3 className="font-semibold mb-2">For Business Owners</h3>
+                <p className="opacity-90">List your halal business and reach new customers</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-4">
+                <h3 className="font-semibold mb-2">For Customers</h3>
+                <p className="opacity-90">Find verified halal businesses near you</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Left side - Forms */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
@@ -266,8 +330,8 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right side - Hero */}
-      <div className="flex-1 bg-[hsl(86,49%,53%)] flex items-center justify-center p-8">
+      {/* Right side - Hero (Hidden on mobile, shown on desktop) */}
+      <div className="hidden md:flex flex-1 bg-[hsl(86,49%,53%)] items-center justify-center p-8">
         <div className="text-center text-white max-w-lg">
           <h2 className="text-4xl font-bold mb-6">
             Discover Halal Businesses in Hong Kong

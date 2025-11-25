@@ -22,9 +22,10 @@ import AdminDisputes from "./admin-disputes";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function AdminRouter() {
-  const { isAdminAuthenticated, checkAdminAuth } = useAdminAuth();
+  const { isAdminAuthenticated, isLoading, checkAdminAuth } = useAdminAuth();
   const { toast } = useToast();
 
   const handleAdminLoginSuccess = () => {
@@ -34,6 +35,18 @@ export default function AdminRouter() {
       description: "Welcome to the admin dashboard",
     });
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-red-500 mx-auto mb-4" />
+          <p className="text-gray-300">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdminAuthenticated) {
     return <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />;
