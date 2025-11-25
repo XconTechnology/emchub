@@ -3083,6 +3083,81 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to update balance" });
     }
   });
+  
+  // Convert TD to Cash Coupon (1 TD = HK$60)
+  app.post("/api/td/convert-to-coupon", isAuthenticated, async (req, res) => {
+    try {
+      const { tdAmount } = req.body;
+      const TD_TO_HKD_RATE = 60; // 1 TD = HK$60
+      
+      if (!tdAmount || tdAmount <= 0) {
+        return res.status(400).json({ error: "Invalid TD amount" });
+      }
+      
+      // Check if user has enough TD balance
+      const currentBalance = await storage.getTimeDollarBalance(req.user.id);
+      if (currentBalance < tdAmount) {
+        return res.status(400).json({ error: "Insufficient TimeDollar balance" });
+      }
+      
+      // Calculate cash value
+      const cashValue = tdAmount * TD_TO_HKD_RATE;
+      
+      // Generate unique coupon code
+      const couponCode = `TD${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      // Create cash coupon
+      const coupon = await storage.createCoupon({
+        couponType: 'cash',
+        issuer: 'admin', // TD conversions are admin-issued
+        vendorId: null,
+        scope: 'platform',
+        productId: null,
+        code: couponCode,
+        title: `TimeDollar Conversion - ${tdAmount} TD`,
+        description: `Converted from ${tdAmount} TimeDollars (HK$${cashValue})`,
+        discountType: null,
+        discountValue: null,
+        cashValue: cashValue.toString(),
+        usageLimit: 1,
+        usedCount: 0,
+        validFrom: new Date(),
+        validUntil: null,
+        status: 'approved', // Auto-approved for TD conversions
+        approvedBy: req.user.id,
+        rejectionReason: null,
+      });
+      
+      // Create TD conversion record
+      await storage.createTdConversion({
+        userId: req.user.id,
+        tdSpent: tdAmount,
+        couponCode: couponCode,
+        couponId: coupon.id,
+      });
+      
+      // Deduct TD from user's wallet via transaction
+      await storage.createTdTransaction({
+        userId: req.user.id,
+        type: 'spend',
+        amount: tdAmount,
+        note: `Converted ${tdAmount} TD to HK$${cashValue} cash coupon (${couponCode})`,
+      });
+      
+      res.json({
+        success: true,
+        coupon: {
+          code: couponCode,
+          cashValue: cashValue,
+          tdSpent: tdAmount,
+          expiresAt: null,
+        },
+      });
+    } catch (error) {
+      console.error("Error converting TD to coupon:", error);
+      res.status(500).json({ error: "Failed to convert TimeDollars to coupon" });
+    }
+  });
 
   // ========================================
   // SHOPPING CART ROUTES
@@ -3225,7 +3300,43 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Status is required" });
       }
       
+      // Get order details before updating
+      const orderDetails = await storage.getOrderDetails(req.params.orderId);
+      
+      // Update order status
       const order = await storage.updateOrderStatus(req.params.orderId, status);
+      
+      // TD EARNING LOGIC: When order is delivered, seller earns TD
+      if (status === 'delivered' && orderDetails?.tdAmount && parseFloat(orderDetails.tdAmount) > 0) {
+        const tdAmount = parseFloat(orderDetails.tdAmount);
+        const vendorId = orderDetails.vendorId;
+        
+        // Get order items to check for TD-eligible listings
+        const orderItems = orderDetails.items || [];
+        
+        for (const item of orderItems) {
+          // Get listing details to check tdValue
+          const listing = await storage.getListing(item.productId);
+          
+          if (listing && listing.tdEligible && listing.tdValue) {
+            // Calculate TD earnings: quantity * tdValue per unit
+            const tdEarnings = item.quantity * listing.tdValue;
+            
+            // Create TD earn transaction for vendor
+            await storage.createTdTransaction({
+              userId: vendorId,
+              type: 'earn',
+              amount: tdEarnings,
+              listingId: listing.id,
+              orderId: order.id,
+              note: `Earned ${tdEarnings} TD for delivering order #${orderDetails.transactionId}`,
+            });
+            
+            console.log(`Vendor ${vendorId} earned ${tdEarnings} TD from delivered order ${order.id}`);
+          }
+        }
+      }
+      
       res.json(order);
     } catch (error) {
       console.error("Error updating order status:", error);

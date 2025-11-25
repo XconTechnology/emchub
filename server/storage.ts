@@ -1773,6 +1773,14 @@ export class DatabaseStorage implements IStorage {
     // Deduct TimeDollars if applicable
     if (paymentMethod === 'timedollar' || paymentMethod === 'both') {
       if (tdAmountValue > 0) {
+        // Validate TD-eligible listings
+        for (const item of cart) {
+          const listing = item.product;
+          if (!listing.tdEligible) {
+            throw new Error(`Product "${listing.title}" is not eligible for TimeDollar payment.`);
+          }
+        }
+        
         await this.updateTimeDollarBalance(userId, -tdAmountValue);
         
         // Get user info for activity log
@@ -1837,6 +1845,17 @@ export class DatabaseStorage implements IStorage {
     if (couponId) {
       const totalDiscount = cashDiscountValue + tdDiscountValue;
       await this.useCoupon(couponId, userId, order.id, totalDiscount);
+    }
+    
+    // Create TD spend transaction record if TD was used
+    if (tdAmountValue > 0) {
+      await this.createTdTransaction({
+        userId,
+        type: 'spend',
+        amount: tdAmountValue,
+        orderId: order.id,
+        note: `Spent ${tdAmountValue} TD on order #${transactionId}`,
+      });
     }
 
     // Create or update transaction record
