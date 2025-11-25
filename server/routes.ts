@@ -3050,10 +3050,10 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Get TimeDollar transactions
-  app.get("/api/timedollars/transactions", isAuthenticated, async (req, res) => {
+  app.get("/api/td/transactions", isAuthenticated, async (req, res) => {
     try {
-      // For now, return empty array - will implement proper transactions table later
-      res.json([]);
+      const transactions = await storage.getTdTransactionsByUser(req.user.id);
+      res.json(transactions);
     } catch (error) {
       console.error("Error getting TimeDollar transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });

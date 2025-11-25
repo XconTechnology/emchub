@@ -296,6 +296,7 @@ export interface IStorage {
     note?: string;
   }): Promise<any>;
   getTdTransactions(userId: string): Promise<any[]>;
+  getTdTransactionsByUser(userId: string): Promise<any[]>;
   getAllTdTransactions(): Promise<any[]>;
   
   // TimeDollar Conversion operations
@@ -2842,6 +2843,10 @@ export class DatabaseStorage implements IStorage {
       .from(tdTransactions)
       .where(eq(tdTransactions.userId, userId))
       .orderBy(sql`${tdTransactions.createdAt} DESC`);
+  }
+  
+  async getTdTransactionsByUser(userId: string): Promise<any[]> {
+    return this.getTdTransactions(userId);
   }
   
   async getAllTdTransactions(): Promise<any[]> {
