@@ -1,9 +1,45 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ExternalLink, Mail, Phone, Send, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AboutUs() {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Message sent!",
+      description: "Thank you for contacting us. We'll get back to you soon.",
+    });
+    
+    setIsSubmitted(true);
+    setIsSubmitting(false);
+    setFormData({ name: "", email: "", subject: "", message: "" });
+    
+    // Reset success state after 5 seconds
+    setTimeout(() => setIsSubmitted(false), 5000);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header forceSolid={true} />
@@ -82,6 +118,149 @@ export default function AboutUs() {
                     <h3 className="font-bold text-lg mb-2" style={{color: "hsl(86 49% 45%)"}}>Focus</h3>
                     <p className="text-muted-foreground">Halal products and services, promoting SMEs</p>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Us Section */}
+          <Card className="shadow-xl mt-8" id="contact">
+            <CardContent className="p-8 md:p-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-black mb-4" style={{color: "hsl(86 49% 45%)"}}>
+                  Contact Us
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  Have questions? We'd love to hear from you.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Contact Information */}
+                <div className="space-y-6">
+                  <h3 className="font-bold text-xl mb-4">Get in Touch</h3>
+                  
+                  <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Mail className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Email</p>
+                      <a 
+                        href="mailto:info@emchub.com.hk" 
+                        className="text-primary hover:underline"
+                        data-testid="link-email"
+                      >
+                        info@emchub.com.hk
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Phone className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Phone</p>
+                      <a 
+                        href="tel:+85298765432" 
+                        className="text-primary hover:underline"
+                        data-testid="link-phone"
+                      >
+                        +852 9876 5432
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Our team is available Monday to Friday, 9:00 AM - 6:00 PM (HKT). 
+                      We typically respond to inquiries within 24-48 hours.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contact Form */}
+                <div>
+                  <h3 className="font-bold text-xl mb-4">Send us a Message</h3>
+                  
+                  {isSubmitted ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <CheckCircle className="w-16 h-16 text-primary mb-4" />
+                      <h4 className="text-xl font-semibold mb-2">Thank You!</h4>
+                      <p className="text-muted-foreground">
+                        Your message has been sent successfully. We'll get back to you soon.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Your Name</Label>
+                        <Input
+                          id="name"
+                          placeholder="Enter your name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          required
+                          data-testid="input-contact-name"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          required
+                          data-testid="input-contact-email"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="subject">Subject</Label>
+                        <Input
+                          id="subject"
+                          placeholder="What is this about?"
+                          value={formData.subject}
+                          onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                          required
+                          data-testid="input-contact-subject"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="message">Message</Label>
+                        <Textarea
+                          id="message"
+                          placeholder="Write your message here..."
+                          rows={5}
+                          value={formData.message}
+                          onChange={(e) => setFormData({...formData, message: e.target.value})}
+                          required
+                          data-testid="input-contact-message"
+                        />
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full gap-2"
+                        disabled={isSubmitting}
+                        data-testid="button-submit-contact"
+                      >
+                        {isSubmitting ? (
+                          <>Sending...</>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            Send Message
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </div>
             </CardContent>
