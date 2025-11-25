@@ -315,13 +315,19 @@ export interface IStorage {
     sellerId: string;
     reason: string;
     deadline?: Date;
+    mediatorId?: string;
   }): Promise<any>;
   getTdDisputes(filters?: { status?: string; userId?: string }): Promise<any[]>;
+  getUserDisputes(userId: string): Promise<any[]>;
+  getTdDispute(id: string): Promise<any>;
   updateTdDispute(id: string, data: {
     mediatorId?: string;
     status?: string;
     resolutionNote?: string;
   }): Promise<any>;
+  updateTdDisputeStatus(id: string, status: string, resolution?: string): Promise<any>;
+  getAllTdDisputes(): Promise<any[]>;
+  getStaffUsers(): Promise<any[]>;
   
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -2893,6 +2899,7 @@ export class DatabaseStorage implements IStorage {
     sellerId: string;
     reason: string;
     deadline?: Date;
+    mediatorId?: string;
   }): Promise<any> {
     const { tdDisputes } = await import("@shared/schema");
     const [dispute] = await db
@@ -2903,6 +2910,7 @@ export class DatabaseStorage implements IStorage {
         sellerId: data.sellerId,
         reason: data.reason,
         deadline: data.deadline,
+        mediatorId: data.mediatorId,
         status: 'open',
       })
       .returning();
@@ -2958,6 +2966,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tdDisputes.id, id))
       .returning();
     return updated;
+  }
+  
+  async getUserDisputes(userId: string): Promise<any[]> {
+    return this.getTdDisputes({ userId });
+  }
+  
+  async getTdDispute(id: string): Promise<any> {
+    const { tdDisputes } = await import("@shared/schema");
+    const [dispute] = await db
+      .select()
+      .from(tdDisputes)
+      .where(eq(tdDisputes.id, id));
+    return dispute;
+  }
+  
+  async updateTdDisputeStatus(id: string, status: string, resolution?: string): Promise<any> {
+    const { tdDisputes } = await import("@shared/schema");
+    const [updated] = await db
+      .update(tdDisputes)
+      .set({
+        status,
+        resolutionNote: resolution,
+        updatedAt: new Date(),
+      })
+      .where(eq(tdDisputes.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async getAllTdDisputes(): Promise<any[]> {
+    const { tdDisputes } = await import("@shared/schema");
+    return db
+      .select()
+      .from(tdDisputes)
+      .orderBy(sql`${tdDisputes.createdAt} DESC`);
+  }
+  
+  async getStaffUsers(): Promise<any[]> {
+    return db
+      .select()
+      .from(users)
+      .where(eq(users.userType, 'staff'));
   }
 }
 

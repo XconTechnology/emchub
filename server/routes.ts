@@ -3160,6 +3160,144 @@ export function registerRoutes(app: Express): Server {
   });
 
   // ========================================
+  // DISPUTE ROUTES
+  // ========================================
+  
+  // Create a dispute
+  app.post("/api/disputes", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, reason } = req.body;
+      
+      if (!orderId || !reason) {
+        return res.status(400).json({ error: "Order ID and reason are required" });
+      }
+      
+      // Get order details
+      const order = await storage.getOrderDetails(orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Verify user is either buyer or seller
+      if (order.userId !== req.user.id && order.vendorId !== req.user.id) {
+        return res.status(403).json({ error: "Unauthorized to create dispute for this order" });
+      }
+      
+      // Calculate deadline (20 working days from now)
+      const deadline = new Date();
+      let workingDaysAdded = 0;
+      while (workingDaysAdded < 20) {
+        deadline.setDate(deadline.getDate() + 1);
+        const dayOfWeek = deadline.getDay();
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          workingDaysAdded++;
+        }
+      }
+      
+      // Auto-assign mediator (find a staff member with mediator role)
+      let mediatorId = null;
+      const staffUsers = await storage.getStaffUsers();
+      const mediators = staffUsers.filter((staff: any) => 
+        staff.role === 'Mediator' || 
+        staff.role === 'Full Admin' || 
+        staff.role === 'Super Admin'
+      );
+      
+      if (mediators.length > 0) {
+        // Randomly assign one of the available mediators
+        mediatorId = mediators[Math.floor(Math.random() * mediators.length)].id;
+      }
+      
+      // Create dispute
+      const dispute = await storage.createTdDispute({
+        orderId,
+        buyerId: order.userId,
+        sellerId: order.vendorId,
+        reason,
+        deadline,
+        mediatorId,
+      });
+      
+      res.json(dispute);
+    } catch (error) {
+      console.error("Error creating dispute:", error);
+      res.status(500).json({ error: "Failed to create dispute" });
+    }
+  });
+  
+  // Get user's disputes (as buyer or seller)
+  app.get("/api/disputes/user", isAuthenticated, async (req, res) => {
+    try {
+      const disputes = await storage.getUserDisputes(req.user.id);
+      res.json(disputes);
+    } catch (error) {
+      console.error("Error getting user disputes:", error);
+      res.status(500).json({ error: "Failed to get disputes" });
+    }
+  });
+  
+  // Get specific dispute
+  app.get("/api/disputes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const dispute = await storage.getTdDispute(req.params.id);
+      
+      if (!dispute) {
+        return res.status(404).json({ error: "Dispute not found" });
+      }
+      
+      // Verify user has access to this dispute
+      if (
+        dispute.buyerId !== req.user.id && 
+        dispute.sellerId !== req.user.id && 
+        dispute.mediatorId !== req.user.id &&
+        req.user.role !== 'admin'
+      ) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      res.json(dispute);
+    } catch (error) {
+      console.error("Error getting dispute:", error);
+      res.status(500).json({ error: "Failed to get dispute" });
+    }
+  });
+  
+  // Update dispute status (mediator/admin only)
+  app.patch("/api/disputes/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const { status, resolution } = req.body;
+      
+      const dispute = await storage.getTdDispute(req.params.id);
+      if (!dispute) {
+        return res.status(404).json({ error: "Dispute not found" });
+      }
+      
+      // Only mediator or admin can resolve
+      if (dispute.mediatorId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Only assigned mediator or admin can resolve disputes" });
+      }
+      
+      const updated = await storage.updateTdDisputeStatus(req.params.id, status, resolution);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating dispute status:", error);
+      res.status(500).json({ error: "Failed to update dispute status" });
+    }
+  });
+  
+  // Get all disputes (admin only)
+  app.get("/api/admin/disputes", isAdminAuthenticated, async (req, res) => {
+    try {
+      const disputes = await storage.getAllTdDisputes();
+      res.json(disputes);
+    } catch (error) {
+      console.error("Error getting all disputes:", error);
+      res.status(500).json({ error: "Failed to get disputes" });
+    }
+  });
+
+  // ========================================
   // SHOPPING CART ROUTES
   // ========================================
   
