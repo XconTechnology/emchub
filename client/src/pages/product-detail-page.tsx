@@ -110,13 +110,13 @@ export default function ProductDetailPage() {
   }
 
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery<ReviewWithUser[]>({
-    queryKey: ['/api/reviews/listing', productId],
+    queryKey: [`/api/reviews/listing/${productId}`],
     enabled: !!productId,
   });
 
   // Check if user has already reviewed
   const { data: reviewCheck } = useQuery<{ hasReviewed: boolean }>({
-    queryKey: ['/api/reviews/check', productId],
+    queryKey: [`/api/reviews/check/${productId}`],
     enabled: !!currentUser && !!productId,
   });
 
@@ -142,8 +142,8 @@ export default function ProductDetailPage() {
       setShowReviewForm(false);
       setReviewText("");
       setReviewRating(5);
-      queryClient.invalidateQueries({ queryKey: ['/api/reviews/listing', productId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/reviews/check', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/reviews/listing/${productId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/reviews/check/${productId}`] });
     },
     onError: (error: any) => {
       toast({

@@ -86,6 +86,8 @@ function Router() {
       <Route path="/dashboard/support-tickets" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-support-tickets" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-support-tickets/:id" component={UserDashboardRouter} />
+      <Route path="/dashboard/saved-items" component={UserDashboardRouter} />
+      <Route path="/dashboard/recycle-bin" component={UserDashboardRouter} />
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/analytics" component={AdminRouter} />
       <Route path="/admin/transactions" component={AdminRouter} />
