@@ -27,7 +27,13 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Order-Based Chat**: Allows customers to message vendors about specific orders directly from the "My Purchases" page.
 - **C2Admin Support and Reporting System**: Complete support ticket system with integrated messaging for staff-user communication, including user-facing forms, admin dashboards for ticket management, and staff dashboards for handling assigned tickets. Features a dedicated `support_tickets` and `support_ticket_messages` database schema for user-staff communication, with role-based access for admins (view-only), staff (bi-directional messaging for assigned tickets), and users (bi-directional messaging for their tickets).
 - **Staff Account System with Role-Based Access Control (RBAC)**: Comprehensive RBAC for managing staff users with granular permissions. Includes roles like Individual, Business, Support, Sales, Mediator, Full Admin, and Super Admin. All staff actions are logged in an audit trail. Access is enforced at the API level.
-- **TimeDollar (TD) System Database Foundation**: Complete database infrastructure for TimeDollar wallet management (`td_wallet`), transactions (`td_transactions`), conversions (`td_conversions`), and dispute resolution (`td_disputes`). Integrates with listings for TD eligibility and payment.
+- **TimeDollar (TD) System**: Fully integrated digital currency system enabling users to earn and spend TimeDollars (TD) for services. Key features:
+  - **Earning TD**: Sellers earn TD when orders are marked as "delivered" (TD = listing.tdValue × quantity)
+  - **Spending TD**: Users can spend TD on TD-eligible listings (tdEligible=true) with automatic wallet balance updates
+  - **TD to Cash Conversion**: Users can convert TD to cash coupons (1 TD = HK$60) via API endpoint `/api/td/convert-to-coupon`
+  - **Database Tables**: `td_wallet` (balances), `td_transactions` (earn/spend records), `td_conversions` (TD→coupon conversions), `td_disputes` (dispute resolution)
+  - **Validation**: Users cannot spend more TD than available; TD payment only accepted for TD-eligible listings
+  - **Transaction Logging**: All TD operations logged in `td_transactions` with type (earn/spend), amount, listing, order, and notes
 
 ## External Dependencies
 
