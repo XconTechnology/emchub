@@ -28,7 +28,8 @@ import {
   Activity,
   BadgeDollarSign,
   Truck,
-  LifeBuoy
+  LifeBuoy,
+  Heart
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -67,6 +68,7 @@ import VendorMessages from "./vendor-messages";
 import UserSupportTickets from "./user-support-tickets";
 import VendorSupportTickets from "./vendor-support-tickets";
 import VendorSupportTicketChat from "./vendor-support-ticket-chat";
+import UserSavedItems from "./user-saved-items";
 
 export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
@@ -94,6 +96,7 @@ export default function UserDashboardRouter() {
   // Navigation items for normal users (non-vendors)
   const normalUserNavigation = [
     { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
+    { name: "Saved Items", path: "/dashboard/saved-items", icon: Heart, testId: "nav-saved-items" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Chats", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
@@ -107,6 +110,7 @@ export default function UserDashboardRouter() {
     { name: "Vendor Orders", path: "/dashboard/vendor-orders", icon: Truck, testId: "nav-vendor-orders" },
     { name: "Messages", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
     { name: "Transactions", path: "/dashboard/vendor-transactions", icon: Receipt, testId: "nav-vendor-transactions" },
+    { name: "Saved Items", path: "/dashboard/saved-items", icon: Heart, testId: "nav-saved-items" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
@@ -244,6 +248,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
+            {location === "/dashboard/saved-items" && "Saved Items"}
           </h1>
           
           <div className="flex items-center gap-3">
@@ -288,6 +293,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/cart" component={UserCart} />
             <Route path="/dashboard/checkout" component={UserCheckout} />
             <Route path="/dashboard/recycle-bin" component={UserRecycleBin} />
+            <Route path="/dashboard/saved-items" component={UserSavedItems} />
             <Route path="/dashboard/support-tickets" component={UserSupportTickets} />
             <Route path="/dashboard/vendor-support-tickets/:id" component={VendorSupportTicketChat} />
             <Route path="/dashboard/vendor-support-tickets" component={VendorSupportTickets} />

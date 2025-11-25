@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,38 @@ import type { Listing, User } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+const SAVED_ITEMS_KEY = 'emchub_saved_items';
+
+function getLocalSavedItems(): string[] {
+  try {
+    const saved = localStorage.getItem(SAVED_ITEMS_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setLocalSavedItems(items: string[]) {
+  localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(items));
+}
+
+function addToLocalSaved(listingId: string) {
+  const items = getLocalSavedItems();
+  if (!items.includes(listingId)) {
+    items.push(listingId);
+    setLocalSavedItems(items);
+  }
+}
+
+function removeFromLocalSaved(listingId: string) {
+  const items = getLocalSavedItems();
+  setLocalSavedItems(items.filter(id => id !== listingId));
+}
+
+function isLocalSaved(listingId: string): boolean {
+  return getLocalSavedItems().includes(listingId);
+}
+
 export default function ProductDetailPage() {
   const [, params] = useRoute("/product/:id");
   const productId = params?.id;
@@ -54,6 +86,25 @@ export default function ProductDetailPage() {
     queryKey: [`/api/listings/${productId}`],
     enabled: !!productId,
   });
+
+  // Query to check if item is saved (only for logged-in users)
+  const { data: savedStatus } = useQuery<{ isSaved: boolean }>({
+    queryKey: ['/api/saved-items/check', productId],
+    enabled: !!currentUser && !!productId,
+  });
+
+  // Effect to set isSaved state based on login status and saved data
+  useEffect(() => {
+    if (!productId) return;
+    
+    if (currentUser && savedStatus !== undefined) {
+      // For logged-in users, use API response
+      setIsSaved(savedStatus.isSaved);
+    } else if (!currentUser) {
+      // For guests, use localStorage
+      setIsSaved(isLocalSaved(productId));
+    }
+  }, [currentUser, savedStatus, productId]);
 
   // Add to cart mutation
   const addToCartMutation = useMutation({
@@ -212,22 +263,79 @@ export default function ProductDetailPage() {
     });
   };
 
-  const handleSave = () => {
-    if (!currentUser) {
-      const returnUrl = `/product/${productId}`;
-      setLocation(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+  // Mutations for save/unsave
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/saved-items', { listingId: productId });
+    },
+    onSuccess: () => {
+      setIsSaved(true);
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-items/check', productId] });
       toast({
-        title: "Login required",
-        description: "Please sign in to save items to your wishlist",
+        title: "Saved to wishlist!",
+        description: "Item added to your saved items",
       });
-      return;
-    }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unsaveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('DELETE', `/api/saved-items/${productId}`);
+    },
+    onSuccess: () => {
+      setIsSaved(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-items/check', productId] });
+      toast({
+        title: "Removed from wishlist",
+        description: "Item removed from your saved items",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unsave item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSave = () => {
+    if (!productId) return;
     
-    setIsSaved(!isSaved);
-    toast({
-      title: isSaved ? "Removed from wishlist" : "Saved to wishlist!",
-      description: isSaved ? "Item removed from your saved items" : "Item added to your saved items",
-    });
+    if (currentUser) {
+      // For logged-in users, use API
+      if (isSaved) {
+        unsaveMutation.mutate();
+      } else {
+        saveMutation.mutate();
+      }
+    } else {
+      // For guests, use localStorage
+      if (isSaved) {
+        removeFromLocalSaved(productId);
+        setIsSaved(false);
+        toast({
+          title: "Removed from wishlist",
+          description: "Item removed from your saved items",
+        });
+      } else {
+        addToLocalSaved(productId);
+        setIsSaved(true);
+        toast({
+          title: "Saved to wishlist!",
+          description: "Item added to your saved items. Sign in to access them from your dashboard.",
+        });
+      }
+    }
   };
 
   const handleWriteReview = () => {
