@@ -3502,7 +3502,17 @@ export class DatabaseStorage implements IStorage {
         message: data.message,
       })
       .returning();
-    return message;
+    
+    // Fetch sender name
+    const [senderUser] = await db
+      .select({ username: users.username })
+      .from(users)
+      .where(eq(users.id, data.senderId));
+    
+    return {
+      ...message,
+      senderName: senderUser?.username || 'Unknown',
+    };
   }
 
   async getServiceRequestMessages(serviceRequestId: string): Promise<any[]> {

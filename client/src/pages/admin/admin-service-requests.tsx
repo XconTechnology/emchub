@@ -452,9 +452,20 @@ export default function AdminServiceRequests() {
           </div>
           <div className="flex gap-2">
             <Textarea
-              placeholder="Type your message..."
+              placeholder="Type your message... (Shift+Enter for newline)"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (messageDialog && newMessage.trim()) {
+                    sendMessageMutation.mutate({
+                      id: messageDialog.id,
+                      message: newMessage,
+                    });
+                  }
+                }
+              }}
               rows={2}
               data-testid="textarea-message"
             />
