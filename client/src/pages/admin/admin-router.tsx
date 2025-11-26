@@ -14,6 +14,7 @@ import AdminVendorRequests from "./admin-vendor-requests";
 import AdminCoupons from "./admin-coupons";
 import AdminActivityLogs from "./admin-activity-logs";
 import AdminSupportTickets from "./admin-support-tickets";
+import AdminServiceRequests from "./admin-service-requests";
 import AdminStaff from "./admin-staff";
 import AdminAuditLogs from "./admin-audit-logs";
 import AdminEvents from "./admin-events";
@@ -63,6 +64,7 @@ export default function AdminRouter() {
         <Route path="/admin/coupons" component={AdminCoupons} />
         <Route path="/admin/activity-logs" component={AdminActivityLogs} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
+        <Route path="/admin/service-requests" component={AdminServiceRequests} />
         <Route path="/admin/staff" component={AdminStaff} />
         <Route path="/admin/audit-logs" component={AdminAuditLogs} />
         <Route path="/admin/timedollars" component={AdminTimeDollars} />

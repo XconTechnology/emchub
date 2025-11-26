@@ -99,6 +99,7 @@ function Router() {
       <Route path="/admin/staff-help" component={AdminRouter} />
       <Route path="/admin/activity-logs" component={AdminRouter} />
       <Route path="/admin/support-tickets" component={AdminRouter} />
+      <Route path="/admin/service-requests" component={AdminRouter} />
       <Route path="/admin/staff" component={AdminRouter} />
       <Route path="/admin/audit-logs" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />

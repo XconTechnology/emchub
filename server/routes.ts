@@ -4491,6 +4491,114 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Service Requests API routes
+  app.post("/api/service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const { title, description, estimatedHours, preferredDate } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId || !title || !description) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const requesterType = req.user?.role === 'vendor' ? 'vendor' : 'user';
+
+      const serviceRequest = await storage.createServiceRequest({
+        requesterId: userId,
+        requesterType,
+        title,
+        description,
+        estimatedHours,
+        preferredDate,
+      });
+
+      res.status(201).json(serviceRequest);
+    } catch (error) {
+      console.error("Error creating service request:", error);
+      res.status(500).json({ error: "Failed to create service request" });
+    }
+  });
+
+  app.get("/api/service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const requests = await storage.getRequesterServiceRequests(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching service requests:", error);
+      res.status(500).json({ error: "Failed to fetch service requests" });
+    }
+  });
+
+  app.get("/api/admin/service-requests", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const requests = await storage.getAllServiceRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching admin service requests:", error);
+      res.status(500).json({ error: "Failed to fetch service requests" });
+    }
+  });
+
+  app.patch("/api/admin/service-requests/:id", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, rejectionReason } = req.body;
+      const adminId = req.session?.adminUserId || req.user?.id;
+
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+
+      const updated = await storage.updateServiceRequestStatus(
+        id,
+        status,
+        adminId,
+        rejectionReason
+      );
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating service request:", error);
+      res.status(500).json({ error: "Failed to update service request" });
+    }
+  });
+
+  app.post("/api/admin/service-requests/:id/messages", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+      const senderId = req.session?.adminUserId || req.user?.id;
+
+      if (!senderId || !message) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const msg = await storage.createServiceRequestMessage({
+        serviceRequestId: id,
+        senderId,
+        message,
+      });
+
+      broadcastEvent({ type: 'service-request-message', data: msg });
+      res.status(201).json(msg);
+    } catch (error) {
+      console.error("Error creating service request message:", error);
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  app.get("/api/admin/service-requests/:id/messages", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const messages = await storage.getServiceRequestMessages(id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching service request messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates
