@@ -42,7 +42,8 @@ import {
   type InsertServiceRequestMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ilike, inArray, sql, desc, alias } from "drizzle-orm";
+import { eq, or, and, ilike, inArray, sql, desc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 // Interface for storage operations
 export interface IStorage {

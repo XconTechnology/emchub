@@ -18,6 +18,7 @@ import {
   UserCog,
   Calendar,
   ExternalLink,
+  Wrench,
 } from "lucide-react";
 import {
   Sidebar,
@@ -101,6 +102,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Support Tickets",
       url: "/admin/support-tickets",
       icon: LifeBuoy,
+    },
+    {
+      title: "Service Requests",
+      url: "/admin/service-requests",
+      icon: Wrench,
     },
     {
       title: "All Listings",
