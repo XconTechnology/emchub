@@ -191,7 +191,9 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
             <Label htmlFor="categoryId">Category *</Label>
             <Select 
               value={form.watch("categoryId") || ""} 
-              onValueChange={(value) => form.setValue("categoryId", value)}
+              onValueChange={(value) => {
+                form.setValue("categoryId", value, { shouldValidate: true });
+              }}
             >
               <SelectTrigger data-testid="select-category">
                 <SelectValue placeholder="Select a category" />
@@ -204,6 +206,9 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
                 ))}
               </SelectContent>
             </Select>
+            {form.formState.errors.categoryId && (
+              <p className="text-sm text-red-500">{form.formState.errors.categoryId.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -293,16 +298,19 @@ export default function AddServiceModal({ isOpen, onClose, editService }: AddSer
             <Label htmlFor="status">Status *</Label>
             <Select 
               value={form.watch("status") || "draft"} 
-              onValueChange={(value) => form.setValue("status", value as "draft" | "published")}
+              onValueChange={(value) => form.setValue("status", value as "draft" | "published" | "pending" | "rejected", { shouldValidate: true })}
             >
               <SelectTrigger data-testid="select-status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Publish</SelectItem>
+                <SelectItem value="pending">Submit for Review</SelectItem>
               </SelectContent>
             </Select>
+            {form.formState.errors.status && (
+              <p className="text-sm text-red-500">{form.formState.errors.status.message}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
