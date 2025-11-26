@@ -29,9 +29,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import type { Category } from "@shared/schema";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import { Upload, X, Store, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { Upload, X, Store, ArrowLeft, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
 import RequestStaffHelpButton from "@/components/RequestStaffHelpButton";
 
 export default function UserCreateListing() {
@@ -40,6 +39,8 @@ export default function UserCreateListing() {
   const [, setLocation] = useLocation();
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState("");
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
@@ -102,21 +103,53 @@ export default function UserCreateListing() {
     createListingMutation.mutate(finalData);
   };
 
-  const handleUploadComplete = (result: any) => {
-    const uploadedUrls = result.successful.map((file: any) => file.uploadURL);
-    setUploadedImages([...uploadedImages, ...uploadedUrls]);
-    toast({ title: "Images uploaded successfully" });
-  };
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
 
-  const getUploadParameters = async () => {
-    const response = await apiRequest('POST', '/api/object-storage/upload-url', {
-      fileName: `listing-${Date.now()}.jpg`,
-    });
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.url,
-    };
+    setIsUploadingFile(true);
+    try {
+      for (let i = 0; i < Math.min(files.length, 5 - uploadedImages.length); i++) {
+        const file = files[i];
+        
+        try {
+          const uploadUrlResponse = await apiRequest('POST', '/api/object-storage/upload-url', {
+            fileName: `listing-${Date.now()}-${i}-${file.name}`,
+          });
+          const uploadUrlData = await uploadUrlResponse.json();
+          
+          const putResponse = await fetch(uploadUrlData.url, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+
+          if (!putResponse.ok) {
+            throw new Error('Failed to upload file');
+          }
+
+          setUploadedImages(prev => [...prev, uploadUrlData.url]);
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          toast({
+            title: "Error uploading image",
+            description: `Failed to upload ${file.name}`,
+            variant: "destructive",
+          });
+        }
+      }
+      
+      if (uploadedImages.length > 0) {
+        toast({ title: `${Math.min(files.length, 5 - uploadedImages.length)} image(s) uploaded successfully` });
+      }
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleAddImageUrl = () => {
@@ -361,17 +394,40 @@ export default function UserCreateListing() {
               {/* Images */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Images</h3>
+                <p className="text-sm text-gray-600">Add up to 5 images to your listing</p>
                 
                 {/* Upload from computer */}
                 <div>
-                  <ObjectUploader
-                    onGetUploadParameters={getUploadParameters}
-                    onComplete={handleUploadComplete}
-                    maxNumberOfFiles={5}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploadingFile || uploadedImages.length >= 5}
+                    className="hidden"
+                    data-testid="input-file-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingFile || uploadedImages.length >= 5}
+                    className="w-full gap-2"
+                    data-testid="button-upload-image"
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Images
-                  </ObjectUploader>
+                    {isUploadingFile ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Images ({uploadedImages.length}/5)
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 {/* Add image by URL */}
@@ -380,42 +436,47 @@ export default function UserCreateListing() {
                     placeholder="Or paste image URL"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
+                    disabled={uploadedImages.length >= 5}
                     data-testid="input-image-url"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleAddImageUrl}
-                    disabled={!imageUrl.trim()}
+                    disabled={!imageUrl.trim() || uploadedImages.length >= 5}
                     data-testid="button-add-image-url"
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Add URL
+                    Add
                   </Button>
                 </div>
 
                 {/* Preview uploaded images */}
                 {uploadedImages.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {uploadedImages.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Upload ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleRemoveImage(index)}
-                          data-testid={`button-remove-image-${index}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Uploaded Images ({uploadedImages.length}/5)</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {uploadedImages.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={url}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                            data-testid={`img-uploaded-${index}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemoveImage(index)}
+                            data-testid={`button-remove-image-${index}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
