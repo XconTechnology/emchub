@@ -128,10 +128,10 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
 
   const addListingMutation = useMutation({
     mutationFn: async (data: AddListingData) => {
-      // Transform form data for the API - hardcode type to "listing"
+      // Transform form data for the API - hardcode type to "business"
       const transformedData = {
         ...data,
-        type: "listing",
+        type: "business",
         status: isEditing ? editListing.status : "pending",
       };
 
@@ -178,12 +178,22 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
   });
 
   const onSubmit = (data: any) => {
+    // Validate categoryId is not empty
+    if (!data.categoryId || data.categoryId.trim() === '') {
+      toast({
+        title: "Category required",
+        description: "Please select a category before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     console.log('Form submitted with data:', data);
     // Include image URLs in the submission
     const submissionData = {
       ...data,
       images: imageUrls,
-      type: "listing",
+      type: "business",
     };
     addListingMutation.mutate(submissionData);
   };
