@@ -4568,10 +4568,26 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       const { message } = req.body;
-      const senderId = req.session?.adminUserId || req.user?.id;
 
-      if (!senderId || !message) {
-        return res.status(400).json({ error: "Missing required fields" });
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Get admin user ID - either from session or from authenticated user
+      let senderId = req.user?.id;
+      
+      // If no user auth, get system admin
+      if (!senderId) {
+        const [adminUser] = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        
+        if (!adminUser) {
+          return res.status(500).json({ error: "Admin user not found" });
+        }
+        senderId = adminUser.id;
       }
 
       const msg = await storage.createServiceRequestMessage({
