@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 
 const serviceSchema = insertListingSchema.extend({
   title: z.string().min(1, "Service title is required"),
+  categoryId: z.string().min(1, "Category is required"),
   price: z.string().optional(),
   isActive: z.boolean(),
   status: z.enum(["draft", "published", "pending", "rejected"]),

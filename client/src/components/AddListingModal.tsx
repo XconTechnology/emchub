@@ -28,7 +28,11 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Category } from "@shared/schema";
 
-type AddListingData = z.infer<typeof insertListingSchema>;
+const listingSchema = insertListingSchema.extend({
+  categoryId: z.string().min(1, "Category is required"),
+});
+
+type AddListingData = z.infer<typeof listingSchema>;
 
 interface AddListingModalProps {
   isOpen: boolean;
@@ -49,12 +53,12 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
   });
 
   const form = useForm<AddListingData>({
-    resolver: zodResolver(insertListingSchema),
+    resolver: zodResolver(listingSchema),
     defaultValues: {
       type: "business",
       title: "",
       description: "",
-      categoryId: undefined,
+      categoryId: "",
       address: "",
       city: "",
       postalCode: "",
