@@ -220,12 +220,9 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 px-4 lg:px-8 py-4 flex items-center border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
-          {/* Left spacer for mobile menu */}
-          <div className="w-10 lg:w-0 flex-shrink-0"></div>
-          
+        <header className="sticky top-0 z-30 pl-14 pr-3 lg:px-8 py-3 flex items-center justify-between border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
           {/* Centered heading */}
-          <h1 className="flex-1 text-xl font-semibold text-white text-center truncate">
+          <h1 className="flex-1 text-lg sm:text-xl font-semibold text-white text-center px-2">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/purchases" && "My Purchases"}
             {location === "/dashboard/activity" && "My Activity"}
@@ -246,11 +243,11 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/coupons" && "Coupons"}
             {location === "/dashboard/pricing" && "Pricing Settings"}
             {location === "/dashboard/vendor-orders" && "Vendor Orders"}
-            {location === "/dashboard/vendor-transactions" && "Transactions & Earnings"}
+            {location === "/dashboard/vendor-transactions" && "Transactions"}
             {location === "/dashboard/messages" && (user?.vendorStatus === 'verified' ? "Messages" : "My Chats")}
             {location === "/dashboard/support-tickets" && "Support Tickets"}
-            {location === "/dashboard/vendor-support-tickets" && "Assigned Support Tickets"}
-            {location.startsWith("/dashboard/vendor-support-tickets/") && "Support Ticket Chat"}
+            {location === "/dashboard/vendor-support-tickets" && "Assigned Tickets"}
+            {location.startsWith("/dashboard/vendor-support-tickets/") && "Ticket Chat"}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
@@ -258,16 +255,16 @@ export default function UserDashboardRouter() {
           </h1>
           
           {/* Right side buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* View Live Site button */}
             <Button
               onClick={() => window.open("/", "_blank")}
               size="sm"
-              className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-2.5"
+              className="bg-white/20 text-white hover:bg-white/30 border-0 p-2 sm:px-3 sm:py-2"
               data-testid="button-view-site"
             >
               <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">View Site</span>
+              <span className="hidden sm:inline ml-1.5">View Site</span>
             </Button>
             
             {/* Show Become a Vendor button for normal users only */}
@@ -275,11 +272,11 @@ export default function UserDashboardRouter() {
               <Button
                 onClick={() => setLocation("/dashboard/become-vendor")}
                 size="sm"
-                className="gap-1.5 bg-white/20 text-white hover:bg-white/30 border-0 text-sm px-2.5"
+                className="bg-white/20 text-white hover:bg-white/30 border-0 p-2 sm:px-3 sm:py-2"
                 data-testid="button-become-vendor-navbar"
               >
                 <BadgeDollarSign className="w-4 h-4" />
-                <span className="hidden sm:inline">Become a Vendor</span>
+                <span className="hidden sm:inline ml-1.5">Become Vendor</span>
               </Button>
             )}
           </div>
