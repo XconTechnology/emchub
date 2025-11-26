@@ -9,6 +9,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script type="text/javascript">
+      // Fix Vite HMR connection - set proper host and port before Vite client loads
+      if (typeof window !== 'undefined') {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port || (window.location.protocol === 'https:' ? 443 : 80);
+        window.__VITE_HMR_CONFIG__ = {
+          protocol,
+          host,
+          port,
+          timeout: 5000,
+          overlay: false
+        };
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
