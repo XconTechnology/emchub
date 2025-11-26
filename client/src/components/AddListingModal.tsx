@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,10 +22,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertListingSchema } from "@shared/schema";
 import { z } from "zod";
-import { Store, MapPin, Phone, Mail, Globe, Clock, DollarSign, Tag, Calendar, Users, Package, Image, X, Plus } from "lucide-react";
+import { Store, MapPin, Phone, Mail, Globe, Clock, DollarSign, Tag, Calendar, Users, Package, Image, X, Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Category } from "@shared/schema";
 
 type AddListingData = z.infer<typeof insertListingSchema>;
@@ -39,7 +39,8 @@ interface AddListingModalProps {
 export default function AddListingModal({ isOpen, onClose, editListing }: AddListingModalProps) {
   const { toast } = useToast();
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!editListing;
 
   // Fetch categories
@@ -187,12 +188,52 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
     addListingMutation.mutate(submissionData);
   };
 
-  const addImageUrl = () => {
-    if (currentImageUrl.trim() && !imageUrls.includes(currentImageUrl.trim())) {
-      const newUrls = [...imageUrls, currentImageUrl.trim()];
-      setImageUrls(newUrls);
-      form.setValue("images", newUrls);
-      setCurrentImageUrl("");
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setIsUploadingFile(true);
+    try {
+      for (let i = 0; i < Math.min(files.length, 5 - imageUrls.length); i++) {
+        const file = files[i];
+        
+        try {
+          const uploadUrlResponse = await apiRequest('POST', '/api/object-storage/upload-url', {
+            fileName: `listing-${Date.now()}-${i}-${file.name}`,
+          });
+          const uploadUrlData = await uploadUrlResponse.json();
+          
+          const putResponse = await fetch(uploadUrlData.url, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          });
+
+          if (!putResponse.ok) {
+            throw new Error('Failed to upload file');
+          }
+
+          setImageUrls(prev => {
+            const newUrls = [...prev, uploadUrlData.url];
+            form.setValue("images", newUrls);
+            return newUrls;
+          });
+        } catch (error) {
+          console.error('Error uploading file:', error);
+          toast({
+            title: "Error uploading image",
+            description: `Failed to upload ${file.name}`,
+            variant: "destructive",
+          });
+        }
+      }
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -413,69 +454,66 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
           {/* Images Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Images</h3>
-            <p className="text-sm text-gray-600">Add images to showcase your business. Enter image URLs below.</p>
+            <p className="text-sm text-gray-600">Add images to showcase your business (up to 5 images)</p>
             
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Image className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
-                    className="pl-10"
-                    value={currentImageUrl}
-                    onChange={(e) => setCurrentImageUrl(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
-                    data-testid="input-image-url"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  onClick={addImageUrl}
-                  disabled={!currentImageUrl.trim()}
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-add-image"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                disabled={isUploadingFile || imageUrls.length >= 5}
+                className="hidden"
+                data-testid="input-file-upload"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingFile || imageUrls.length >= 5}
+                className="w-full gap-2"
+                data-testid="button-upload-image"
+              >
+                {isUploadingFile ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Click to Upload ({imageUrls.length}/5)
+                  </>
+                )}
+              </Button>
               
               {imageUrls.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Added Images ({imageUrls.length})</Label>
-                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                  <Label>Uploaded Images ({imageUrls.length})</Label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
                     {imageUrls.map((url, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                      <div key={index} className="relative group">
                         <img
                           src={url}
                           alt={`Business image ${index + 1}`}
-                          className="w-12 h-12 object-cover rounded border"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' fill='%23ddd'%3E%3Crect width='48' height='48' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12' fill='%23999'%3E?%3C/text%3E%3C/svg%3E";
-                          }}
+                          className="w-full h-24 object-cover rounded border"
+                          data-testid={`img-uploaded-${index}`}
                         />
-                        <span className="flex-1 text-sm truncate" title={url}>
-                          {url}
-                        </span>
                         <Button
                           type="button"
                           onClick={() => removeImageUrl(index)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
                           data-testid={`button-remove-image-${index}`}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              
-              <p className="text-xs text-gray-500">
-                Tip: Use image hosting services like Imgur, Google Drive (public links), or your own website
-              </p>
             </div>
           </div>
 
