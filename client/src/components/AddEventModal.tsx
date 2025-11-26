@@ -145,10 +145,11 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
       // Combine date and time into eventDate timestamp and convert to Date object
       const eventDateTime = new Date(`${data.eventDate}T${data.eventTime}:00`);
       
-      const eventData: any = {
-        ...data,
-        type: "event",
-        userId: user?.id,
+      // Only send fields that the server schema expects (exclude form-only fields)
+      const eventData = {
+        type: "event" as const,
+        title: data.title,
+        description: data.description,
         eventDate: eventDateTime,
         eventPrice: data.eventPrice ? parseFloat(data.eventPrice) : undefined,
         capacity: data.capacity ? parseInt(data.capacity) : undefined,
