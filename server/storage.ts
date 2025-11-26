@@ -3509,9 +3509,10 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.id, data.senderId));
     
+    const username = senderUser?.username || 'Unknown';
     return {
       ...message,
-      senderName: senderUser?.username || 'Unknown',
+      senderName: username === 'system_admin' ? 'Admin' : username,
     };
   }
 
@@ -3533,7 +3534,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(serviceRequestMessages.serviceRequestId, serviceRequestId))
       .orderBy(sql`${serviceRequestMessages.createdAt} ASC`);
     
-    return messages;
+    return messages.map(msg => ({
+      ...msg,
+      senderName: msg.senderName === 'system_admin' ? 'Admin' : (msg.senderName || 'Unknown')
+    }));
   }
 }
 

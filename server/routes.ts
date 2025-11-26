@@ -4596,8 +4596,14 @@ export function registerRoutes(app: Express): Server {
         message,
       });
 
-      broadcastEvent({ type: 'service-request-message', data: msg });
-      res.status(201).json(msg);
+      // Override sender name to "Admin" for admin messages
+      const responseMsg = {
+        ...msg,
+        senderName: 'Admin'
+      };
+
+      broadcastEvent({ type: 'service-request-message', data: responseMsg });
+      res.status(201).json(responseMsg);
     } catch (error) {
       console.error("Error creating service request message:", error);
       res.status(500).json({ error: "Failed to create message" });
