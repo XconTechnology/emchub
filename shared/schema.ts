@@ -835,6 +835,31 @@ export const insertServiceRequestMessageSchema = createInsertSchema(serviceReque
 export type ServiceRequestMessage = typeof serviceRequestMessages.$inferSelect;
 export type InsertServiceRequestMessage = z.infer<typeof insertServiceRequestMessageSchema>;
 
+// Service Offers table - for admin to create offers for service requests
+export const serviceOffers = pgTable("service_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serviceRequestId: varchar("service_request_id").notNull().references(() => serviceRequests.id),
+  serviceName: varchar("service_name").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  hours: decimal("hours", { precision: 5, scale: 2 }).notNull(),
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'accepted' | 'paid' | 'cancelled'
+  paymentIntentId: varchar("payment_intent_id"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertServiceOfferSchema = createInsertSchema(serviceOffers).omit({
+  id: true,
+  status: true,
+  paymentIntentId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ServiceOffer = typeof serviceOffers.$inferSelect;
+export type InsertServiceOffer = z.infer<typeof insertServiceOfferSchema>;
+
 // Types
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

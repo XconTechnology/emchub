@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateOfferDialog } from "./admin-service-offers";
 import {
   Select,
   SelectContent,
@@ -61,6 +62,7 @@ export default function AdminServiceRequests() {
   const [newMessage, setNewMessage] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
+  const [showCreateOffer, setShowCreateOffer] = useState(false);
 
   const { data: requests = [], isLoading } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/admin/service-requests'],
@@ -450,42 +452,59 @@ export default function AdminServiceRequests() {
               ))
             )}
           </div>
-          <div className="flex gap-2">
-            <Textarea
-              placeholder="Type your message... (Shift+Enter for newline)"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
+          <div className="flex gap-2 flex-col">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Type your message... (Shift+Enter for newline)"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (messageDialog && newMessage.trim()) {
+                      sendMessageMutation.mutate({
+                        id: messageDialog.id,
+                        message: newMessage,
+                      });
+                    }
+                  }
+                }}
+                rows={2}
+                data-testid="textarea-message"
+              />
+              <Button
+                onClick={() => {
                   if (messageDialog && newMessage.trim()) {
                     sendMessageMutation.mutate({
                       id: messageDialog.id,
                       message: newMessage,
                     });
                   }
-                }
-              }}
-              rows={2}
-              data-testid="textarea-message"
-            />
+                }}
+                disabled={sendMessageMutation.isPending}
+                data-testid="button-send-message"
+              >
+                Send
+              </Button>
+            </div>
             <Button
-              onClick={() => {
-                if (messageDialog && newMessage.trim()) {
-                  sendMessageMutation.mutate({
-                    id: messageDialog.id,
-                    message: newMessage,
-                  });
-                }
-              }}
-              disabled={sendMessageMutation.isPending}
-              data-testid="button-send-message"
+              variant="outline"
+              onClick={() => setShowCreateOffer(true)}
+              data-testid="button-create-offer-trigger"
             >
-              Send
+              + Create Offer
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Offer Dialog */}
+      <CreateOfferDialog
+        open={showCreateOffer}
+        onOpenChange={setShowCreateOffer}
+        serviceRequestId={messageDialog?.id || ""}
+        onOfferCreated={() => setShowCreateOffer(false)}
+      />
     </div>
   );
 }

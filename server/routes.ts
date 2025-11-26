@@ -4683,6 +4683,169 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Service Offers API routes
+  app.post("/api/admin/service-offers", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { serviceRequestId, serviceName, price, hours } = req.body;
+
+      if (!serviceRequestId || !serviceName || !price || !hours) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      let adminId = req.user?.id;
+      if (!adminId) {
+        const [adminUser] = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUser?.id;
+      }
+
+      const offer = await storage.createServiceOffer({
+        serviceRequestId,
+        serviceName,
+        price: price.toString(),
+        hours: hours.toString(),
+        createdBy: adminId,
+      });
+
+      // Send offer as a message
+      const msg = await storage.createServiceRequestMessage({
+        serviceRequestId,
+        senderId: adminId,
+        message: `OFFER: ${serviceName} - HK$${price} for ${hours} hours`,
+      });
+
+      broadcastEvent({ type: 'service-offer', data: offer });
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating service offer:", error);
+      res.status(500).json({ error: "Failed to create offer" });
+    }
+  });
+
+  app.get("/api/service-offers/:serviceRequestId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { serviceRequestId } = req.params;
+      const offers = await storage.getServiceOffers(serviceRequestId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching service offers:", error);
+      res.status(500).json({ error: "Failed to fetch offers" });
+    }
+  });
+
+  app.post("/api/service-offers/:id/accept-and-pay", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      const offer = await storage.getServiceOffer(id);
+      if (!offer) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+
+      // Verify this is for the user's service request
+      const request = await storage.getServiceRequest(offer.serviceRequestId);
+      if (request?.requesterId !== userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      // Create Stripe payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(parseFloat(offer.price as string) * 100), // Convert to cents
+        currency: 'hkd',
+        metadata: {
+          serviceOfferId: id,
+          serviceRequestId: offer.serviceRequestId,
+          userId,
+        },
+      });
+
+      // Update offer with payment intent ID
+      const updated = await storage.updateServiceOffer(id, {
+        paymentIntentId: paymentIntent.id,
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret, offer: updated });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to process payment" });
+    }
+  });
+
+  app.post("/api/service-offers/:id/confirm-payment", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      const offer = await storage.getServiceOffer(id);
+      if (!offer) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+
+      // Update offer status to paid
+      const updated = await storage.updateServiceOffer(id, { status: 'paid' });
+
+      // Notify admin that payment was received
+      const request = await storage.getServiceRequest(offer.serviceRequestId);
+      if (request?.assignedAdminId) {
+        await storage.createServiceRequestMessage({
+          serviceRequestId: offer.serviceRequestId,
+          senderId: req.user?.id,
+          message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
+        });
+      }
+
+      broadcastEvent({ type: 'service-offer-paid', data: updated });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
+  app.post("/api/service-offers/:id/cancel", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      const offer = await storage.getServiceOffer(id);
+      if (!offer) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+
+      // If payment was made, process refund
+      if (offer.paymentIntentId && offer.status === 'paid') {
+        await stripe.refunds.create({
+          payment_intent: offer.paymentIntentId,
+        });
+      }
+
+      const updated = await storage.updateServiceOffer(id, { status: 'cancelled' });
+
+      // Notify user of cancellation
+      const request = await storage.getServiceRequest(offer.serviceRequestId);
+      const adminId = req.user?.id || (await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.username, 'system_admin'))
+        .limit(1)
+        .then(r => r[0]?.id));
+
+      await storage.createServiceRequestMessage({
+        serviceRequestId: offer.serviceRequestId,
+        senderId: adminId,
+        message: `Service cancelled: ${offer.serviceName}. Payment refunded.`,
+      });
+
+      broadcastEvent({ type: 'service-offer-cancelled', data: updated });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error cancelling service:", error);
+      res.status(500).json({ error: "Failed to cancel service" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates
