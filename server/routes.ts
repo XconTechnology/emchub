@@ -1467,14 +1467,35 @@ export function registerRoutes(app: Express): Server {
     try {
       const listingId = req.params.id;
       const { listings } = await import("@shared/schema");
-      await db
+      
+      // Get the listing to find the user ID for notification
+      const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
+      // Reject the listing
+      const [updatedListing] = await db
         .update(listings)
         .set({ 
           status: 'rejected',
           updatedAt: new Date()
         })
-        .where(eq(listings.id, listingId));
-      res.json({ message: "Listing rejected successfully" });
+        .where(eq(listings.id, listingId))
+        .returning();
+      
+      // Broadcast notification to the vendor
+      broadcastEvent({
+        type: 'listing-rejected',
+        data: {
+          listingId,
+          userId: listing.userId,
+          status: 'rejected',
+          title: listing.title
+        }
+      });
+      
+      res.json({ message: "Listing rejected successfully", listing: updatedListing });
     } catch (error) {
       console.error("Error rejecting listing:", error);
       res.status(500).json({ message: "Failed to reject listing" });
