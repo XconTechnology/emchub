@@ -515,7 +515,7 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   // Make all fields optional - user can choose what to provide
   title: z.string().optional(),
   description: z.string().optional(),
-  categoryId: z.string().optional(),
+  categoryId: z.string().min(1, "Category is required"),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   

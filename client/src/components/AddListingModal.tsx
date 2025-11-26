@@ -54,7 +54,7 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
       type: "business",
       title: "",
       description: "",
-      categoryId: "",
+      categoryId: undefined,
       address: "",
       city: "",
       postalCode: "",
