@@ -172,7 +172,7 @@ export default function UserDashboardRouter() {
                     className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive(item.path)
                         ? "bg-white text-[#8FC24C] font-semibold shadow-md"
-                        : "text-white/90 hover:bg-white/15 hover:text-white hover:shadow-sm"
+                        : "text-white/90 hover:bg-white/30 hover:text-white hover:shadow-md"
                     }`}
                     data-testid={item.testId}
                     onClick={() => setSidebarOpen(false)}
