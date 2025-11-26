@@ -31,9 +31,11 @@ export default function UserMyListings() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("published");
 
-  const { data: userListings, isLoading } = useQuery<Listing[]>({
+  const { data: userListings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const deleteListingMutation = useMutation({
@@ -50,11 +52,11 @@ export default function UserMyListings() {
     },
   });
 
-  const listings = userListings?.filter(item => item.type === 'business') || [];
+  const listings = (userListings || []).filter((item: Listing) => item.type === 'business');
   
-  const approvedListings = listings.filter(l => l.status === 'published');
-  const pendingListings = listings.filter(l => l.status === 'pending');
-  const rejectedListings = listings.filter(l => l.status === 'rejected');
+  const approvedListings = listings.filter((l: Listing) => l.status === 'published');
+  const pendingListings = listings.filter((l: Listing) => l.status === 'pending');
+  const rejectedListings = listings.filter((l: Listing) => l.status === 'rejected');
 
   const renderListingCard = (listing: Listing) => (
     <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>

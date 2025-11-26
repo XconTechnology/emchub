@@ -76,8 +76,9 @@ export default function UserCreateListing() {
       );
       return apiRequest('POST', '/api/listings', cleanedData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/listings/user'] });
+      await new Promise(resolve => setTimeout(resolve, 300));
       toast({
         title: "Listing submitted!",
         description: "Your listing has been submitted for approval.",
