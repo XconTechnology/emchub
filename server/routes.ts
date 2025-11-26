@@ -4599,6 +4599,68 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // User-facing service request message routes
+  app.post("/api/service-requests/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId || !message) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Verify the request belongs to this user or they're an approved helper
+      const request = await storage.getServiceRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.requesterId !== userId) {
+        // Check if user is the assigned admin (staff)
+        const isAdminSession = req.session?.adminAuth === true;
+        if (!isAdminSession && request.assignedAdminId !== userId) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      }
+
+      const msg = await storage.createServiceRequestMessage({
+        serviceRequestId: id,
+        senderId: userId,
+        message,
+      });
+
+      broadcastEvent({ type: 'service-request-message', data: msg });
+      res.status(201).json(msg);
+    } catch (error) {
+      console.error("Error creating service request message:", error);
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  app.get("/api/service-requests/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      // Verify user has access to this request
+      const request = await storage.getServiceRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      if (request.requesterId !== userId && request.assignedAdminId !== userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const messages = await storage.getServiceRequestMessages(id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching service request messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time updates
