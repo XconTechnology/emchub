@@ -51,7 +51,7 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
   const form = useForm<AddListingData>({
     resolver: zodResolver(insertListingSchema),
     defaultValues: {
-      type: "listing",
+      type: "business",
       title: "",
       description: "",
       categoryId: "",
