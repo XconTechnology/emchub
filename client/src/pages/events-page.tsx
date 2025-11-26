@@ -135,7 +135,7 @@ export default function EventsPage() {
               const LocationIcon = location.icon;
               
               return (
-                <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`card-event-${event.id}`}>
+                <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full" data-testid={`card-event-${event.id}`}>
                   {/* Event Image */}
                   {event.images && event.images.length > 0 ? (
                     <div className="relative h-48 overflow-hidden">
@@ -171,7 +171,7 @@ export default function EventsPage() {
                     )}
                   </CardHeader>
 
-                  <CardContent>
+                  <CardContent className="flex-grow">
                     <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-4">
                       {event.description}
                     </p>
@@ -191,7 +191,7 @@ export default function EventsPage() {
                     </div>
                   </CardContent>
 
-                  <CardFooter>
+                  <CardFooter className="mt-auto">
                     <Link href={`/event/${event.id}`} className="w-full">
                       <Button className="w-full" data-testid={`button-view-event-${event.id}`}>
                         View Details
