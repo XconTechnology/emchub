@@ -787,6 +787,54 @@ export const insertTdDisputeSchema = createInsertSchema(tdDisputes).omit({
 export type TdDispute = typeof tdDisputes.$inferSelect;
 export type InsertTdDispute = z.infer<typeof insertTdDisputeSchema>;
 
+// Service Requests table - for user/vendor service requests to admin
+export const serviceRequests = pgTable("service_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requesterId: varchar("requester_id").notNull().references(() => users.id),
+  requesterType: varchar("requester_type").notNull(), // 'user' | 'vendor'
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  estimatedHours: decimal("estimated_hours", { precision: 5, scale: 2 }),
+  preferredDate: varchar("preferred_date"),
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'in_progress' | 'completed' | 'rejected'
+  assignedAdminId: varchar("assigned_admin_id").references(() => users.id),
+  completedAt: timestamp("completed_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertServiceRequestSchema = createInsertSchema(serviceRequests).omit({
+  id: true,
+  status: true,
+  assignedAdminId: true,
+  completedAt: true,
+  rejectionReason: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
+
+// Service Request Messages table - for live chat within service requests
+export const serviceRequestMessages = pgTable("service_request_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serviceRequestId: varchar("service_request_id").notNull().references(() => serviceRequests.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  attachmentUrl: varchar("attachment_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertServiceRequestMessageSchema = createInsertSchema(serviceRequestMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ServiceRequestMessage = typeof serviceRequestMessages.$inferSelect;
+export type InsertServiceRequestMessage = z.infer<typeof insertServiceRequestMessageSchema>;
+
 // Types
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
