@@ -520,21 +520,30 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   email: z.string().email().optional().or(z.literal("")),
   
   // Location fields optional
-  address: z.string().optional(),
+  address: z.string().optional().nullable(),
   city: z.string().optional(),
+  website: z.string().optional().nullable(),
   
   // Status field - pending (awaiting approval), published (approved and live), rejected (not approved)
-  status: z.enum(["pending", "published", "rejected"]).optional().default("pending"),
+  status: z.enum(["pending", "published", "rejected", "draft"]).optional().default("pending"),
   
   // Event date fields - accept ISO strings and transform to Date objects
   eventDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   eventEndDate: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
   
+  // Numeric fields - accept both string and number, transform to number
+  eventPrice: z.union([z.number(), z.string().transform((s) => s ? parseFloat(s) : undefined)]).optional().nullable(),
+  capacity: z.union([z.number(), z.string().transform((s) => s ? parseInt(s) : undefined)]).optional().nullable(),
+  price: z.union([z.number(), z.string().transform((s) => s ? parseFloat(s) : undefined)]).optional().nullable(),
+  inventory: z.union([z.number(), z.string().transform((s) => s ? parseInt(s) : undefined)]).optional().nullable(),
+  timedollarPercentage: z.union([z.number(), z.string().transform((s) => s ? parseInt(s) : undefined)]).optional().nullable(),
+  cashPercentage: z.union([z.number(), z.string().transform((s) => s ? parseInt(s) : undefined)]).optional().nullable(),
+  
   // Optional arrays
   tags: z.array(z.string()).optional(),
   images: z.array(z.string()).optional(),
   paymentMethods: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
