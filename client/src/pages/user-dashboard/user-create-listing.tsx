@@ -38,7 +38,6 @@ export default function UserCreateListing() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [imageUrl, setImageUrl] = useState("");
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,14 +148,6 @@ export default function UserCreateListing() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }
-  };
-
-  const handleAddImageUrl = () => {
-    if (imageUrl.trim()) {
-      setUploadedImages([...uploadedImages, imageUrl.trim()]);
-      setImageUrl("");
-      toast({ title: "Image URL added successfully" });
     }
   };
 
@@ -402,7 +393,6 @@ export default function UserCreateListing() {
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    accept="image/*"
                     onChange={handleFileUpload}
                     disabled={isUploadingFile || uploadedImages.length >= 5}
                     className="hidden"
@@ -424,30 +414,9 @@ export default function UserCreateListing() {
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        Upload Images ({uploadedImages.length}/5)
+                        Click to Upload ({uploadedImages.length}/5)
                       </>
                     )}
-                  </Button>
-                </div>
-
-                {/* Add image by URL */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Or paste image URL"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    disabled={uploadedImages.length >= 5}
-                    data-testid="input-image-url"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddImageUrl}
-                    disabled={!imageUrl.trim() || uploadedImages.length >= 5}
-                    data-testid="button-add-image-url"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Add
                   </Button>
                 </div>
 
