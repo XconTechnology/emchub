@@ -13,6 +13,8 @@ import {
   staffHelpRequests,
   activityLogs,
   transactions,
+  serviceRequests,
+  serviceRequestMessages,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -34,9 +36,13 @@ import {
   type InsertStaffHelpRequest,
   type ActivityLog,
   type Transaction,
+  type ServiceRequest,
+  type InsertServiceRequest,
+  type ServiceRequestMessage,
+  type InsertServiceRequestMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ilike, inArray, sql, desc } from "drizzle-orm";
+import { eq, or, and, ilike, inArray, sql, desc, alias } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -347,6 +353,15 @@ export interface IStorage {
   getAllTdDisputes(): Promise<any[]>;
   getStaffUsers(): Promise<any[]>;
   
+  // Service Request operations
+  createServiceRequest(data: { requesterId: string; requesterType: string; title: string; description: string; estimatedHours?: string; preferredDate?: string }): Promise<any>;
+  getServiceRequest(id: string): Promise<any | undefined>;
+  getRequesterServiceRequests(requesterId: string): Promise<any[]>;
+  getAllServiceRequests(): Promise<any[]>;
+  updateServiceRequestStatus(id: string, status: string, adminId?: string, rejectionReason?: string): Promise<any>;
+  createServiceRequestMessage(data: { serviceRequestId: string; senderId: string; message: string }): Promise<any>;
+  getServiceRequestMessages(serviceRequestId: string): Promise<any[]>;
+
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
   getBusinessListings(): Promise<BusinessListing[]>;
@@ -3385,6 +3400,129 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.userType, 'staff'));
+  }
+
+  // Service Request operations
+  async createServiceRequest(data: { requesterId: string; requesterType: string; title: string; description: string; estimatedHours?: string; preferredDate?: string }): Promise<any> {
+    const [request] = await db
+      .insert(serviceRequests)
+      .values({
+        requesterId: data.requesterId,
+        requesterType: data.requesterType,
+        title: data.title,
+        description: data.description,
+        estimatedHours: data.estimatedHours ? parseFloat(data.estimatedHours) : undefined,
+        preferredDate: data.preferredDate,
+        status: 'pending',
+      })
+      .returning();
+    return request;
+  }
+
+  async getServiceRequest(id: string): Promise<any | undefined> {
+    const [request] = await db
+      .select()
+      .from(serviceRequests)
+      .where(eq(serviceRequests.id, id));
+    return request;
+  }
+
+  async getRequesterServiceRequests(requesterId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(serviceRequests)
+      .where(eq(serviceRequests.requesterId, requesterId))
+      .orderBy(sql`${serviceRequests.createdAt} DESC`);
+  }
+
+  async getAllServiceRequests(): Promise<any[]> {
+    const requester = alias(users, 'requester');
+    const admin = alias(users, 'admin');
+    
+    const requests = await db
+      .select({
+        id: serviceRequests.id,
+        requesterId: serviceRequests.requesterId,
+        requesterType: serviceRequests.requesterType,
+        title: serviceRequests.title,
+        description: serviceRequests.description,
+        estimatedHours: serviceRequests.estimatedHours,
+        preferredDate: serviceRequests.preferredDate,
+        status: serviceRequests.status,
+        assignedAdminId: serviceRequests.assignedAdminId,
+        completedAt: serviceRequests.completedAt,
+        rejectionReason: serviceRequests.rejectionReason,
+        createdAt: serviceRequests.createdAt,
+        updatedAt: serviceRequests.updatedAt,
+        requesterName: requester.username,
+        adminName: admin.username,
+      })
+      .from(serviceRequests)
+      .leftJoin(requester, eq(serviceRequests.requesterId, requester.id))
+      .leftJoin(admin, eq(serviceRequests.assignedAdminId, admin.id))
+      .orderBy(sql`${serviceRequests.createdAt} DESC`);
+    
+    return requests;
+  }
+
+  async updateServiceRequestStatus(id: string, status: string, adminId?: string, rejectionReason?: string): Promise<any> {
+    const updates: any = {
+      status,
+      updatedAt: new Date(),
+    };
+    
+    if (adminId) {
+      updates.assignedAdminId = adminId;
+    }
+    
+    if (rejectionReason) {
+      updates.rejectionReason = rejectionReason;
+    }
+    
+    if (status === 'completed') {
+      updates.completedAt = new Date();
+    }
+
+    const [updated] = await db
+      .update(serviceRequests)
+      .set(updates)
+      .where(eq(serviceRequests.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async createServiceRequestMessage(data: { serviceRequestId: string; senderId: string; message: string }): Promise<any> {
+    const [message] = await db
+      .insert(serviceRequestMessages)
+      .values({
+        serviceRequestId: data.serviceRequestId,
+        senderId: data.senderId,
+        message: data.message,
+      })
+      .returning();
+    return message;
+  }
+
+  async getServiceRequestMessages(serviceRequestId: string): Promise<any[]> {
+    const sender = alias(users, 'sender');
+    
+    const messages = await db
+      .select({
+        id: serviceRequestMessages.id,
+        serviceRequestId: serviceRequestMessages.serviceRequestId,
+        senderId: serviceRequestMessages.senderId,
+        message: serviceRequestMessages.message,
+        attachmentUrl: serviceRequestMessages.attachmentUrl,
+        createdAt: serviceRequestMessages.createdAt,
+        senderName: sender.username,
+      })
+      .from(serviceRequestMessages)
+      .leftJoin(sender, eq(serviceRequestMessages.senderId, sender.id))
+      .where(eq(serviceRequestMessages.serviceRequestId, serviceRequestId))
+      .orderBy(sql`${serviceRequestMessages.createdAt} ASC`);
+    
+    return messages;
   }
 }
 
