@@ -1029,6 +1029,7 @@ export class DatabaseStorage implements IStorage {
     const [listing] = await db
       .update(listings)
       .set({ 
+        status: "published",
         moderationStatus: "approved",
         moderationNotes: notes || null,
         moderatedBy: adminId,
@@ -1044,6 +1045,7 @@ export class DatabaseStorage implements IStorage {
     const [listing] = await db
       .update(listings)
       .set({ 
+        status: "rejected",
         moderationStatus: "rejected",
         moderationNotes: reason,
         moderatedBy: adminId,
