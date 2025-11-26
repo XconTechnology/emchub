@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useLocation } from "wouter";
 import type { Category, Listing } from "@shared/schema";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 import { Store, Search, MapPin, X } from "lucide-react";
 
 export default function Explore() {
@@ -223,7 +224,7 @@ export default function Explore() {
                       <div className="h-48 bg-gray-100 relative overflow-hidden">
                         {listing.images && listing.images.length > 0 ? (
                           <img 
-                            src={listing.images[0]} 
+                            src={normalizeImageUrl(listing.images[0])} 
                             alt={listing.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />

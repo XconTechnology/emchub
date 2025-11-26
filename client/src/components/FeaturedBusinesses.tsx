@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Star, Phone, Mail, Globe } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 import type { Listing, Category } from "@shared/schema";
 import { Link } from "wouter";
 
@@ -118,7 +119,7 @@ export default function FeaturedBusinesses() {
                   <div className="relative overflow-hidden">
                     {listing.images && listing.images.length > 0 ? (
                       <img
-                        src={listing.images[0]}
+                        src={normalizeImageUrl(listing.images[0])}
                         alt={listing.title}
                         className="w-full h-56 object-cover transition-transform duration-700 group-hover:scale-110"
                       />

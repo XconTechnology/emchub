@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Store, Edit, Trash2, Plus, MapPin, Phone, Mail } from "lucide-react";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 import { useLocation } from "wouter";
 import type { Listing } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,7 +63,7 @@ export default function UserMyListings() {
     <Card key={listing.id} className="hover:shadow-lg transition-shadow" data-testid={`card-listing-${listing.id}`}>
       {listing.images && listing.images.length > 0 && (
         <img 
-          src={listing.images[0]} 
+          src={normalizeImageUrl(listing.images[0])} 
           alt={listing.title} 
           className="w-full h-48 object-cover rounded-t-lg" 
           data-testid={`img-listing-${listing.id}`}

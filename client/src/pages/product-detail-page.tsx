@@ -30,6 +30,7 @@ import {
   X
 } from "lucide-react";
 import type { Listing, User } from "@shared/schema";
+import { normalizeImageUrls } from "@/lib/imageUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -466,7 +467,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const images = product.images || [];
+  const images = normalizeImageUrls(product.images);
   const hasImages = images.length > 0;
   const categories = product.customCategory?.split(',').map(c => c.trim()).filter(Boolean) || [];
 

@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
+import { normalizeImageUrls } from "@/lib/imageUtils";
 
 interface ProductDetailModalProps {
   product: Listing | null;
@@ -32,7 +33,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   if (!product) return null;
 
-  const images = product.images || [];
+  const images = normalizeImageUrls(product.images);
   const hasImages = images.length > 0;
 
   const nextImage = () => {

@@ -17,6 +17,7 @@ import {
   ImageOff
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
+import { normalizeImageUrl } from "@/lib/imageUtils";
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,7 +106,7 @@ export default function ProductsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => {
               const images = product.images || [];
-              const mainImage = images[0];
+              const mainImage = normalizeImageUrl(images[0]);
               const hasImage = mainImage && mainImage.trim() !== '';
               const categories = product.customCategory?.split(',').map(c => c.trim()).filter(Boolean) || [];
               const inStock = (product.inventory || 0) > 0;

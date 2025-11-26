@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Phone, Globe, Clock, Star } from 'lucide-react';
 import { Listing, Category } from '@shared/schema';
+import { normalizeImageUrl } from '@/lib/imageUtils';
 import DashboardLayout from '@/components/DashboardLayout';
 
 export default function DirectoryPage() {
