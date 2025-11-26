@@ -1402,6 +1402,12 @@ export function registerRoutes(app: Express): Server {
       const listingId = req.params.id;
       const { listings, coupons: couponsTable, users: usersTable } = await import("@shared/schema");
       
+      // Get the listing to find the user ID for cache invalidation
+      const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+      
       // Get admin user ID (handle session-based auth where req.user might be undefined)
       let adminId = req.user?.id;
       if (!adminId) {
@@ -1414,13 +1420,14 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Approve the listing
-      await db
+      const [updatedListing] = await db
         .update(listings)
         .set({ 
           status: 'published',
           updatedAt: new Date()
         })
-        .where(eq(listings.id, listingId));
+        .where(eq(listings.id, listingId))
+        .returning();
       
       // Auto-approve any pending coupons linked to this product
       const linkedCoupons = await db
@@ -1435,9 +1442,20 @@ export function registerRoutes(app: Express): Server {
         await storage.approveCoupon(coupon.id, adminId);
       }
       
+      // Broadcast cache invalidation to the vendor/user
+      broadcastEvent({
+        type: 'listing-approved',
+        data: {
+          listingId,
+          userId: listing.userId,
+          status: 'published'
+        }
+      });
+      
       res.json({ 
         message: "Listing approved and published successfully",
-        couponsApproved: linkedCoupons.length
+        couponsApproved: linkedCoupons.length,
+        listing: updatedListing
       });
     } catch (error) {
       console.error("Error approving listing:", error);
