@@ -208,11 +208,13 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
         const file = files[i];
         
         try {
+          // Step 1: Get signed upload URL
           const uploadUrlResponse = await apiRequest('POST', '/api/object-storage/upload-url', {
             fileName: `listing-${Date.now()}-${i}-${file.name}`,
           });
           const uploadUrlData = await uploadUrlResponse.json();
           
+          // Step 2: Upload file to signed URL
           const putResponse = await fetch(uploadUrlData.url, {
             method: 'PUT',
             body: file,
@@ -225,8 +227,17 @@ export default function AddListingModal({ isOpen, onClose, editListing }: AddLis
             throw new Error('Failed to upload file');
           }
 
+          // Step 3: Convert signed URL to permanent object path
+          const imageResponse = await apiRequest('PUT', '/api/listing-images', {
+            imageURL: uploadUrlData.url,
+          });
+          const imageData = await imageResponse.json();
+          
+          // Use the permanent objectPath instead of the signed URL
+          const permanentUrl = imageData.objectPath || imageData.publicURL || uploadUrlData.url;
+
           setImageUrls(prev => {
-            const newUrls = [...prev, uploadUrlData.url];
+            const newUrls = [...prev, permanentUrl];
             form.setValue("images", newUrls);
             return newUrls;
           });
