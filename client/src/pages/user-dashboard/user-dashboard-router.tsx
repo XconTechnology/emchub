@@ -147,7 +147,7 @@ export default function UserDashboardRouter() {
         style={{ backgroundColor: '#8FC24C' }}
       >
         {/* EMC HUB Logo/Link */}
-        <div className="p-6 pl-14 lg:pl-6 border-b border-white/10">
+        <div className="p-6 pl-20 lg:pl-6 border-b border-white/10">
           <Link href="/" data-testid="link-emc-hub-home">
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
               <h3 className="font-bold text-white text-xl" data-testid="text-emc-hub">
