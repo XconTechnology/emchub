@@ -441,15 +441,30 @@ export default function AdminServiceRequests() {
             {messages.length === 0 ? (
               <p className="text-center text-sm text-gray-500 py-4">No messages yet</p>
             ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                  <p className="text-sm font-medium">{msg.senderName}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
-                  </p>
-                </div>
-              ))
+              messages.map((msg) => {
+                const isPaymentReceived = msg.message.includes("Payment received");
+                
+                return (
+                  <div 
+                    key={msg.id} 
+                    className={`p-3 rounded ${
+                      isPaymentReceived
+                        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                        : "bg-gray-100 dark:bg-gray-800"
+                    }`}
+                  >
+                    <p className={`text-sm font-medium ${isPaymentReceived ? "text-green-900 dark:text-green-100" : ""}`}>
+                      {isPaymentReceived ? "✅ Payment Received" : msg.senderName}
+                    </p>
+                    <p className={`text-sm mt-1 ${isPaymentReceived ? "text-green-800 dark:text-green-200" : "text-gray-600 dark:text-gray-400"}`}>
+                      {msg.message}
+                    </p>
+                    <p className={`text-xs mt-1 ${isPaymentReceived ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
+                      {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  </div>
+                );
+              })
             )}
           </div>
           <div className="flex gap-2 flex-col">
