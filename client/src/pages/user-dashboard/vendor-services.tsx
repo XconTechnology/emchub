@@ -39,7 +39,7 @@ interface ServiceRequest {
   updatedAt: string;
 }
 
-function OfferCard({ message, offerId, serviceRequestId, onAccept }: { message: string; offerId: string; serviceRequestId: string; onAccept: () => void }) {
+function OfferCard({ message, offer, onAccept }: { message: string; offer: any; onAccept: () => void }) {
   const [showPayment, setShowPayment] = useState(false);
   const stripe = useStripe();
   const elements = useElements();
@@ -51,14 +51,17 @@ function OfferCard({ message, offerId, serviceRequestId, onAccept }: { message: 
     
     setIsProcessing(true);
     try {
-      const response = await fetch(`/api/service-offers/${offerId}/accept-and-pay`, {
+      const response = await fetch(`/api/service-offers/${offer.id}/accept-and-pay`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
 
-      if (!response.ok) throw new Error("Payment failed");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Payment failed");
+      }
       
       const { clientSecret } = await response.json();
       
@@ -164,6 +167,19 @@ export default function VendorServices() {
     },
     enabled: !!messageDialog?.id,
     refetchInterval: 3000,
+  });
+
+  const { data: offers = [] } = useQuery<any[]>({
+    queryKey: ['/api/service-offers', messageDialog?.id],
+    queryFn: async () => {
+      if (!messageDialog?.id) return [];
+      const response = await fetch(`/api/service-offers/${messageDialog.id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch offers');
+      return response.json();
+    },
+    enabled: !!messageDialog?.id,
   });
 
   const submitMutation = useMutation({
@@ -402,28 +418,33 @@ export default function VendorServices() {
             {messages.length === 0 ? (
               <p className="text-center text-sm text-gray-500 py-4">No messages yet</p>
             ) : (
-              messages.map((msg) => (
-                <div key={msg.id}>
-                  {msg.message.includes("OFFER:") ? (
-                    <Elements stripe={stripePromise}>
-                      <OfferCard
-                        message={msg.message}
-                        offerId={msg.id}
-                        serviceRequestId={messageDialog?.id || ""}
-                        onAccept={() => setMessageDialog(null)}
-                      />
-                    </Elements>
-                  ) : (
-                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                      <p className="text-sm font-medium">{msg.senderName}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))
+              messages.map((msg) => {
+                const matchingOffer = msg.message.includes("OFFER:") 
+                  ? offers.find(o => o.serviceName === msg.message.match(/OFFER: (.+?) -/)?.[1])
+                  : null;
+                
+                return (
+                  <div key={msg.id}>
+                    {matchingOffer ? (
+                      <Elements stripe={stripePromise}>
+                        <OfferCard
+                          message={msg.message}
+                          offer={matchingOffer}
+                          onAccept={() => setMessageDialog(null)}
+                        />
+                      </Elements>
+                    ) : (
+                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                        <p className="text-sm font-medium">{msg.senderName}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
           <div className="flex gap-2">
