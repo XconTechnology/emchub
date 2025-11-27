@@ -3893,6 +3893,11 @@ export function registerRoutes(app: Express): Server {
 
   // Get all transactions including service offer payments (admin only)
   app.get("/api/admin/transactions", isAdminAuthenticated, async (req, res) => {
+    // Disable caching to ensure fresh data
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     try {
       const transactions = await storage.getAllTransactions();
       
@@ -4913,7 +4918,13 @@ export function registerRoutes(app: Express): Server {
       
       console.log(`Offer ${id} marked as paid. Message created for request ${offer.serviceRequestId}`);
 
-      broadcastEvent({ type: 'service-offer-paid', data: updated });
+      // Broadcast to force admin dashboard refresh
+      broadcastEvent({ 
+        type: 'service-offer-paid', 
+        data: updated,
+        invalidateQueries: ['/api/admin/transactions']
+      });
+      
       res.json(updated);
     } catch (error) {
       console.error("Error confirming payment:", error);

@@ -56,8 +56,10 @@ export default function AdminTransactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: transactions, isLoading } = useQuery<Transaction[]>({
+  const { data: transactions, isLoading, refetch } = useQuery<Transaction[]>({
     queryKey: ['/api/admin/transactions'],
+    staleTime: 5000, // Refresh every 5 seconds
+    gcTime: 10000,
   });
 
   const filteredTransactions = transactions?.filter((transaction) => {
