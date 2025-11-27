@@ -163,6 +163,11 @@ function UserServicesContent() {
     preferredDate: "",
   });
 
+  // Fetch current user
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['/api/me'],
+  });
+
   // Fetch user service requests
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/user-service-requests'],
@@ -196,26 +201,30 @@ function UserServicesContent() {
     refetchInterval: 3000,
   });
 
-  // Notification effect
+  // Notification effect - only notify for messages from OTHER users, not the sender
   useEffect(() => {
-    if (messages.length > previousMessageCount && messageDialog) {
-      // Play notification sound
-      const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
-      audio.play().catch(() => {}); // Silently fail if audio can't play
-      
-      // Show toast notification
+    if (messages.length > previousMessageCount && messageDialog && currentUser) {
       const lastMsg = messages[messages.length - 1];
-      toast({
-        title: "New message",
-        description: `${lastMsg.senderName}: ${lastMsg.message.substring(0, 50)}...`,
-      });
+      
+      // Only show notification if the message is FROM someone else (not the current user)
+      if (lastMsg.senderId !== currentUser.id) {
+        // Play notification sound
+        const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+        audio.play().catch(() => {}); // Silently fail if audio can't play
+        
+        // Show toast notification
+        toast({
+          title: "New message",
+          description: `${lastMsg.senderName}: ${lastMsg.message.substring(0, 50)}...`,
+        });
 
-      // Update tab title
-      document.title = `📬 ${lastMsg.senderName} sent a message - EMC HUB`;
+        // Update tab title
+        document.title = `📬 ${lastMsg.senderName} sent a message - EMC HUB`;
+      }
       
       setPreviousMessageCount(messages.length);
     }
-  }, [messages, previousMessageCount, messageDialog, toast]);
+  }, [messages, previousMessageCount, messageDialog, currentUser, toast]);
 
   // Reset tab title when dialog closes
   useEffect(() => {
