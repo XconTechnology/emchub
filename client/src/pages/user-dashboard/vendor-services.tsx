@@ -12,12 +12,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench } from "lucide-react";
+import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 
 interface ServiceRequest {
   id: string;
@@ -33,6 +37,105 @@ interface ServiceRequest {
   rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+function OfferCard({ message, offerId, serviceRequestId, onAccept }: { message: string; offerId: string; serviceRequestId: string; onAccept: () => void }) {
+  const [showPayment, setShowPayment] = useState(false);
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePayment = async () => {
+    if (!stripe || !elements) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch("/api/service-offers/accept-and-pay", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offerId,
+          paymentMethodId: "card_" + Math.random().toString(36).substr(2, 9),
+        }),
+      });
+
+      if (!response.ok) throw new Error("Payment failed");
+      
+      const { clientSecret } = await response.json();
+      
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement)!,
+          billing_details: {},
+        },
+      });
+
+      if (error) {
+        toast({ title: "Payment failed", description: error.message, variant: "destructive" });
+      } else if (paymentIntent?.status === "succeeded") {
+        toast({ title: "Offer accepted and paid successfully!" });
+        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+        setShowPayment(false);
+        onAccept();
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const offerMatch = message.match(/OFFER: (.+?) - HK\$(\d+(?:\.\d+)?) for (.+)/);
+  if (!offerMatch) return null;
+
+  const [, serviceName, price, hours] = offerMatch;
+
+  return (
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            Service Offer
+          </p>
+          <p className="text-sm mt-2"><strong>Service:</strong> {serviceName}</p>
+          <p className="text-sm"><strong>Price:</strong> HK${price}</p>
+          <p className="text-sm"><strong>Hours:</strong> {hours}</p>
+        </div>
+      </div>
+
+      {!showPayment ? (
+        <Button
+          className="mt-4 w-full"
+          onClick={() => setShowPayment(true)}
+          data-testid="button-accept-offer"
+        >
+          Accept & Pay
+        </Button>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <CardElement />
+          <Button
+            onClick={handlePayment}
+            disabled={!stripe || isProcessing}
+            className="w-full"
+            data-testid="button-pay-offer"
+          >
+            {isProcessing ? "Processing..." : `Pay HK$${price}`}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowPayment(false)}
+            className="w-full"
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function VendorServices() {
@@ -303,12 +406,25 @@ export default function VendorServices() {
               <p className="text-center text-sm text-gray-500 py-4">No messages yet</p>
             ) : (
               messages.map((msg) => (
-                <div key={msg.id} className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                  <p className="text-sm font-medium">{msg.senderName}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
-                  </p>
+                <div key={msg.id}>
+                  {msg.message.includes("OFFER:") ? (
+                    <Elements stripe={stripePromise}>
+                      <OfferCard
+                        message={msg.message}
+                        offerId={msg.id}
+                        serviceRequestId={messageDialog?.id || ""}
+                        onAccept={() => setMessageDialog(null)}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                      <p className="text-sm font-medium">{msg.senderName}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))
             )}
