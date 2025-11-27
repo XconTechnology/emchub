@@ -35,6 +35,11 @@ interface Transaction {
   createdAt: Date;
   transactionType?: string;
   serviceName?: string;
+  serviceRequestTitle?: string;
+  serviceRequestDescription?: string;
+  estimatedHours?: number;
+  offerHours?: number;
+  serviceStatus?: string;
   customer?: {
     id: string;
     username: string;
@@ -180,12 +185,13 @@ export default function AdminTransactions() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Service Details</TableHead>
                     <TableHead>Vendor</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Admin (5%)</TableHead>
                     <TableHead>Vendor (95%)</TableHead>
+                    <TableHead>Hours</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Payment ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -200,8 +206,22 @@ export default function AdminTransactions() {
                             ? `💼 Service Offer` 
                             : `🛍️ Product`}
                         </Badge>
-                        {transaction.serviceName && (
-                          <p className="text-xs text-gray-500 mt-1">{transaction.serviceName}</p>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        {transaction.transactionType === 'service_offer' ? (
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">{transaction.serviceRequestTitle || transaction.serviceName}</p>
+                            {transaction.serviceRequestDescription && (
+                              <p className="text-xs text-gray-500 truncate" title={transaction.serviceRequestDescription}>
+                                {transaction.serviceRequestDescription.substring(0, 50)}...
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                              Fee: HK${Number(transaction.totalAmount).toFixed(2)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm">{transaction.serviceName}</p>
                         )}
                       </TableCell>
                       <TableCell>
@@ -221,13 +241,20 @@ export default function AdminTransactions() {
                       <TableCell className="text-blue-600 font-medium" data-testid={`text-earnings-${transaction.id}`}>
                         HK${Number(transaction.vendorEarnings).toFixed(2)}
                       </TableCell>
+                      <TableCell className="text-center text-sm">
+                        {transaction.transactionType === 'service_offer' && (
+                          <div>
+                            {transaction.offerHours && (
+                              <p className="font-medium">{Number(transaction.offerHours).toFixed(1)}h</p>
+                            )}
+                            {transaction.estimatedHours && (
+                              <p className="text-xs text-gray-500">Est: {Number(transaction.estimatedHours).toFixed(1)}h</p>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {getStatusBadge(transaction.paymentStatus)}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-gray-500" data-testid={`text-payment-id-${transaction.id}`}>
-                        {transaction.stripePaymentIntentId 
-                          ? `${transaction.stripePaymentIntentId.substring(0, 20)}...`
-                          : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}

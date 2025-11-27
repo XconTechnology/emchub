@@ -3923,6 +3923,11 @@ export function registerRoutes(app: Express): Server {
             createdAt: offer.createdAt,
             transactionType: "service_offer",
             serviceName: offer.serviceName,
+            serviceRequestTitle: requestData[0]?.title || "Service Request",
+            serviceRequestDescription: requestData[0]?.description || "",
+            estimatedHours: requestData[0]?.estimatedHours ? parseFloat(requestData[0].estimatedHours as string) : 0,
+            offerHours: parseFloat(offer.hours as string),
+            serviceStatus: requestData[0]?.status || "pending",
             customer: { id: "system", username: "Admin", email: "admin@system.local" },
             vendor: vendorData[0] ? { id: vendorData[0].id, username: vendorData[0].username, email: vendorData[0].email } : { id: "", username: "Unknown", email: "" },
           };
