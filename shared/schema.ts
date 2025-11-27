@@ -430,11 +430,10 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 
-// Transactions table for tracking Stripe payments and commissions
+// Transactions table for tracking Stripe payments and commissions (PRODUCT/ORDER ONLY)
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").references(() => orders.id),
-  serviceRequestId: varchar("service_request_id"), // For service request fee transactions
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who receives the payment
   customerId: varchar("customer_id").notNull().references(() => users.id), // Customer who made the payment
   
@@ -443,12 +442,12 @@ export const transactions = pgTable("transactions", {
   stripeChargeId: varchar("stripe_charge_id"),
   
   // Payment method and amounts (in HKD)
-  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both' | 'service_request'
+  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both'
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(), // Total payment amount
   cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in cash (HKD)
   tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in TimeDollars (TD)
-  platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin (or 100% for service requests)
-  vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor (or 0 for service requests)
+  platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin
+  vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor
   
   // Payment status
   status: varchar("status").notNull().default("pending"), // 'pending' | 'completed' | 'failed' | 'refunded'
@@ -462,7 +461,28 @@ export const transactions = pgTable("transactions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Service Request Fees table - SEPARATE from regular transactions
+export const serviceRequestFees = pgTable("service_request_fees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serviceRequestId: varchar("service_request_id").notNull().references(() => serviceRequests.id),
+  serviceOfferId: varchar("service_offer_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id), // User who paid
+  fee: decimal("fee", { precision: 10, scale: 2 }).notNull(), // 100% goes to admin
+  status: varchar("status").notNull().default("completed"), // 'pending' | 'completed' | 'failed' | 'refunded'
+  stripePaymentIntentId: varchar("stripe_payment_intent_id").unique(),
+  stripeChargeId: varchar("stripe_charge_id"),
+  currency: varchar("currency").notNull().default("hkd"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertServiceRequestFeeSchema = createInsertSchema(serviceRequestFees).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -470,6 +490,8 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type ServiceRequestFee = typeof serviceRequestFees.$inferSelect;
+export type InsertServiceRequestFee = z.infer<typeof insertServiceRequestFeeSchema>;
 
 // Keep the old business_listings table for backward compatibility but mark as deprecated
 export const businessListings = pgTable("business_listings", {

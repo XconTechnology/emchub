@@ -3891,7 +3891,7 @@ export function registerRoutes(app: Express): Server {
     res.json({ received: true });
   });
 
-  // Get all transactions (admin only)
+  // Get all transactions (PRODUCT/ORDER only - admin only)
   app.get("/api/admin/transactions", isAdminAuthenticated, async (req, res) => {
     // Disable caching to ensure fresh data
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -3899,12 +3899,47 @@ export function registerRoutes(app: Express): Server {
     res.set('Expires', '0');
     
     try {
-      // Get all transactions
+      // Get all transactions (product/order only)
       const transactions = await storage.getAllTransactions();
       res.json(transactions);
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
+    }
+  });
+
+  // Get all service request fees (admin only)
+  app.get("/api/admin/service-request-fees", isAdminAuthenticated, async (req, res) => {
+    // Disable caching to ensure fresh data
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
+    try {
+      // Get all service request fees with user and request details
+      const fees = await db
+        .select({
+          id: serviceRequestFees.id,
+          serviceRequestId: serviceRequestFees.serviceRequestId,
+          serviceOfferId: serviceRequestFees.serviceOfferId,
+          fee: serviceRequestFees.fee,
+          status: serviceRequestFees.status,
+          createdAt: serviceRequestFees.createdAt,
+          userId: serviceRequestFees.userId,
+          userName: usersTable.username,
+          userEmail: usersTable.email,
+          requestTitle: serviceRequests.title,
+          requestDescription: serviceRequests.description,
+        })
+        .from(serviceRequestFees)
+        .leftJoin(usersTable, eq(serviceRequestFees.userId, usersTable.id))
+        .leftJoin(serviceRequests, eq(serviceRequestFees.serviceRequestId, serviceRequests.id))
+        .orderBy(desc(serviceRequestFees.createdAt));
+
+      res.json(fees);
+    } catch (error) {
+      console.error("Error getting service request fees:", error);
+      res.status(500).json({ error: "Failed to get service request fees" });
     }
   });
 
@@ -4869,27 +4904,17 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Service request not found" });
       }
 
-      // Create transaction where ADMIN receives the full payment (separate from regular transactions)
-      const totalAmount = parseFloat(offer.price as string);
+      // Create SERVICE REQUEST FEE record (separate from regular transactions)
+      const feeAmount = parseFloat(offer.price as string);
       
-      // Get admin user - service request fees go to admin
-      const adminUser = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
-      const adminId = adminUser[0]?.id || 'admin'; // Fallback if no admin found
-
-      await storage.createTransaction({
-        orderId: null, // No order for service requests
-        serviceRequestId: offer.serviceRequestId, // Link to service request
-        vendorId: adminId, // ADMIN receives the payment
-        customerId: req.user?.id, // User who pays
+      await db.insert(serviceRequestFees).values({
+        serviceRequestId: offer.serviceRequestId,
+        serviceOfferId: id,
+        userId: req.user?.id,
+        fee: feeAmount,
+        status: 'completed',
         stripePaymentIntentId: offer.paymentIntentId,
         stripeChargeId: null,
-        paymentMethod: 'service_request',
-        totalAmount: totalAmount,
-        cashAmount: totalAmount,
-        tdAmount: 0,
-        platformCommission: totalAmount, // 100% to admin (this is the fee)
-        vendorEarnings: 0, // No vendor earnings for service request fees
-        status: 'completed',
         currency: 'hkd',
       });
 
@@ -4900,13 +4925,13 @@ export function registerRoutes(app: Express): Server {
         message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
       });
       
-      console.log(`Offer ${id} marked as paid. Service request fee HK$${totalAmount} recorded to admin.`);
+      console.log(`Offer ${id} marked as paid. Service request fee HK$${feeAmount} recorded (100% to admin).`);
 
       // Broadcast to force admin dashboard refresh
       broadcastEvent({ 
         type: 'service-offer-paid', 
         data: updated,
-        invalidateQueries: ['/api/admin/transactions']
+        invalidateQueries: ['/api/admin/transactions', '/api/admin/service-request-fees']
       });
       
       res.json(updated);
