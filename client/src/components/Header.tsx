@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings, ShoppingCart } from "lucide-react";
+import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings, ShoppingCart, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import AddListingModal from "./AddListingModal";
 import { BecomeVendorModal } from "./BecomeVendorModal";
@@ -35,6 +35,17 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   const { data: cartItems = [] } = useQuery<any[]>({
     queryKey: ['/api/cart'],
     enabled: !!user,
+  });
+
+  // Fetch unread notification counts with real-time polling
+  const { data: notificationCounts } = useQuery<{
+    totalUnread: number;
+    conversationUnread: number;
+    serviceRequestUnread: number;
+  }>({
+    queryKey: ['/api/notifications/unread-counts'],
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
   });
 
   useEffect(() => {
@@ -112,6 +123,27 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     </Button>
                   )}
                   
+                  {/* Messages Icon with Notification Badge */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setLocation('/dashboard/services')}
+                    className="relative rounded-full hover:bg-gray-100/20 transition-all"
+                    data-testid="button-messages"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[hsl(200,80%,50%)] flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
+                      <MessageSquare className="w-5 h-5 text-white" />
+                    </div>
+                    {(notificationCounts?.totalUnread || 0) > 0 && (
+                      <Badge 
+                        className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1 bg-red-500 text-white text-xs animate-pulse"
+                        data-testid="messages-badge"
+                      >
+                        {notificationCounts?.totalUnread}
+                      </Badge>
+                    )}
+                  </Button>
+
                   {/* Cart Icon */}
                   <Button 
                     variant="ghost" 
@@ -304,6 +336,22 @@ export default function Header({ forceSolid = false }: HeaderProps) {
                     Add Listing
                   </Button>
                 )}
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start relative"
+                  onClick={() => { setLocation('/dashboard/services'); setIsMobileMenuOpen(false); }}
+                  data-testid="mobile-link-messages"
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Messages
+                  {(notificationCounts?.totalUnread || 0) > 0 && (
+                    <Badge 
+                      className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 px-1 bg-red-500 text-white text-xs animate-pulse"
+                    >
+                      {notificationCounts?.totalUnread}
+                    </Badge>
+                  )}
+                </Button>
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start relative"

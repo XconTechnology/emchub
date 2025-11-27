@@ -78,10 +78,18 @@ export default function UserDashboardRouter() {
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Fetch unread message count
+  // Fetch unread message count (B2C conversations)
   const { data: unreadCountData } = useQuery<{ count: number }>({
     queryKey: ['/api/messages/unread/count'],
     enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds
+  });
+
+  // Fetch service request unread counts
+  const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
+    queryKey: ['/api/service-requests/unread-counts'],
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds
   });
 
   useEffect(() => {
@@ -95,6 +103,7 @@ export default function UserDashboardRouter() {
   }
 
   const unreadCount = unreadCountData?.count || 0;
+  const serviceUnreadCount = serviceRequestUnread?.totalUnread || 0;
 
   // Navigation items for normal users (non-vendors)
   const normalUserNavigation = [
@@ -102,7 +111,7 @@ export default function UserDashboardRouter() {
     { name: "Saved Items", path: "/dashboard/saved-items", icon: Heart, testId: "nav-saved-items" },
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "My Chats", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
-    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services" },
+    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services", badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
     { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
@@ -121,7 +130,7 @@ export default function UserDashboardRouter() {
     { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
-    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services" },
+    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services", badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined },
     { name: "WhatsApp Group", path: "/dashboard/whatsapp", icon: MessageCircle, testId: "nav-whatsapp" },
     { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   List,
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,6 +51,14 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
   const { adminLogout } = useAdminAuth();
   const { toast } = useToast();
 
+  // Fetch admin service request unread counts
+  const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
+    queryKey: ['/api/admin/service-requests/unread-counts'],
+    refetchInterval: 5000, // Poll every 5 seconds
+  });
+
+  const serviceUnreadCount = serviceRequestUnread?.totalUnread || 0;
+
   const handleLogout = () => {
     adminLogout();
     toast({
@@ -57,7 +67,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
     });
   };
 
-  const adminNavItems = [
+  const adminNavItems: { title: string; url: string; icon: any; badge?: number }[] = [
     {
       title: "Dashboard",
       url: "/admin",
@@ -107,6 +117,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Service Requests",
       url: "/admin/service-requests",
       icon: Wrench,
+      badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined,
     },
     {
       title: "All Listings",
@@ -165,9 +176,19 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                         isActive={location === item.url}
                         data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                       >
-                        <Link href={item.url}>
-                          <item.icon className="w-4 h-4" />
-                          <span>{item.title}</span>
+                        <Link href={item.url} className="flex items-center justify-between w-full">
+                          <span className="flex items-center gap-2">
+                            <item.icon className="w-4 h-4" />
+                            <span>{item.title}</span>
+                          </span>
+                          {item.badge && (
+                            <Badge 
+                              className="h-5 min-w-5 flex items-center justify-center p-0 px-1 bg-red-500 text-white text-xs animate-pulse"
+                              data-testid={`badge-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
