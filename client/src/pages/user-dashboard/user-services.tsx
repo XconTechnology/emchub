@@ -39,8 +39,8 @@ interface ServiceRequest {
   updatedAt: string;
 }
 
-// Payment Modal Component using Stripe Elements
-function PaymentModal({ 
+// Payment form component using Stripe Elements (without Dialog wrapper)
+function PaymentFormContent({ 
   offerId, 
   offer, 
   onClose, 
@@ -111,7 +111,7 @@ function PaymentModal({
   };
 
   return (
-    <DialogContent className="max-w-md">
+    <>
       <DialogHeader>
         <DialogTitle>Complete Payment</DialogTitle>
         <DialogDescription>
@@ -144,7 +144,7 @@ function PaymentModal({
           </Button>
         </div>
       </div>
-    </DialogContent>
+    </>
   );
 }
 
@@ -638,18 +638,20 @@ function UserServicesContent() {
       </Dialog>
 
       {/* Payment Dialog */}
-      {paymentDialog && (
-        <Elements stripe={stripePromise}>
-          <PaymentModal
-            offerId={paymentDialog.id}
-            offer={paymentDialog}
-            onClose={() => setPaymentDialog(null)}
-            onSuccess={() => {
-              setPreviousMessageCount(0);
-            }}
-          />
-        </Elements>
-      )}
+      <Dialog open={!!paymentDialog} onOpenChange={() => setPaymentDialog(null)}>
+        <DialogContent className="max-w-md">
+          {paymentDialog && (
+            <PaymentFormContent
+              offerId={paymentDialog.id}
+              offer={paymentDialog}
+              onClose={() => setPaymentDialog(null)}
+              onSuccess={() => {
+                setPreviousMessageCount(0);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
