@@ -3901,7 +3901,15 @@ export function registerRoutes(app: Express): Server {
     try {
       // Get all transactions (now includes service offer payments)
       const transactions = await storage.getAllTransactions();
-      res.json(transactions);
+      
+      // Map paymentMethod to transactionType for UI
+      const mappedTransactions = transactions.map((tx: any) => ({
+        ...tx,
+        transactionType: tx.paymentMethod === 'service_offer' ? 'service_offer' : 'product',
+        paymentStatus: tx.status === 'completed' ? 'succeeded' : tx.status,
+      }));
+      
+      res.json(mappedTransactions);
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
