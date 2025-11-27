@@ -75,6 +75,20 @@ function OfferCard({ message, offer, onAccept }: { message: string; offer: any; 
       if (error) {
         toast({ title: "Payment failed", description: error.message, variant: "destructive" });
       } else if (paymentIntent?.status === "succeeded") {
+        // Confirm payment with backend to notify admin
+        try {
+          const confirmRes = await fetch(`/api/service-offers/${offer.id}/confirm-payment`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          });
+          
+          if (!confirmRes.ok) throw new Error("Failed to confirm payment");
+        } catch (confirmError: any) {
+          console.error("Payment confirmation error:", confirmError);
+        }
+        
         toast({ title: "Offer accepted and paid successfully!" });
         queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
         setShowPayment(false);
