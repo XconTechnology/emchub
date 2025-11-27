@@ -434,6 +434,7 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").references(() => orders.id),
+  serviceRequestId: varchar("service_request_id"), // For service request fee transactions
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who receives the payment
   customerId: varchar("customer_id").notNull().references(() => users.id), // Customer who made the payment
   
@@ -442,12 +443,12 @@ export const transactions = pgTable("transactions", {
   stripeChargeId: varchar("stripe_charge_id"),
   
   // Payment method and amounts (in HKD)
-  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both'
+  paymentMethod: varchar("payment_method").notNull().default('cash'), // 'cash' | 'timedollar' | 'both' | 'service_request'
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(), // Total payment amount
   cashAmount: decimal("cash_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in cash (HKD)
   tdAmount: decimal("td_amount", { precision: 10, scale: 2 }).default('0'), // Amount paid in TimeDollars (TD)
-  platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin
-  vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor
+  platformCommission: decimal("platform_commission", { precision: 10, scale: 2 }).notNull(), // 5% commission for admin (or 100% for service requests)
+  vendorEarnings: decimal("vendor_earnings", { precision: 10, scale: 2 }).notNull(), // 95% earnings for vendor (or 0 for service requests)
   
   // Payment status
   status: varchar("status").notNull().default("pending"), // 'pending' | 'completed' | 'failed' | 'refunded'

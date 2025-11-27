@@ -3899,17 +3899,9 @@ export function registerRoutes(app: Express): Server {
     res.set('Expires', '0');
     
     try {
-      // Get all transactions (now includes service offer payments)
+      // Get all transactions
       const transactions = await storage.getAllTransactions();
-      
-      // Map paymentMethod to transactionType for UI
-      const mappedTransactions = transactions.map((tx: any) => ({
-        ...tx,
-        transactionType: tx.paymentMethod === 'service_offer' ? 'service_offer' : 'product',
-        paymentStatus: tx.status === 'completed' ? 'succeeded' : tx.status,
-      }));
-      
-      res.json(mappedTransactions);
+      res.json(transactions);
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
@@ -4871,29 +4863,32 @@ export function registerRoutes(app: Express): Server {
       // Update offer status to paid
       const updated = await storage.updateServiceOffer(id, { status: 'paid' });
 
-      // Get the service request to find who the vendor is
+      // Get the service request
       const request = await storage.getServiceRequest(offer.serviceRequestId);
       if (!request) {
         return res.status(404).json({ error: "Service request not found" });
       }
 
-      // Create a REAL transaction record so it appears in the transactions table
+      // Create transaction where ADMIN receives the full payment (separate from regular transactions)
       const totalAmount = parseFloat(offer.price as string);
-      const platformCommission = totalAmount * 0.05; // 5% admin commission
-      const vendorEarnings = totalAmount - platformCommission;
+      
+      // Get admin user - service request fees go to admin
+      const adminUser = await db.select().from(usersTable).where(eq(usersTable.role, 'admin')).limit(1);
+      const adminId = adminUser[0]?.id || 'admin'; // Fallback if no admin found
 
       await storage.createTransaction({
-        orderId: null, // No order for service offers
-        vendorId: request.requesterId, // The person who receives payment
-        customerId: req.user?.id, // The person who pays
+        orderId: null, // No order for service requests
+        serviceRequestId: offer.serviceRequestId, // Link to service request
+        vendorId: adminId, // ADMIN receives the payment
+        customerId: req.user?.id, // User who pays
         stripePaymentIntentId: offer.paymentIntentId,
         stripeChargeId: null,
-        paymentMethod: 'cash',
+        paymentMethod: 'service_request',
         totalAmount: totalAmount,
         cashAmount: totalAmount,
         tdAmount: 0,
-        platformCommission: platformCommission,
-        vendorEarnings: vendorEarnings,
+        platformCommission: totalAmount, // 100% to admin (this is the fee)
+        vendorEarnings: 0, // No vendor earnings for service request fees
         status: 'completed',
         currency: 'hkd',
       });
@@ -4905,7 +4900,7 @@ export function registerRoutes(app: Express): Server {
         message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
       });
       
-      console.log(`Offer ${id} marked as paid. Transaction created. Message sent to admin.`);
+      console.log(`Offer ${id} marked as paid. Service request fee HK$${totalAmount} recorded to admin.`);
 
       // Broadcast to force admin dashboard refresh
       broadcastEvent({ 
