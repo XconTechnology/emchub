@@ -4177,6 +4177,57 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get service request unread counts (for users/vendors)
+  app.get("/api/service-requests/unread-counts", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      const isAdmin = user.role === 'admin' || user.role === 'staff';
+      
+      const unreadData = await storage.getServiceRequestUnreadCounts(user.id, isAdmin);
+      res.json(unreadData);
+    } catch (error) {
+      console.error("Error getting service request unread counts:", error);
+      res.status(500).json({ error: "Failed to get unread counts" });
+    }
+  });
+
+  // Get admin service request unread counts
+  app.get("/api/admin/service-requests/unread-counts", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user?.id || req.session?.adminUserId;
+      const unreadData = await storage.getServiceRequestUnreadCounts(adminId, true);
+      res.json(unreadData);
+    } catch (error) {
+      console.error("Error getting admin service request unread counts:", error);
+      res.status(500).json({ error: "Failed to get unread counts" });
+    }
+  });
+
+  // Combined unread counts for header notification badge (all chats)
+  app.get("/api/notifications/unread-counts", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      const isAdmin = user.role === 'admin' || user.role === 'staff';
+      const userRole = user.vendorStatus === 'verified' ? 'vendor' : 'customer';
+      
+      // Get B2C conversation unread count
+      const conversationUnread = await storage.getUnreadCount(user.id, userRole);
+      
+      // Get service request unread count
+      const serviceRequestData = await storage.getServiceRequestUnreadCounts(user.id, isAdmin);
+      
+      res.json({
+        totalUnread: conversationUnread + serviceRequestData.totalUnread,
+        conversationUnread,
+        serviceRequestUnread: serviceRequestData.totalUnread,
+        serviceRequests: serviceRequestData.requests,
+      });
+    } catch (error) {
+      console.error("Error getting notification unread counts:", error);
+      res.status(500).json({ error: "Failed to get unread counts" });
+    }
+  });
+
   // ==================== Support Ticket Attachment Upload ====================
 
   // Configure multer for support ticket attachments
@@ -4693,6 +4744,9 @@ export function registerRoutes(app: Express): Server {
         message,
       });
 
+      // Increment unread count for the requester (user/vendor) since admin is sending
+      await storage.incrementServiceRequestUnreadForRequester(id);
+
       // Override sender name to "Admin" for admin messages
       const responseMsg = {
         ...msg,
@@ -4704,6 +4758,24 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error creating service request message:", error);
       res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  // Mark service request messages as read (Admin)
+  app.post("/api/admin/service-requests/:id/messages/mark-read", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user?.id || req.session?.adminUserId;
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      await storage.markServiceRequestMessagesRead(id, adminId, true);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
     }
   });
 
@@ -4764,11 +4836,38 @@ export function registerRoutes(app: Express): Server {
         message,
       });
 
+      // Increment unread count for admin since user/vendor is sending
+      await storage.incrementServiceRequestUnreadForAdmin(id);
+
       broadcastEvent({ type: 'service-request-message', data: msg });
       res.status(201).json(msg);
     } catch (error) {
       console.error("Error creating service request message:", error);
       res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  // Mark service request messages as read (User/Vendor)
+  app.post("/api/service-requests/:id/messages/mark-read", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Verify the request belongs to this user
+      const request = await storage.getServiceRequest(id);
+      if (!request || request.requesterId !== userId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      
+      await storage.markServiceRequestMessagesRead(id, userId, false);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
     }
   });
 

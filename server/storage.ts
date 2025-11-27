@@ -367,6 +367,14 @@ export interface IStorage {
   updateServiceRequestStatus(id: string, status: string, adminId?: string, rejectionReason?: string): Promise<any>;
   createServiceRequestMessage(data: { serviceRequestId: string; senderId: string; message: string }): Promise<any>;
   getServiceRequestMessages(serviceRequestId: string): Promise<any[]>;
+  
+  // Service Request Unread Count operations
+  incrementServiceRequestUnreadForRequester(serviceRequestId: string): Promise<void>;
+  incrementServiceRequestUnreadForAdmin(serviceRequestId: string): Promise<void>;
+  resetServiceRequestUnreadForRequester(serviceRequestId: string): Promise<void>;
+  resetServiceRequestUnreadForAdmin(serviceRequestId: string): Promise<void>;
+  getServiceRequestUnreadCounts(userId: string, isAdmin: boolean): Promise<{ totalUnread: number; requests: any[] }>;
+  markServiceRequestMessagesRead(serviceRequestId: string, readerId: string, isAdmin: boolean): Promise<void>;
 
   // Service Offer operations
   createServiceOffer(data: { serviceRequestId: string; serviceName: string; price: string; hours: string; createdBy: string }): Promise<any>;
@@ -3567,6 +3575,102 @@ export class DatabaseStorage implements IStorage {
       ...msg,
       senderName: (msg.senderRole === 'admin' || msg.senderRole === 'staff') ? 'Admin' : (msg.senderName || 'Unknown')
     }));
+  }
+
+  // Service Request Unread Count operations
+  async incrementServiceRequestUnreadForRequester(serviceRequestId: string): Promise<void> {
+    await db
+      .update(serviceRequests)
+      .set({ 
+        unreadByRequester: sql`COALESCE(${serviceRequests.unreadByRequester}, 0) + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(serviceRequests.id, serviceRequestId));
+  }
+
+  async incrementServiceRequestUnreadForAdmin(serviceRequestId: string): Promise<void> {
+    await db
+      .update(serviceRequests)
+      .set({ 
+        unreadByAdmin: sql`COALESCE(${serviceRequests.unreadByAdmin}, 0) + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(serviceRequests.id, serviceRequestId));
+  }
+
+  async resetServiceRequestUnreadForRequester(serviceRequestId: string): Promise<void> {
+    await db
+      .update(serviceRequests)
+      .set({ 
+        unreadByRequester: 0,
+        updatedAt: new Date()
+      })
+      .where(eq(serviceRequests.id, serviceRequestId));
+  }
+
+  async resetServiceRequestUnreadForAdmin(serviceRequestId: string): Promise<void> {
+    await db
+      .update(serviceRequests)
+      .set({ 
+        unreadByAdmin: 0,
+        updatedAt: new Date()
+      })
+      .where(eq(serviceRequests.id, serviceRequestId));
+  }
+
+  async getServiceRequestUnreadCounts(userId: string, isAdmin: boolean): Promise<{ totalUnread: number; requests: any[] }> {
+    const requester = alias(users, 'requester');
+    
+    let query;
+    if (isAdmin) {
+      // Admin sees unread counts from ALL service requests (unreadByAdmin)
+      query = await db
+        .select({
+          id: serviceRequests.id,
+          title: serviceRequests.title,
+          unreadCount: serviceRequests.unreadByAdmin,
+          requesterName: requester.username,
+          requesterType: serviceRequests.requesterType,
+        })
+        .from(serviceRequests)
+        .leftJoin(requester, eq(serviceRequests.requesterId, requester.id))
+        .where(sql`COALESCE(${serviceRequests.unreadByAdmin}, 0) > 0`);
+    } else {
+      // User/Vendor sees unread counts from their own service requests (unreadByRequester)
+      query = await db
+        .select({
+          id: serviceRequests.id,
+          title: serviceRequests.title,
+          unreadCount: serviceRequests.unreadByRequester,
+          requesterType: serviceRequests.requesterType,
+        })
+        .from(serviceRequests)
+        .where(and(
+          eq(serviceRequests.requesterId, userId),
+          sql`COALESCE(${serviceRequests.unreadByRequester}, 0) > 0`
+        ));
+    }
+    
+    const totalUnread = query.reduce((sum, req) => sum + (req.unreadCount || 0), 0);
+    return { totalUnread, requests: query };
+  }
+
+  async markServiceRequestMessagesRead(serviceRequestId: string, readerId: string, isAdmin: boolean): Promise<void> {
+    // Mark all messages in this request as read
+    await db
+      .update(serviceRequestMessages)
+      .set({ isRead: true })
+      .where(and(
+        eq(serviceRequestMessages.serviceRequestId, serviceRequestId),
+        sql`${serviceRequestMessages.senderId} != ${readerId}`
+      ));
+    
+    // Reset the appropriate unread counter
+    if (isAdmin) {
+      await this.resetServiceRequestUnreadForAdmin(serviceRequestId);
+    } else {
+      await this.resetServiceRequestUnreadForRequester(serviceRequestId);
+    }
   }
 
   // Service Offer operations
