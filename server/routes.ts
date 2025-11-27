@@ -3896,20 +3896,23 @@ export function registerRoutes(app: Express): Server {
     try {
       const transactions = await storage.getAllTransactions();
       
-      // Also fetch paid service offers
-      const allServiceOffers = await db.select().from(serviceOffers).where(eq(serviceOffers.status, 'paid'));
+      // Also fetch paid service offers - fetch ALL first then filter
+      const allServiceOffers = await db.select().from(serviceOffers);
+      const paidOffers = allServiceOffers.filter(o => o.status === 'paid');
+      
+      console.log(`Found ${allServiceOffers.length} total offers, ${paidOffers.length} are paid`);
       
       // Transform service offers into transaction format
-      const serviceOfferTransactions = await Promise.all(allServiceOffers.map(async (offer: any) => {
-        const request = await db.select().from(serviceRequests).where(eq(serviceRequests.id, offer.serviceRequestId));
-        const vendor = await db.select().from(usersTable).where(eq(usersTable.id, request[0]?.requesterId));
+      const serviceOfferTransactions = await Promise.all(paidOffers.map(async (offer: any) => {
+        const requestData = await db.select().from(serviceRequests).where(eq(serviceRequests.id, offer.serviceRequestId));
+        const vendorData = requestData[0] ? await db.select().from(usersTable).where(eq(usersTable.id, requestData[0]?.requesterId)) : [];
         
         return {
           id: offer.id,
           orderId: offer.serviceRequestId,
-          stripePaymentIntentId: offer.paymentIntentId,
+          stripePaymentIntentId: offer.paymentIntentId || "service-offer-" + offer.id,
           customerId: "system",
-          vendorId: request[0]?.requesterId,
+          vendorId: requestData[0]?.requesterId,
           totalAmount: parseFloat(offer.price as string),
           platformCommission: 0,
           vendorEarnings: parseFloat(offer.price as string),
@@ -3918,11 +3921,13 @@ export function registerRoutes(app: Express): Server {
           transactionType: "service_offer",
           serviceName: offer.serviceName,
           customer: { id: "system", username: "Admin", email: "admin@system.local" },
-          vendor: vendor[0] ? { id: vendor[0].id, username: vendor[0].username, email: vendor[0].email } : { id: "", username: "Unknown", email: "" },
+          vendor: vendorData[0] ? { id: vendorData[0].id, username: vendorData[0].username, email: vendorData[0].email } : { id: "", username: "Unknown", email: "" },
         };
       }));
       
-      res.json([...transactions, ...serviceOfferTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      const combined = [...transactions, ...serviceOfferTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      console.log(`Returning ${combined.length} total transactions`);
+      res.json(combined);
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
@@ -4886,13 +4891,14 @@ export function registerRoutes(app: Express): Server {
 
       // Notify admin that payment was received
       const request = await storage.getServiceRequest(offer.serviceRequestId);
-      if (request?.assignedAdminId) {
-        await storage.createServiceRequestMessage({
-          serviceRequestId: offer.serviceRequestId,
-          senderId: req.user?.id,
-          message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
-        });
-      }
+      // Always create a message so admin sees the payment
+      await storage.createServiceRequestMessage({
+        serviceRequestId: offer.serviceRequestId,
+        senderId: req.user?.id,
+        message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
+      });
+      
+      console.log(`Offer ${id} marked as paid. Message created for request ${offer.serviceRequestId}`);
 
       broadcastEvent({ type: 'service-offer-paid', data: updated });
       res.json(updated);
