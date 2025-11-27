@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench, CreditCard } from "lucide-react";
+import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench, CreditCard, Eye } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -274,6 +274,23 @@ export default function VendorServices() {
     );
   };
 
+  const getRemainingTime = (createdAt: string) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diffMs = now.getTime() - created.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -317,8 +334,36 @@ export default function VendorServices() {
                     <CardTitle>{request.title}</CardTitle>
                     <CardDescription>{request.description}</CardDescription>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap justify-end">
                     {getStatusBadge(request.status)}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {request.estimatedHours && (
+                    <p><span className="font-medium">Hours:</span> {request.estimatedHours}</p>
+                  )}
+                  {request.preferredDate && (
+                    <p><span className="font-medium">Date:</span> {request.preferredDate}</p>
+                  )}
+                </div>
+                {request.rejectionReason && (
+                  <p className="text-red-600 dark:text-red-400"><span className="font-medium">Reason:</span> {request.rejectionReason}</p>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500">{getRemainingTime(request.createdAt)}</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setMessageDialog(request)}
+                      className="gap-2"
+                      data-testid={`button-view-request-${request.id}`}
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Request
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -331,18 +376,6 @@ export default function VendorServices() {
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                {request.estimatedHours && (
-                  <p>Estimated Hours: {request.estimatedHours}</p>
-                )}
-                {request.preferredDate && (
-                  <p>Preferred Date: {request.preferredDate}</p>
-                )}
-                {request.rejectionReason && (
-                  <p className="text-red-600 dark:text-red-400">Rejection Reason: {request.rejectionReason}</p>
-                )}
-                <p className="text-xs">Submitted {format(new Date(request.createdAt), 'MMM dd, yyyy')}</p>
               </CardContent>
             </Card>
           ))}
