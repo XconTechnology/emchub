@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +63,12 @@ export default function AdminServiceRequests() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
+
+  // Fetch current user
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ['/api/me'],
+  });
 
   const { data: requests = [], isLoading } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/admin/service-requests'],
@@ -81,6 +87,38 @@ export default function AdminServiceRequests() {
     enabled: !!messageDialog?.id,
     refetchInterval: 3000,
   });
+
+  // Notification effect - only notify for messages from OTHER users, not the sender
+  useEffect(() => {
+    if (messages.length > previousMessageCount && messageDialog && currentUser) {
+      const lastMsg = messages[messages.length - 1];
+      
+      // Only show notification if the message is FROM someone else (not the current user)
+      if (lastMsg.senderId !== currentUser.id) {
+        // Play notification sound
+        const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+        audio.play().catch(() => {}); // Silently fail if audio can't play
+        
+        // Show toast notification
+        toast({
+          title: "New message",
+          description: `${lastMsg.senderName}: ${lastMsg.message.substring(0, 50)}...`,
+        });
+
+        // Update tab title
+        document.title = `📬 ${lastMsg.senderName} sent a message - EMC HUB`;
+      }
+      
+      setPreviousMessageCount(messages.length);
+    }
+  }, [messages, previousMessageCount, messageDialog, currentUser, toast]);
+
+  // Reset tab title when dialog closes
+  useEffect(() => {
+    if (!messageDialog) {
+      document.title = "EMC HUB";
+    }
+  }, [messageDialog]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
