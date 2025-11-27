@@ -39,7 +39,7 @@ interface ServiceRequest {
   updatedAt: string;
 }
 
-function OfferCard({ message, offer, onAccept }: { message: string; offer: any; onAccept: () => void }) {
+function OfferCard({ message, offer, onAccept, requestId }: { message: string; offer: any; onAccept: () => void; requestId?: string }) {
   const [showPayment, setShowPayment] = useState(false);
   const stripe = useStripe();
   const elements = useElements();
@@ -75,7 +75,6 @@ function OfferCard({ message, offer, onAccept }: { message: string; offer: any; 
       if (error) {
         toast({ title: "Payment failed", description: error.message, variant: "destructive" });
       } else if (paymentIntent?.status === "succeeded") {
-        // Confirm payment with backend to notify admin
         try {
           const confirmRes = await fetch(`/api/service-offers/${offer.id}/confirm-payment`, {
             method: "POST",
@@ -90,7 +89,10 @@ function OfferCard({ message, offer, onAccept }: { message: string; offer: any; 
         }
         
         toast({ title: "Offer accepted and paid successfully!" });
-        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+        if (requestId) {
+          queryClient.invalidateQueries({ queryKey: ['/api/service-requests', requestId, 'messages'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/service-offers', requestId] });
+        }
         setShowPayment(false);
         onAccept();
       }
@@ -106,6 +108,69 @@ function OfferCard({ message, offer, onAccept }: { message: string; offer: any; 
 
   const [, serviceName, price, hours] = offerMatch;
 
+  // Calculate work progress
+  const getWorkProgress = () => {
+    if (!offer.createdAt || !hours) return 0;
+    const now = new Date();
+    const created = new Date(offer.createdAt);
+    const deadline = new Date(created.getTime() + parseInt(hours) * 60 * 60 * 1000);
+    const elapsed = now.getTime() - created.getTime();
+    const total = deadline.getTime() - created.getTime();
+    return Math.min(100, Math.max(0, (elapsed / total) * 100));
+  };
+
+  const getRemainingWorkTime = () => {
+    if (!offer.createdAt || !hours) return "N/A";
+    const now = new Date();
+    const created = new Date(offer.createdAt);
+    const deadline = new Date(created.getTime() + parseInt(hours) * 60 * 60 * 1000);
+    const remainingMs = deadline.getTime() - now.getTime();
+    
+    if (remainingMs <= 0) return "Time expired";
+    
+    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+    const remainingMins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${remainingHours}h ${remainingMins}m`;
+  };
+
+  // If offer is paid, show work progress instead of payment card
+  if (offer.status === 'paid') {
+    return (
+      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
+              ✅ Work in Progress
+            </p>
+            <p className="text-sm mt-2"><strong>Service:</strong> {serviceName}</p>
+            <p className="text-sm"><strong>Amount Paid:</strong> HK${price}</p>
+            <p className="text-sm"><strong>Duration:</strong> {hours} hours</p>
+          </div>
+        </div>
+        
+        <div className="mt-4 space-y-3">
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Work Progress</p>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all"
+                style={{ width: `${getWorkProgress()}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              ⏱️ Time Remaining: <span className="font-bold text-green-600 dark:text-green-400">{getRemainingWorkTime()}</span>
+            </p>
+          </div>
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Started: {format(new Date(offer.createdAt), 'MMM dd, yyyy HH:mm')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show payment card for unpaid offers
   return (
     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
       <div className="flex items-start justify-between">
@@ -542,6 +607,7 @@ export default function VendorServices() {
                         <OfferCard
                           message={msg.message}
                           offer={matchingOffer}
+                          requestId={messageDialog?.id}
                           onAccept={() => setMessageDialog(null)}
                         />
                       </Elements>
