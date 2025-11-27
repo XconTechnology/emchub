@@ -823,6 +823,8 @@ export const serviceRequests = pgTable("service_requests", {
   assignedAdminId: varchar("assigned_admin_id").references(() => users.id),
   completedAt: timestamp("completed_at"),
   rejectionReason: text("rejection_reason"),
+  unreadByRequester: integer("unread_by_requester").default(0), // Unread count for requester (user/vendor)
+  unreadByAdmin: integer("unread_by_admin").default(0), // Unread count for admin
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -847,6 +849,7 @@ export const serviceRequestMessages = pgTable("service_request_messages", {
   senderId: varchar("sender_id").notNull().references(() => users.id),
   message: text("message").notNull(),
   attachmentUrl: varchar("attachment_url"),
+  isRead: boolean("is_read").default(false), // Track if message has been read
   createdAt: timestamp("created_at").defaultNow(),
 });
 
