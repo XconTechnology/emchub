@@ -38,6 +38,7 @@ interface ServiceRequest {
 export default function UserServices() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [messageDialog, setMessageDialog] = useState<ServiceRequest | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [formData, setFormData] = useState({
