@@ -14,10 +14,11 @@ import {
   eventRegistrationFormSchema,
   users as usersTable,
   serviceOffers,
-  serviceRequests
+  serviceRequests,
+  serviceRequestFees
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, or } from "drizzle-orm";
+import { eq, sql, or, desc } from "drizzle-orm";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 import { geocodeAddress, delay } from "./geocoding";
 import Stripe from "stripe";
