@@ -33,6 +33,8 @@ interface Transaction {
   vendorEarnings: number;
   paymentStatus: string;
   createdAt: Date;
+  transactionType?: string;
+  serviceName?: string;
   customer?: {
     id: string;
     username: string;
@@ -177,7 +179,7 @@ export default function AdminTransactions() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Vendor</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Admin (5%)</TableHead>
@@ -193,12 +195,14 @@ export default function AdminTransactions() {
                         {format(new Date(transaction.createdAt), "MMM dd, yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p className="font-medium text-sm" data-testid={`text-customer-${transaction.id}`}>
-                            {transaction.customer?.username || "Unknown"}
-                          </p>
-                          <p className="text-xs text-gray-500">{transaction.customer?.email}</p>
-                        </div>
+                        <Badge variant={transaction.transactionType === 'service_offer' ? 'default' : 'outline'}>
+                          {transaction.transactionType === 'service_offer' 
+                            ? `💼 Service Offer` 
+                            : `🛍️ Product`}
+                        </Badge>
+                        {transaction.serviceName && (
+                          <p className="text-xs text-gray-500 mt-1">{transaction.serviceName}</p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div>

@@ -12,7 +12,9 @@ import {
   insertVendorRequestSchema,
   insertEventRegistrationSchema,
   eventRegistrationFormSchema,
-  users as usersTable
+  users as usersTable,
+  serviceOffers,
+  serviceRequests
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, or } from "drizzle-orm";
@@ -3889,11 +3891,38 @@ export function registerRoutes(app: Express): Server {
     res.json({ received: true });
   });
 
-  // Get all transactions (admin only)
+  // Get all transactions including service offer payments (admin only)
   app.get("/api/admin/transactions", isAdminAuthenticated, async (req, res) => {
     try {
       const transactions = await storage.getAllTransactions();
-      res.json(transactions);
+      
+      // Also fetch paid service offers
+      const allServiceOffers = await db.select().from(serviceOffers).where(eq(serviceOffers.status, 'paid'));
+      
+      // Transform service offers into transaction format
+      const serviceOfferTransactions = await Promise.all(allServiceOffers.map(async (offer: any) => {
+        const request = await db.select().from(serviceRequests).where(eq(serviceRequests.id, offer.serviceRequestId));
+        const vendor = await db.select().from(usersTable).where(eq(usersTable.id, request[0]?.requesterId));
+        
+        return {
+          id: offer.id,
+          orderId: offer.serviceRequestId,
+          stripePaymentIntentId: offer.paymentIntentId,
+          customerId: "system",
+          vendorId: request[0]?.requesterId,
+          totalAmount: parseFloat(offer.price as string),
+          platformCommission: 0,
+          vendorEarnings: parseFloat(offer.price as string),
+          paymentStatus: "succeeded",
+          createdAt: offer.createdAt,
+          transactionType: "service_offer",
+          serviceName: offer.serviceName,
+          customer: { id: "system", username: "Admin", email: "admin@system.local" },
+          vendor: vendor[0] ? { id: vendor[0].id, username: vendor[0].username, email: vendor[0].email } : { id: "", username: "Unknown", email: "" },
+        };
+      }));
+      
+      res.json([...transactions, ...serviceOfferTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
