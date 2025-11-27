@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench } from "lucide-react";
+import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -65,6 +65,33 @@ export default function UserServices() {
     },
     enabled: !!messageDialog?.id,
     refetchInterval: 3000,
+  });
+
+  const { data: offers = [] } = useQuery<any[]>({
+    queryKey: ['/api/service-offers', messageDialog?.id],
+    queryFn: async () => {
+      if (!messageDialog?.id) return [];
+      const response = await fetch(`/api/service-offers/${messageDialog.id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch offers');
+      return response.json();
+    },
+    enabled: !!messageDialog?.id,
+    refetchInterval: 3000,
+  });
+
+  const acceptOfferMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      return apiRequest("POST", `/api/service-offers/${offerId}/accept-and-pay`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/service-offers', messageDialog?.id] });
+      toast({ title: "Offer accepted! Proceeding to payment..." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to accept offer", description: error.message, variant: "destructive" });
+    },
   });
 
   const submitMutation = useMutation({
@@ -404,8 +431,30 @@ export default function UserServices() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-4">
-            {messages.length === 0 ? (
-              <p className="text-center text-sm text-gray-500 py-4">No messages yet. Start a conversation!</p>
+            {/* Display Unpaid Offers */}
+            {offers.filter((o: any) => o.status === 'pending').map((offer: any) => (
+              <div key={offer.id} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-900 dark:text-green-100">{offer.serviceName}</p>
+                    <p className="text-sm text-green-800 dark:text-green-200 mt-1">HK${offer.price} for {offer.hoursPerDay} hours/day</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => acceptOfferMutation.mutate(offer.id)}
+                    disabled={acceptOfferMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid={`button-accept-pay-${offer.id}`}
+                  >
+                    <CreditCard className="w-3 h-3 mr-1" />
+                    {acceptOfferMutation.isPending ? "Processing..." : "Accept & Pay"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            {messages.length === 0 && offers.filter((o: any) => o.status === 'pending').length === 0 ? (
+              <p className="text-center text-sm text-gray-500 py-4">No messages or offers yet. Start a conversation!</p>
             ) : (
               messages.map((msg) => (
                 <div key={msg.id} className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
