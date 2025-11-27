@@ -233,6 +233,23 @@ function UserServicesContent() {
     }
   }, [messageDialog]);
 
+  // Mark messages as read when chat dialog opens
+  useEffect(() => {
+    if (messageDialog?.id) {
+      // Mark all messages in this service request as read
+      fetch(`/api/service-requests/${messageDialog.id}/messages/mark-read`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(() => {
+        // Invalidate unread counts to update badges (Header + Dashboard sidebar)
+        queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/service-requests/unread-counts'] });
+      }).catch(() => {
+        // Silently fail - mark-as-read is not critical
+      });
+    }
+  }, [messageDialog?.id]);
+
   const submitMutation = useMutation({
     mutationFn: async (data: any) => 
       apiRequest("POST", "/api/user-service-requests", {

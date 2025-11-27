@@ -120,6 +120,23 @@ export default function AdminServiceRequests() {
     }
   }, [messageDialog]);
 
+  // Mark messages as read when chat dialog opens
+  useEffect(() => {
+    if (messageDialog?.id) {
+      // Mark all messages in this service request as read for admin
+      fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(() => {
+        // Invalidate unread counts to update badges (Admin sidebar + any header badges)
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
+      }).catch(() => {
+        // Silently fail - mark-as-read is not critical
+      });
+    }
+  }, [messageDialog?.id]);
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       return apiRequest("PATCH", `/api/admin/service-requests/${id}`, { status });
