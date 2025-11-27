@@ -4530,6 +4530,59 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Separate user and vendor service request endpoints
+  app.post("/api/user-service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { title, description, estimatedHours, preferredDate } = req.body;
+      if (!title || !description) return res.status(400).json({ error: "Missing required fields" });
+      const request = await storage.createServiceRequest({
+        requesterId: userId,
+        requesterType: 'user',
+        title, description, estimatedHours, preferredDate,
+      });
+      res.status(201).json(request);
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: "Failed to create request" });
+    }
+  });
+
+  app.get("/api/user-service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const requests = await storage.getUserServiceRequests(req.user?.id);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
+  app.post("/api/vendor-service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { title, description, estimatedHours, preferredDate } = req.body;
+      if (!title || !description) return res.status(400).json({ error: "Missing required fields" });
+      const request = await storage.createServiceRequest({
+        requesterId: userId,
+        requesterType: 'vendor',
+        title, description, estimatedHours, preferredDate,
+      });
+      res.status(201).json(request);
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: "Failed to create request" });
+    }
+  });
+
+  app.get("/api/vendor-service-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const requests = await storage.getVendorServiceRequests(req.user?.id);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
   app.get("/api/admin/service-requests", isAdminAuthenticated, async (req: any, res) => {
     try {
       const requests = await storage.getAllServiceRequests();

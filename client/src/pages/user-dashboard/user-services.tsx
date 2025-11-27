@@ -38,7 +38,6 @@ interface ServiceRequest {
 export default function UserServices() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [messageDialog, setMessageDialog] = useState<ServiceRequest | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [formData, setFormData] = useState({
@@ -48,8 +47,9 @@ export default function UserServices() {
     preferredDate: "",
   });
 
+  // Fetch only user service requests (not vendor requests)
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
-    queryKey: ['/api/service-requests'],
+    queryKey: ['/api/user-service-requests'],
   });
 
   const { data: messages = [] } = useQuery<any[]>({
@@ -68,9 +68,12 @@ export default function UserServices() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: any) => 
-      apiRequest("POST", "/api/service-requests", data),
+      apiRequest("POST", "/api/user-service-requests", {
+        ...data,
+        requesterType: 'user',
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user-service-requests'] });
       toast({ 
         title: "Service request submitted successfully",
         description: "Admin will review your request shortly."

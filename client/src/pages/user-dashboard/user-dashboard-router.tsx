@@ -45,6 +45,7 @@ import UserBrowse from "./user-browse";
 import UserReviews from "./user-reviews";
 import UserTimeDollars from "./user-timedollars";
 import UserServices from "./user-services";
+import VendorServices from "./vendor-services";
 import UserWhatsApp from "./user-whatsapp";
 import Profile from "../profile";
 import UserSettings from "./user-settings";
@@ -299,7 +300,9 @@ export default function UserDashboardRouter() {
               {user?.vendorStatus === 'verified' ? <VendorReviews /> : <UserReviews />}
             </Route>
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
-            <Route path="/dashboard/services" component={UserServices} />
+            <Route path="/dashboard/services">
+              {user?.vendorStatus === 'verified' ? <VendorServices /> : <UserServices />}
+            </Route>
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
             <Route path="/dashboard/my-listings" component={UserMyListings} />
             <Route path="/dashboard/create-listing" component={UserCreateListing} />

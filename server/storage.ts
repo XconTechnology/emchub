@@ -358,10 +358,18 @@ export interface IStorage {
   createServiceRequest(data: { requesterId: string; requesterType: string; title: string; description: string; estimatedHours?: string; preferredDate?: string }): Promise<any>;
   getServiceRequest(id: string): Promise<any | undefined>;
   getRequesterServiceRequests(requesterId: string): Promise<any[]>;
+  getUserServiceRequests(userId: string): Promise<any[]>;
+  getVendorServiceRequests(userId: string): Promise<any[]>;
   getAllServiceRequests(): Promise<any[]>;
   updateServiceRequestStatus(id: string, status: string, adminId?: string, rejectionReason?: string): Promise<any>;
   createServiceRequestMessage(data: { serviceRequestId: string; senderId: string; message: string }): Promise<any>;
   getServiceRequestMessages(serviceRequestId: string): Promise<any[]>;
+
+  // Service Offer operations
+  createServiceOffer(data: { serviceRequestId: string; serviceName: string; price: string; hours: string; createdBy: string }): Promise<any>;
+  getServiceOffer(id: string): Promise<any | undefined>;
+  getServiceOffers(serviceRequestId: string): Promise<any[]>;
+  updateServiceOffer(id: string, data: any): Promise<any>;
 
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
