@@ -156,6 +156,7 @@ export default function VendorServices() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [messageDialog, setMessageDialog] = useState<ServiceRequest | null>(null);
+  const [viewDialog, setViewDialog] = useState<ServiceRequest | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [formData, setFormData] = useState({
     title: "",
@@ -291,6 +292,24 @@ export default function VendorServices() {
     }
   };
 
+  const getRemainingTimeForCompletion = (createdAt: string, estimatedHours: number | null) => {
+    if (!estimatedHours) return "No time limit";
+    
+    const now = new Date();
+    const created = new Date(createdAt);
+    const deadline = new Date(created.getTime() + estimatedHours * 60 * 60 * 1000);
+    const remainingMs = deadline.getTime() - now.getTime();
+    
+    if (remainingMs <= 0) {
+      return "Time expired";
+    }
+    
+    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+    const remainingMins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${remainingHours}h ${remainingMins}m remaining`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -357,7 +376,7 @@ export default function VendorServices() {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => setMessageDialog(request)}
+                      onClick={() => setViewDialog(request)}
                       className="gap-2"
                       data-testid={`button-view-request-${request.id}`}
                     >
@@ -455,11 +474,57 @@ export default function VendorServices() {
         </DialogContent>
       </Dialog>
 
+      {/* View Request Details Dialog */}
+      <Dialog open={!!viewDialog} onOpenChange={() => setViewDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{viewDialog?.title}</DialogTitle>
+            <DialogDescription>{viewDialog?.description}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                <p className="font-medium">{viewDialog?.status.replace(/_/g, ' ').toUpperCase()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Hours</p>
+                <p className="font-medium">{viewDialog?.estimatedHours || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Preferred Date</p>
+                <p className="font-medium">{viewDialog?.preferredDate || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Submitted</p>
+                <p className="font-medium">{viewDialog?.createdAt ? format(new Date(viewDialog.createdAt), 'MMM dd, yyyy') : '-'}</p>
+              </div>
+            </div>
+            
+            {viewDialog?.status === 'approved' && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">⏱️ Time Remaining</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
+                  {getRemainingTimeForCompletion(viewDialog.createdAt, viewDialog.estimatedHours)}
+                </p>
+              </div>
+            )}
+            
+            {viewDialog?.rejectionReason && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                <p className="text-sm font-medium text-red-900 dark:text-red-100">Rejection Reason</p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{viewDialog.rejectionReason}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Messages Dialog */}
       <Dialog open={!!messageDialog} onOpenChange={() => setMessageDialog(null)}>
         <DialogContent className="max-w-2xl max-h-96 flex flex-col">
           <DialogHeader>
-            <DialogTitle>Messages - {messageDialog?.title}</DialogTitle>
+            <DialogTitle>Chat - {messageDialog?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4">
             {messages.length === 0 ? (
