@@ -3891,7 +3891,7 @@ export function registerRoutes(app: Express): Server {
     res.json({ received: true });
   });
 
-  // Get all transactions including service offer payments (admin only)
+  // Get all transactions (admin only)
   app.get("/api/admin/transactions", isAdminAuthenticated, async (req, res) => {
     // Disable caching to ensure fresh data
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -3899,53 +3899,9 @@ export function registerRoutes(app: Express): Server {
     res.set('Expires', '0');
     
     try {
+      // Get all transactions (now includes service offer payments)
       const transactions = await storage.getAllTransactions();
-      
-      try {
-        // Fetch PAID service offers using WHERE clause
-        const paidOffers = await db
-          .select()
-          .from(serviceOffers)
-          .where(eq(serviceOffers.status, 'paid'));
-        
-        console.log(`[Transactions] Found ${paidOffers.length} PAID offers`);
-        
-        // Transform service offers into transaction format
-        const serviceOfferTransactions = await Promise.all(paidOffers.map(async (offer: any) => {
-          const requestData = await db.select().from(serviceRequests).where(eq(serviceRequests.id, offer.serviceRequestId));
-          const vendorData = requestData[0] ? await db.select().from(usersTable).where(eq(usersTable.id, requestData[0]?.requesterId)) : [];
-          
-          const transaction = {
-            id: offer.id,
-            orderId: offer.serviceRequestId,
-            stripePaymentIntentId: offer.paymentIntentId || "service-offer-" + offer.id,
-            customerId: "system",
-            vendorId: requestData[0]?.requesterId,
-            totalAmount: parseFloat(offer.price as string),
-            platformCommission: 0,
-            vendorEarnings: parseFloat(offer.price as string),
-            paymentStatus: "succeeded",
-            createdAt: offer.createdAt,
-            transactionType: "service_offer",
-            serviceName: offer.serviceName,
-            serviceRequestTitle: requestData[0]?.title || "Service Request",
-            serviceRequestDescription: requestData[0]?.description || "",
-            estimatedHours: requestData[0]?.estimatedHours ? parseFloat(requestData[0].estimatedHours as string) : 0,
-            offerHours: parseFloat(offer.hours as string),
-            serviceStatus: requestData[0]?.status || "pending",
-            customer: { id: "system", username: "Admin", email: "admin@system.local" },
-            vendor: vendorData[0] ? { id: vendorData[0].id, username: vendorData[0].username, email: vendorData[0].email } : { id: "", username: "Unknown", email: "" },
-          };
-          return transaction;
-        }));
-        
-        const combined = [...transactions, ...serviceOfferTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        console.log(`[Transactions] Returning ${combined.length} total transactions`);
-        res.json(combined);
-      } catch (innerError) {
-        console.error("[Transactions] Error processing service offers:", innerError);
-        res.json(transactions);
-      }
+      res.json(transactions);
     } catch (error) {
       console.error("Error getting transactions:", error);
       res.status(500).json({ error: "Failed to get transactions" });
@@ -4907,16 +4863,41 @@ export function registerRoutes(app: Express): Server {
       // Update offer status to paid
       const updated = await storage.updateServiceOffer(id, { status: 'paid' });
 
-      // Notify admin that payment was received
+      // Get the service request to find who the vendor is
       const request = await storage.getServiceRequest(offer.serviceRequestId);
-      // Always create a message so admin sees the payment
+      if (!request) {
+        return res.status(404).json({ error: "Service request not found" });
+      }
+
+      // Create a REAL transaction record so it appears in the transactions table
+      const totalAmount = parseFloat(offer.price as string);
+      const platformCommission = totalAmount * 0.05; // 5% admin commission
+      const vendorEarnings = totalAmount - platformCommission;
+
+      await storage.createTransaction({
+        orderId: null, // No order for service offers
+        vendorId: request.requesterId, // The person who receives payment
+        customerId: req.user?.id, // The person who pays
+        stripePaymentIntentId: offer.paymentIntentId,
+        stripeChargeId: null,
+        paymentMethod: 'cash',
+        totalAmount: totalAmount,
+        cashAmount: totalAmount,
+        tdAmount: 0,
+        platformCommission: platformCommission,
+        vendorEarnings: vendorEarnings,
+        status: 'completed',
+        currency: 'hkd',
+      });
+
+      // Notify admin that payment was received
       await storage.createServiceRequestMessage({
         serviceRequestId: offer.serviceRequestId,
         senderId: req.user?.id,
         message: `Payment received for offer: ${offer.serviceName} - HK$${offer.price}`,
       });
       
-      console.log(`Offer ${id} marked as paid. Message created for request ${offer.serviceRequestId}`);
+      console.log(`Offer ${id} marked as paid. Transaction created. Message sent to admin.`);
 
       // Broadcast to force admin dashboard refresh
       broadcastEvent({ 
