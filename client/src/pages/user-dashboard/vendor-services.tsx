@@ -51,14 +51,11 @@ function OfferCard({ message, offerId, serviceRequestId, onAccept }: { message: 
     
     setIsProcessing(true);
     try {
-      const response = await fetch("/api/service-offers/accept-and-pay", {
+      const response = await fetch(`/api/service-offers/${offerId}/accept-and-pay`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          offerId,
-          paymentMethodId: "card_" + Math.random().toString(36).substr(2, 9),
-        }),
+        body: JSON.stringify({}),
       });
 
       if (!response.ok) throw new Error("Payment failed");
