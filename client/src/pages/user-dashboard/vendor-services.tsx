@@ -592,37 +592,37 @@ export default function VendorServices() {
             <DialogTitle>Chat - {messageDialog?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+            {/* Display all unpaid offers at the top */}
+            {offers.length > 0 && (
+              <div className="space-y-3">
+                {offers.filter(o => o.status !== 'paid').map((offer) => (
+                  <Elements key={offer.id} stripe={stripePromise}>
+                    <OfferCard
+                      message={`OFFER: ${offer.serviceName} - HK$${offer.price} for ${offer.hours}`}
+                      offer={offer}
+                      requestId={messageDialog?.id}
+                      onAccept={() => setMessageDialog(null)}
+                    />
+                  </Elements>
+                ))}
+              </div>
+            )}
+
+            {/* Display messages */}
             {messages.length === 0 ? (
               <p className="text-center text-sm text-gray-500 py-4">No messages yet</p>
             ) : (
-              messages.map((msg) => {
-                const matchingOffer = msg.message.includes("OFFER:") 
-                  ? offers.find(o => o.serviceName === msg.message.match(/OFFER: (.+?) -/)?.[1])
-                  : null;
-                
-                return (
-                  <div key={msg.id}>
-                    {matchingOffer ? (
-                      <Elements stripe={stripePromise}>
-                        <OfferCard
-                          message={msg.message}
-                          offer={matchingOffer}
-                          requestId={messageDialog?.id}
-                          onAccept={() => setMessageDialog(null)}
-                        />
-                      </Elements>
-                    ) : (
-                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
-                        <p className="text-sm font-medium">{msg.senderName}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
-                        </p>
-                      </div>
-                    )}
+              messages.map((msg) => (
+                <div key={msg.id}>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+                    <p className="text-sm font-medium">{msg.senderName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{msg.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {format(new Date(msg.createdAt), 'MMM dd, yyyy HH:mm')}
+                    </p>
                   </div>
-                );
-              })
+                </div>
+              ))
             )}
           </div>
           <div className="flex gap-2">
