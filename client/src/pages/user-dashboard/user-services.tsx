@@ -13,11 +13,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Briefcase, Plus, MessageSquare, Check, X, Clock, Wrench, CreditCard } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 
 interface ServiceRequest {
   id: string;
@@ -35,12 +39,123 @@ interface ServiceRequest {
   updatedAt: string;
 }
 
-export default function UserServices() {
+// Payment Modal Component using Stripe Elements
+function PaymentModal({ 
+  offerId, 
+  offer, 
+  onClose, 
+  onSuccess 
+}: { 
+  offerId: string; 
+  offer: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePayment = async () => {
+    if (!stripe || !elements) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`/api/service-offers/${offerId}/accept-and-pay`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Payment failed");
+      }
+      
+      const { clientSecret } = await response.json();
+      
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement)!,
+          billing_details: {},
+        },
+      });
+
+      if (error) {
+        toast({ title: "Payment failed", description: error.message, variant: "destructive" });
+      } else if (paymentIntent?.status === "succeeded") {
+        try {
+          const confirmRes = await fetch(`/api/service-offers/${offerId}/confirm-payment`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          });
+          
+          if (!confirmRes.ok) throw new Error("Failed to confirm payment");
+        } catch (confirmError: any) {
+          console.error("Payment confirmation error:", confirmError);
+        }
+        
+        toast({ title: "Offer accepted and paid successfully!" });
+        queryClient.invalidateQueries({ queryKey: ['/api/service-offers'] });
+        onSuccess();
+        onClose();
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Complete Payment</DialogTitle>
+        <DialogDescription>
+          Pay HK${offer?.price} to accept the offer
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+          <p className="text-sm"><strong>Service:</strong> {offer?.serviceName}</p>
+          <p className="text-sm"><strong>Amount:</strong> HK${offer?.price}</p>
+          <p className="text-sm"><strong>Hours:</strong> {offer?.hoursPerDay}/day</p>
+        </div>
+        
+        <div>
+          <Label className="mb-2">Card Details</Label>
+          <CardElement className="p-3 border rounded bg-white dark:bg-gray-800" />
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isProcessing} className="flex-1">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handlePayment} 
+            disabled={!stripe || isProcessing} 
+            className="flex-1"
+            data-testid="button-confirm-payment"
+          >
+            {isProcessing ? "Processing..." : `Pay HK$${offer?.price}`}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  );
+}
+
+function UserServicesContent() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [messageDialog, setMessageDialog] = useState<ServiceRequest | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [paymentDialog, setPaymentDialog] = useState<any>(null);
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -48,7 +163,7 @@ export default function UserServices() {
     preferredDate: "",
   });
 
-  // Fetch only user service requests (not vendor requests)
+  // Fetch user service requests
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/user-service-requests'],
   });
@@ -81,18 +196,33 @@ export default function UserServices() {
     refetchInterval: 3000,
   });
 
-  const acceptOfferMutation = useMutation({
-    mutationFn: async (offerId: string) => {
-      return apiRequest("POST", `/api/service-offers/${offerId}/accept-and-pay`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/service-offers', messageDialog?.id] });
-      toast({ title: "Offer accepted! Proceeding to payment..." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Failed to accept offer", description: error.message, variant: "destructive" });
-    },
-  });
+  // Notification effect
+  useEffect(() => {
+    if (messages.length > previousMessageCount && messageDialog) {
+      // Play notification sound
+      const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+      audio.play().catch(() => {}); // Silently fail if audio can't play
+      
+      // Show toast notification
+      const lastMsg = messages[messages.length - 1];
+      toast({
+        title: "New message",
+        description: `${lastMsg.senderName}: ${lastMsg.message.substring(0, 50)}...`,
+      });
+
+      // Update tab title
+      document.title = `📬 ${lastMsg.senderName} sent a message - EMC HUB`;
+      
+      setPreviousMessageCount(messages.length);
+    }
+  }, [messages, previousMessageCount, messageDialog, toast]);
+
+  // Reset tab title when dialog closes
+  useEffect(() => {
+    if (!messageDialog) {
+      document.title = "EMC HUB";
+    }
+  }, [messageDialog]);
 
   const submitMutation = useMutation({
     mutationFn: async (data: any) => 
@@ -332,7 +462,10 @@ export default function UserServices() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setMessageDialog(request)}
+                          onClick={() => {
+                            setMessageDialog(request);
+                            setPreviousMessageCount(0);
+                          }}
                           data-testid={`button-message-${request.id}`}
                         >
                           <MessageSquare className="w-4 h-4 mr-1" />
@@ -408,6 +541,7 @@ export default function UserServices() {
                     onClick={() => {
                       setSelectedRequest(null);
                       setMessageDialog(selectedRequest);
+                      setPreviousMessageCount(0);
                     }}
                     data-testid="button-open-chat"
                   >
@@ -441,13 +575,12 @@ export default function UserServices() {
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => acceptOfferMutation.mutate(offer.id)}
-                    disabled={acceptOfferMutation.isPending}
+                    onClick={() => setPaymentDialog(offer)}
                     className="bg-green-600 hover:bg-green-700"
                     data-testid={`button-accept-pay-${offer.id}`}
                   >
                     <CreditCard className="w-3 h-3 mr-1" />
-                    {acceptOfferMutation.isPending ? "Processing..." : "Accept & Pay"}
+                    Accept & Pay
                   </Button>
                 </div>
               </div>
@@ -503,6 +636,28 @@ export default function UserServices() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Dialog */}
+      {paymentDialog && (
+        <Elements stripe={stripePromise}>
+          <PaymentModal
+            offerId={paymentDialog.id}
+            offer={paymentDialog}
+            onClose={() => setPaymentDialog(null)}
+            onSuccess={() => {
+              setPreviousMessageCount(0);
+            }}
+          />
+        </Elements>
+      )}
     </div>
+  );
+}
+
+export default function UserServices() {
+  return (
+    <Elements stripe={stripePromise}>
+      <UserServicesContent />
+    </Elements>
   );
 }
