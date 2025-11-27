@@ -301,7 +301,7 @@ export default function UserServices() {
                       >
                         View Details
                       </Button>
-                      {['approved', 'in_progress'].includes(request.status) && (
+                      {request.status !== 'rejected' && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -376,7 +376,7 @@ export default function UserServices() {
                 <Button variant="outline" onClick={() => setSelectedRequest(null)}>
                   Close
                 </Button>
-                {['approved', 'in_progress'].includes(selectedRequest.status) && (
+                {selectedRequest.status !== 'rejected' && (
                   <Button
                     onClick={() => {
                       setSelectedRequest(null);
