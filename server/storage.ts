@@ -15,6 +15,7 @@ import {
   transactions,
   serviceRequests,
   serviceRequestMessages,
+  serviceOffers,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -40,6 +41,8 @@ import {
   type InsertServiceRequest,
   type ServiceRequestMessage,
   type InsertServiceRequestMessage,
+  type ServiceOffer,
+  type InsertServiceOffer,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ilike, inArray, sql, desc } from "drizzle-orm";
@@ -3444,6 +3447,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`${serviceRequests.createdAt} DESC`);
   }
 
+  async getUserServiceRequests(userId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(serviceRequests)
+      .where(and(eq(serviceRequests.requesterId, userId), eq(serviceRequests.requesterType, 'user')))
+      .orderBy(sql`${serviceRequests.createdAt} DESC`);
+  }
+
+  async getVendorServiceRequests(vendorId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(serviceRequests)
+      .where(and(eq(serviceRequests.requesterId, vendorId), eq(serviceRequests.requesterType, 'vendor')))
+      .orderBy(sql`${serviceRequests.createdAt} DESC`);
+  }
+
   async getAllServiceRequests(): Promise<any[]> {
     const requester = alias(users, 'requester');
     const admin = alias(users, 'admin');
@@ -3546,6 +3565,48 @@ export class DatabaseStorage implements IStorage {
       ...msg,
       senderName: msg.senderName === 'system_admin' ? 'Admin' : (msg.senderName || 'Unknown')
     }));
+  }
+
+  // Service Offer operations
+  async createServiceOffer(data: { serviceRequestId: string; serviceName: string; price: string; hours: string; createdBy: string }): Promise<any> {
+    const [offer] = await db
+      .insert(serviceOffers)
+      .values({
+        serviceRequestId: data.serviceRequestId,
+        serviceName: data.serviceName,
+        price: data.price,
+        hours: data.hours,
+        createdBy: data.createdBy,
+        status: 'pending',
+      })
+      .returning();
+    return offer;
+  }
+
+  async getServiceOffer(id: string): Promise<any | undefined> {
+    const [offer] = await db
+      .select()
+      .from(serviceOffers)
+      .where(eq(serviceOffers.id, id));
+    return offer;
+  }
+
+  async getServiceOffers(serviceRequestId: string): Promise<any[]> {
+    return db
+      .select()
+      .from(serviceOffers)
+      .where(eq(serviceOffers.serviceRequestId, serviceRequestId))
+      .orderBy(sql`${serviceOffers.createdAt} DESC`);
+  }
+
+  async updateServiceOffer(id: string, data: any): Promise<any> {
+    const updates: any = { ...data, updatedAt: new Date() };
+    const [updated] = await db
+      .update(serviceOffers)
+      .set(updates)
+      .where(eq(serviceOffers.id, id))
+      .returning();
+    return updated;
   }
 }
 
