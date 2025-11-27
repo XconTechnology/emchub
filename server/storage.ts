@@ -3530,16 +3530,17 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     
-    // Fetch sender name
+    // Fetch sender name and role
     const [senderUser] = await db
-      .select({ username: users.username })
+      .select({ username: users.username, role: users.role })
       .from(users)
       .where(eq(users.id, data.senderId));
     
     const username = senderUser?.username || 'Unknown';
+    const isAdmin = senderUser?.role === 'admin' || senderUser?.role === 'staff';
     return {
       ...message,
-      senderName: username === 'system_admin' ? 'Admin' : username,
+      senderName: isAdmin ? 'Admin' : username,
     };
   }
 
@@ -3555,6 +3556,7 @@ export class DatabaseStorage implements IStorage {
         attachmentUrl: serviceRequestMessages.attachmentUrl,
         createdAt: serviceRequestMessages.createdAt,
         senderName: sender.username,
+        senderRole: sender.role,
       })
       .from(serviceRequestMessages)
       .leftJoin(sender, eq(serviceRequestMessages.senderId, sender.id))
@@ -3563,7 +3565,7 @@ export class DatabaseStorage implements IStorage {
     
     return messages.map(msg => ({
       ...msg,
-      senderName: msg.senderName === 'system_admin' ? 'Admin' : (msg.senderName || 'Unknown')
+      senderName: (msg.senderRole === 'admin' || msg.senderRole === 'staff') ? 'Admin' : (msg.senderName || 'Unknown')
     }));
   }
 
