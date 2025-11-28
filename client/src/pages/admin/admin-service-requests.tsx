@@ -74,6 +74,7 @@ export default function AdminServiceRequests() {
 
   const { data: requests = [], isLoading } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/admin/service-requests'],
+    refetchInterval: 5000,
   });
 
   const { data: messages = [] } = useQuery<any[]>({
@@ -130,7 +131,9 @@ export default function AdminServiceRequests() {
         method: 'POST',
         credentials: 'include',
       }).then(() => {
-        // Invalidate unread counts to update badges (Admin sidebar + any header badges)
+        // Immediately refetch the requests to update badge
+        queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests'] });
+        // Also invalidate unread counts to update badges (Admin sidebar + any header badges)
         queryClient.invalidateQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] });
         queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
       }).catch(() => {
