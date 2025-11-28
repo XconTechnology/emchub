@@ -242,9 +242,10 @@ function UserServicesContent() {
         method: 'POST',
         credentials: 'include',
       }).then(() => {
-        // Invalidate unread counts to update badges (Header + Dashboard sidebar)
+        // Invalidate all related queries to update badges
         queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
         queryClient.invalidateQueries({ queryKey: ['/api/service-requests/unread-counts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/user-service-requests'] }); // Refresh service requests list
       }).catch(() => {
         // Silently fail - mark-as-read is not critical
       });
