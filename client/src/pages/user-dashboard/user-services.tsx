@@ -243,10 +243,10 @@ function UserServicesContent() {
         method: 'POST',
         credentials: 'include',
       }).then(() => {
-        // Invalidate all related queries to update badges
-        queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/service-requests/unread-counts'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/user-service-requests'] }); // Refresh service requests list
+        // Refetch immediately to remove badge
+        queryClient.refetchQueries({ queryKey: ['/api/user-service-requests'] });
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-counts'] });
+        queryClient.refetchQueries({ queryKey: ['/api/service-requests/unread-counts'] });
       }).catch(() => {
         // Silently fail - mark-as-read is not critical
       });
