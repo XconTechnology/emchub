@@ -127,18 +127,24 @@ export default function AdminServiceRequests() {
   useEffect(() => {
     if (messageDialog?.id) {
       // Mark all messages in this service request as read for admin
-      fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
-        method: 'POST',
-        credentials: 'include',
-      }).then(() => {
-        // Immediately refetch the requests to update badge
-        queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests'] });
-        // Also refetch unread counts to update badges (Admin sidebar + any header badges)
-        queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] });
-        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-counts'] });
-      }).catch(() => {
-        // Silently fail - mark-as-read is not critical
-      });
+      (async () => {
+        try {
+          await fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+          
+          // Immediately refetch all queries to update badges
+          await Promise.all([
+            queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests'] }),
+            queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] }),
+            queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-counts'] }),
+          ]);
+        } catch (error) {
+          // Silently fail - mark-as-read is not critical
+          console.error("Failed to mark messages as read:", error);
+        }
+      })();
     }
   }, [messageDialog?.id]);
 
