@@ -4783,18 +4783,21 @@ export function registerRoutes(app: Express): Server {
       const { id } = req.params;
       const adminId = req.user?.id || req.session?.adminUserId;
       
+      console.log(`[MARK-READ] Request received for service request ${id}, adminId=${adminId}`);
+      
       if (!adminId) {
+        console.log(`[MARK-READ] Failed - no adminId`);
         return res.status(401).json({ error: "Not authenticated" });
       }
       
       // Mark messages as read and reset unread counter using storage function
+      console.log(`[MARK-READ] Calling storage.markServiceRequestMessagesRead...`);
       await storage.markServiceRequestMessagesRead(id, adminId, true);
-      
-      console.log(`Admin ${adminId} marked service request ${id} messages as read`);
+      console.log(`[MARK-READ] Completed successfully for ${id}`);
       
       res.json({ success: true });
     } catch (error) {
-      console.error("Error marking messages as read:", error);
+      console.error("[MARK-READ] Error:", error);
       res.status(500).json({ error: "Failed to mark messages as read" });
     }
   });

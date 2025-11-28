@@ -3611,6 +3611,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetServiceRequestUnreadForAdmin(serviceRequestId: string): Promise<void> {
+    console.log(`[STORAGE] Resetting unreadByAdmin to 0 for ${serviceRequestId}`);
     await db
       .update(serviceRequests)
       .set({ 
@@ -3618,6 +3619,7 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(serviceRequests.id, serviceRequestId));
+    console.log(`[STORAGE] Reset completed for ${serviceRequestId}`);
   }
 
   async getServiceRequestUnreadCounts(userId: string, isAdmin: boolean): Promise<{ totalUnread: number; requests: any[] }> {
