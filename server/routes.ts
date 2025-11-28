@@ -4817,11 +4817,16 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/user-service-requests", isAuthenticated, async (req: any, res) => {
     try {
-      // Get requests with unreadByAdmin from database directly
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Get only this user's service requests
       const dbRequests = await db
         .select()
         .from(serviceRequests)
-        .where(eq(serviceRequests.requesterId, req.user?.id));
+        .where(eq(serviceRequests.requesterId, userId));
       
       res.json(dbRequests);
     } catch (error) {
@@ -4848,7 +4853,12 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/vendor-service-requests", isAuthenticated, async (req: any, res) => {
     try {
-      const requests = await storage.getVendorServiceRequests(req.user?.id);
+      const vendorId = req.user?.id;
+      if (!vendorId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const requests = await storage.getVendorServiceRequests(vendorId);
       res.json(requests);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch requests" });
