@@ -320,7 +320,7 @@ export default function AdminServiceRequests() {
                             className="relative"
                           >
                             <MessageSquare className="w-4 h-4" />
-                            {request.unreadByRequester && request.unreadByRequester > 0 && (
+                            {(request.unreadByRequester || 0) > 0 && (
                               <Badge 
                                 className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
                                 data-testid={`badge-unread-${request.id}`}
