@@ -501,12 +501,12 @@ function UserServicesContent() {
                             Chat
                           </Button>
                           {(request.unreadByAdmin || 0) > 0 && (
-                            <Badge 
-                              className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
+                            <span 
+                              className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full animate-pulse"
                               data-testid={`badge-unread-${request.id}`}
                             >
                               {request.unreadByAdmin}
-                            </Badge>
+                            </span>
                           )}
                         </div>
                       )}

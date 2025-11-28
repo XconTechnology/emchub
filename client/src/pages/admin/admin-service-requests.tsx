@@ -312,23 +312,24 @@ export default function AdminServiceRequests() {
                           >
                             View
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setMessageDialog(request)}
-                            data-testid={`button-message-${request.id}`}
-                            className="relative"
-                          >
-                            <MessageSquare className="w-4 h-4" />
+                          <div className="relative inline-block">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setMessageDialog(request)}
+                              data-testid={`button-message-${request.id}`}
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </Button>
                             {(request.unreadByRequester || 0) > 0 && (
-                              <Badge 
-                                className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
+                              <span 
+                                className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full animate-pulse"
                                 data-testid={`badge-unread-${request.id}`}
                               >
                                 {request.unreadByRequester}
-                              </Badge>
+                              </span>
                             )}
-                          </Button>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
