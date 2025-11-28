@@ -4689,11 +4689,11 @@ export function registerRoutes(app: Express): Server {
       
       // Add unread counts for each request
       const requestsWithUnread = requests.map((request: any) => {
-        // This will be populated by individual queries in the frontend
-        // or we can batch query here later. For now, set to undefined
+        // Return both unreadByRequester and unreadByAdmin
         return {
           ...request,
-          unreadByRequester: request.unreadByRequester || 0
+          unreadByRequester: request.unreadByRequester || 0,
+          unreadByAdmin: request.unreadByAdmin || 0
         };
       });
       
