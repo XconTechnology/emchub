@@ -739,6 +739,130 @@ export default function AdminCoupons() {
           </div>
         )}
 
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Edit Coupon: {editingCoupon?.code}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const payload: any = {
+                code: formData.code.toUpperCase(),
+                title: formData.title,
+                description: formData.description,
+                couponType: formData.couponType,
+                scope: formData.scope,
+                productId: formData.scope === "platform" ? null : formData.productId,
+                usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
+                validFrom: formData.validFrom || undefined,
+                validUntil: formData.validUntil || undefined,
+              };
+
+              if (formData.couponType === "discount") {
+                payload.discountType = formData.discountType;
+                payload.discountValue = parseFloat(formData.discountValue);
+              } else {
+                payload.cashValue = parseFloat(formData.cashValue);
+              }
+
+              editMutation.mutate(payload);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-code">Code</Label>
+                <Input
+                  id="edit-code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  disabled
+                  data-testid="input-edit-code"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  data-testid="input-edit-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  data-testid="input-edit-description"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-validFrom">Valid From</Label>
+                  <Input
+                    id="edit-validFrom"
+                    type="date"
+                    value={formData.validFrom}
+                    onChange={(e) => setFormData({...formData, validFrom: e.target.value})}
+                    data-testid="input-edit-validFrom"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-validUntil">Valid Until</Label>
+                  <Input
+                    id="edit-validUntil"
+                    type="date"
+                    value={formData.validUntil}
+                    onChange={(e) => setFormData({...formData, validUntil: e.target.value})}
+                    data-testid="input-edit-validUntil"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-usageLimit">Usage Limit</Label>
+                <Input
+                  id="edit-usageLimit"
+                  type="number"
+                  value={formData.usageLimit}
+                  onChange={(e) => setFormData({...formData, usageLimit: e.target.value})}
+                  data-testid="input-edit-usageLimit"
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={editMutation.isPending} data-testid="button-save-edit">
+                  {editMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingCoupon} onOpenChange={(open) => {
+          if (!open) setDeletingCoupon(null);
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Coupon</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete coupon "{deletingCoupon?.code}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                data-testid="button-confirm-delete"
+                onClick={() => deletingCoupon && deleteMutation.mutate(deletingCoupon.id)}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={deleteMutation.isPending}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Rejection Dialog */}
         <AlertDialog open={!!rejectingCoupon} onOpenChange={(open) => {
           if (!open) {
