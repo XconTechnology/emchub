@@ -123,20 +123,26 @@ export default function AdminServiceRequests() {
     }
   }, [messageDialog]);
 
-  // Mark messages as read on backend when dialog opens
+  // Mark messages as read on backend whenever messages change while dialog is open
   useEffect(() => {
-    if (messageDialog?.id) {
-      // Call mark-read API to persist on backend
-      const response = fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
+    if (messageDialog?.id && messages.length > 0) {
+      // Call mark-read API whenever there are messages and dialog is open
+      fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
         method: 'POST',
         credentials: 'include',
-      });
-      // Don't await - just let it complete in background
-      response.catch(error => {
+      }).then(() => {
+        // Update local cache to hide badge immediately
+        queryClient.setQueryData(['/api/admin/service-requests'], (oldData: ServiceRequest[] | undefined) => {
+          if (!oldData) return oldData;
+          return oldData.map(r => 
+            r.id === messageDialog.id ? { ...r, unreadByAdmin: 0 } : r
+          );
+        });
+      }).catch(error => {
         console.error("Failed to mark messages as read:", error);
       });
     }
-  }, [messageDialog?.id]);
+  }, [messageDialog?.id, messages.length]);
 
   // Handle opening message dialog
   const handleOpenMessageDialog = (request: ServiceRequest) => {
