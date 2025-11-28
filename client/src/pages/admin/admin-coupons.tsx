@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   Ticket, Calendar, Users, BarChart3, Search, Plus, 
-  CheckCircle, XCircle, Clock, Power, DollarSign 
+  CheckCircle, XCircle, Clock, Power, DollarSign, Edit, Trash2
 } from "lucide-react";
 import {
   Dialog,
@@ -46,10 +46,13 @@ export default function AdminCoupons() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewingAnalytics, setViewingAnalytics] = useState<Coupon | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [rejectingCoupon, setRejectingCoupon] = useState<Coupon | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterIssuer, setFilterIssuer] = useState<string>("all");
+  const [deletingCoupon, setDeletingCoupon] = useState<Coupon | null>(null);
 
   const [formData, setFormData] = useState({
     code: "",
@@ -133,6 +136,32 @@ export default function AdminCoupons() {
     },
     onError: (error: any) => {
       toast({ title: "Failed to reject coupon", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async (data: any) => apiRequest("PUT", `/api/admin/coupons/${editingCoupon?.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/coupons"] });
+      toast({ title: "Coupon updated successfully" });
+      setIsEditOpen(false);
+      setEditingCoupon(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to update coupon", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/coupons/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/coupons"] });
+      toast({ title: "Coupon deleted successfully" });
+      setDeletingCoupon(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to delete coupon", description: error.message, variant: "destructive" });
     },
   });
 
@@ -607,6 +636,45 @@ export default function AdminCoupons() {
                         <BarChart3 className="w-4 h-4 mr-2" />
                         Analytics
                       </Button>
+                      {coupon.issuer === "admin" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid={`button-edit-${coupon.id}`}
+                            onClick={() => {
+                              setEditingCoupon(coupon);
+                              setFormData({
+                                code: coupon.code,
+                                title: coupon.title || "",
+                                description: coupon.description || "",
+                                couponType: coupon.couponType as "discount" | "cash",
+                                discountType: coupon.discountType as "percentage" | "fixed" || "percentage",
+                                discountValue: coupon.discountValue?.toString() || "",
+                                cashValue: coupon.cashDiscountValue?.toString() || "",
+                                scope: coupon.scope as "platform" | "product" || "platform",
+                                productId: coupon.productId || null,
+                                usageLimit: coupon.usageLimit?.toString() || "",
+                                validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : "",
+                                validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : "",
+                              });
+                              setIsEditOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            data-testid={`button-delete-${coupon.id}`}
+                            onClick={() => setDeletingCoupon(coupon)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </>
+                      )}
                       {coupon.status === "pending" && (
                         <>
                           <Button

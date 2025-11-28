@@ -3016,6 +3016,95 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update platform coupon (admin only)
+  app.put("/api/admin/coupons/:id", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      // Get admin ID
+      let adminId: string | undefined;
+      let adminUsername: string = 'Admin';
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else if (req.session?.adminAuth === true) {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+          adminUsername = adminUsers[0].username;
+        }
+      }
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const coupon = await storage.updateCoupon(req.params.id, req.body);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: adminId,
+        userName: adminUsername,
+        actionType: 'update',
+        entityType: 'coupon',
+        entityId: coupon.id,
+        entityTitle: coupon.title || coupon.code,
+        description: `Updated platform coupon: ${coupon.code}`,
+        metadata: { coupon },
+      });
+      
+      res.json(coupon);
+    } catch (error) {
+      console.error("Error updating admin coupon:", error);
+      res.status(500).json({ error: "Failed to update coupon" });
+    }
+  });
+
+  // Delete platform coupon (admin only)
+  app.delete("/api/admin/coupons/:id", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      // Get admin ID
+      let adminId: string | undefined;
+      let adminUsername: string = 'Admin';
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else if (req.session?.adminAuth === true) {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+          adminUsername = adminUsers[0].username;
+        }
+      }
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const couponId = req.params.id;
+      await storage.deleteCoupon(couponId);
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: adminId,
+        userName: adminUsername,
+        actionType: 'delete',
+        entityType: 'coupon',
+        entityId: couponId,
+        description: `Deleted platform coupon`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting admin coupon:", error);
+      res.status(500).json({ error: "Failed to delete coupon" });
+    }
+  });
+
   // Delete coupon
   app.delete("/api/coupons/:id", isAuthenticated, async (req, res) => {
     try {
