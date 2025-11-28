@@ -4645,17 +4645,13 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/user-service-requests", isAuthenticated, async (req: any, res) => {
     try {
-      const requests = await storage.getUserServiceRequests(req.user?.id);
+      // Get requests with unreadByAdmin from database directly
+      const dbRequests = await db
+        .select()
+        .from(serviceRequests)
+        .where(eq(serviceRequests.requesterId, req.user?.id));
       
-      // Add unreadByAdmin counts for each request
-      const requestsWithUnread = requests.map((request: any) => {
-        return {
-          ...request,
-          unreadByAdmin: request.unreadByAdmin || 0
-        };
-      });
-      
-      res.json(requestsWithUnread);
+      res.json(dbRequests);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch requests" });
     }
