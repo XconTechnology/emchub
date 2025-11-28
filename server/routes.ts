@@ -4787,12 +4787,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
+      // Mark messages as read and reset unread counter using storage function
       await storage.markServiceRequestMessagesRead(id, adminId, true);
       
-      // Reset unreadByAdmin to 0 when admin reads messages
-      await db.update(serviceRequests)
-        .set({ unreadByAdmin: 0 })
-        .where(eq(serviceRequests.id, id));
+      console.log(`Admin ${adminId} marked service request ${id} messages as read`);
       
       res.json({ success: true });
     } catch (error) {
