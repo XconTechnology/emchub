@@ -4781,7 +4781,18 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/admin/service-requests/:id/messages/mark-read", isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const adminId = req.user?.id || req.session?.adminUserId;
+      
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string | undefined;
+      if (req.user) {
+        adminId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        // Session-based admin - use system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : undefined;
+      }
       
       console.log(`[MARK-READ] Request received for service request ${id}, adminId=${adminId}`);
       
