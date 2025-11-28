@@ -169,9 +169,10 @@ function UserServicesContent() {
     queryKey: ['/api/me'],
   });
 
-  // Fetch user service requests
+  // Fetch user service requests with polling to get updated unread counts
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/user-service-requests'],
+    refetchInterval: 5000, // Poll every 5 seconds for unread updates
   });
 
   const { data: messages = [] } = useQuery<any[]>({
