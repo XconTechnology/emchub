@@ -4681,7 +4681,18 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/admin/service-requests", isAdminAuthenticated, async (req: any, res) => {
     try {
       const requests = await storage.getAllServiceRequests();
-      res.json(requests);
+      
+      // Add unread counts for each request
+      const requestsWithUnread = requests.map((request: any) => {
+        // This will be populated by individual queries in the frontend
+        // or we can batch query here later. For now, set to undefined
+        return {
+          ...request,
+          unreadByRequester: request.unreadByRequester || 0
+        };
+      });
+      
+      res.json(requestsWithUnread);
     } catch (error) {
       console.error("Error fetching admin service requests:", error);
       res.status(500).json({ error: "Failed to fetch service requests" });

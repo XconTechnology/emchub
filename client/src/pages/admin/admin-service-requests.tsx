@@ -51,6 +51,7 @@ interface ServiceRequest {
   updatedAt: string;
   requesterName: string;
   adminName: string | null;
+  unreadByRequester?: number;
 }
 
 export default function AdminServiceRequests() {
@@ -316,8 +317,17 @@ export default function AdminServiceRequests() {
                             size="sm"
                             onClick={() => setMessageDialog(request)}
                             data-testid={`button-message-${request.id}`}
+                            className="relative"
                           >
                             <MessageSquare className="w-4 h-4" />
+                            {request.unreadByRequester && request.unreadByRequester > 0 && (
+                              <Badge 
+                                className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
+                                data-testid={`badge-unread-${request.id}`}
+                              >
+                                {request.unreadByRequester}
+                              </Badge>
+                            )}
                           </Button>
                         </div>
                       </TableCell>
