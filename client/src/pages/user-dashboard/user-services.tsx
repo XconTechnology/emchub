@@ -38,6 +38,7 @@ interface ServiceRequest {
   createdAt: string;
   updatedAt: string;
   unreadByAdmin?: number;
+  unreadByRequester?: number;
 }
 
 // Payment form component using Stripe Elements (without Dialog wrapper)
@@ -501,12 +502,12 @@ function UserServicesContent() {
                             <MessageSquare className="w-4 h-4 mr-1" />
                             Chat
                           </Button>
-                          {(request.unreadByAdmin || 0) > 0 && (
+                          {(request.unreadByRequester || 0) > 0 && (
                             <span 
                               className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full animate-pulse"
                               data-testid={`badge-unread-${request.id}`}
                             >
-                              {request.unreadByAdmin}
+                              {request.unreadByRequester}
                             </span>
                           )}
                         </div>
