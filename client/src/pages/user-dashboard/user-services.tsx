@@ -37,6 +37,7 @@ interface ServiceRequest {
   rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
+  unreadByAdmin?: number;
 }
 
 // Payment form component using Stripe Elements (without Dialog wrapper)
@@ -493,9 +494,18 @@ function UserServicesContent() {
                             setPreviousMessageCount(0);
                           }}
                           data-testid={`button-message-${request.id}`}
+                          className="relative"
                         >
                           <MessageSquare className="w-4 h-4 mr-1" />
                           Chat
+                          {request.unreadByAdmin && request.unreadByAdmin > 0 && (
+                            <Badge 
+                              className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
+                              data-testid={`badge-unread-${request.id}`}
+                            >
+                              {request.unreadByAdmin}
+                            </Badge>
+                          )}
                         </Button>
                       )}
                     </div>

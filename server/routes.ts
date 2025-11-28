@@ -4646,7 +4646,16 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/user-service-requests", isAuthenticated, async (req: any, res) => {
     try {
       const requests = await storage.getUserServiceRequests(req.user?.id);
-      res.json(requests);
+      
+      // Add unreadByAdmin counts for each request
+      const requestsWithUnread = requests.map((request: any) => {
+        return {
+          ...request,
+          unreadByAdmin: request.unreadByAdmin || 0
+        };
+      });
+      
+      res.json(requestsWithUnread);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch requests" });
     }
