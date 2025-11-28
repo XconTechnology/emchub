@@ -52,6 +52,7 @@ interface ServiceRequest {
   requesterName: string;
   adminName: string | null;
   unreadByRequester?: number;
+  unreadByAdmin?: number;
 }
 
 export default function AdminServiceRequests() {
@@ -321,12 +322,12 @@ export default function AdminServiceRequests() {
                             >
                               <MessageSquare className="w-4 h-4" />
                             </Button>
-                            {(request.unreadByRequester || 0) > 0 && (
+                            {(request.unreadByAdmin || 0) > 0 && (
                               <span 
                                 className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center px-1.5 bg-red-500 text-white text-xs font-semibold rounded-full animate-pulse"
                                 data-testid={`badge-unread-${request.id}`}
                               >
-                                {request.unreadByRequester}
+                                {request.unreadByAdmin}
                               </span>
                             )}
                           </div>

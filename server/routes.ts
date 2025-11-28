@@ -4788,6 +4788,12 @@ export function registerRoutes(app: Express): Server {
       }
       
       await storage.markServiceRequestMessagesRead(id, adminId, true);
+      
+      // Reset unreadByAdmin to 0 when admin reads messages
+      await db.update(serviceRequests)
+        .set({ unreadByAdmin: 0 })
+        .where(eq(serviceRequests.id, id));
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error marking messages as read:", error);
