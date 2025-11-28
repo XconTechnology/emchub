@@ -123,6 +123,21 @@ export default function AdminServiceRequests() {
     }
   }, [messageDialog]);
 
+  // Mark messages as read on backend when dialog opens
+  useEffect(() => {
+    if (messageDialog?.id) {
+      // Call mark-read API to persist on backend
+      const response = fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      // Don't await - just let it complete in background
+      response.catch(error => {
+        console.error("Failed to mark messages as read:", error);
+      });
+    }
+  }, [messageDialog?.id]);
+
   // Handle opening message dialog
   const handleOpenMessageDialog = (request: ServiceRequest) => {
     // Immediately update local cache to set unreadByAdmin to 0 to hide badge instantly
@@ -134,15 +149,7 @@ export default function AdminServiceRequests() {
     });
     
     // Open the dialog with the request
-    setMessageDialog(request);
-    
-    // Mark as read on the backend
-    fetch(`/api/admin/service-requests/${request.id}/messages/mark-read`, {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(error => {
-      console.error("Failed to mark messages as read:", error);
-    });
+    setMessageDialog({ ...request, unreadByAdmin: 0 });
   };
 
   const updateStatusMutation = useMutation({
