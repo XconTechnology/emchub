@@ -98,7 +98,7 @@ export default function AdminCoupons() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => apiRequest("POST", "/api/coupons", data),
+    mutationFn: async (data: any) => apiRequest("POST", "/api/admin/coupons", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/coupons"] });
       toast({ title: "Coupon created successfully" });

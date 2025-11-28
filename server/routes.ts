@@ -2933,6 +2933,89 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Create platform coupon (admin only)
+  app.post("/api/admin/coupons", isAdminAuthenticated, async (req: any, res) => {
+    try {
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string | undefined;
+      let adminUsername: string = 'Admin';
+      
+      if (req.user) {
+        adminId = req.user.id;
+        adminUsername = req.user.username;
+      } else if (req.session?.adminAuth === true) {
+        // Session-based admin - use system admin
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        if (adminUsers.length > 0) {
+          adminId = adminUsers[0].id;
+          adminUsername = adminUsers[0].username;
+        }
+      }
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { 
+        code, 
+        title, 
+        description, 
+        couponType,
+        discountType, 
+        discountValue,
+        scope,
+        productId,
+        cashDiscountType, 
+        cashDiscountValue, 
+        tdDiscountType, 
+        tdDiscountValue, 
+        usageLimit, 
+        validFrom, 
+        validUntil 
+      } = req.body;
+      
+      const coupon = await storage.createCoupon({
+        vendorId: adminId,
+        code,
+        title,
+        description,
+        couponType: couponType || 'discount',
+        issuer: 'admin',
+        scope: scope || 'global',
+        productId: productId || null,
+        discountType: couponType === 'discount' ? discountType : null,
+        discountValue: couponType === 'discount' ? discountValue : null,
+        cashDiscountType: couponType === 'cash' ? cashDiscountType : null,
+        cashDiscountValue: couponType === 'cash' ? cashDiscountValue : null,
+        tdDiscountType,
+        tdDiscountValue,
+        usageLimit,
+        validFrom: validFrom ? new Date(validFrom) : undefined,
+        validUntil: validUntil ? new Date(validUntil) : undefined,
+        status: 'approved', // Admin-created coupons are auto-approved
+      });
+      
+      // Log activity
+      await storage.createActivityLog({
+        userId: adminId,
+        userName: adminUsername,
+        actionType: 'create',
+        entityType: 'coupon',
+        entityId: coupon.id,
+        entityTitle: coupon.title || coupon.code,
+        description: `Created platform coupon: ${coupon.code}`,
+        metadata: { coupon },
+      });
+      
+      res.status(201).json(coupon);
+    } catch (error) {
+      console.error("Error creating admin coupon:", error);
+      res.status(500).json({ error: "Failed to create coupon" });
+    }
+  });
+
   // Delete coupon
   app.delete("/api/coupons/:id", isAuthenticated, async (req, res) => {
     try {
