@@ -487,27 +487,28 @@ function UserServicesContent() {
                         View Details
                       </Button>
                       {request.status !== 'rejected' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setMessageDialog(request);
-                            setPreviousMessageCount(0);
-                          }}
-                          data-testid={`button-message-${request.id}`}
-                          className="relative"
-                        >
-                          <MessageSquare className="w-4 h-4 mr-1" />
-                          Chat
+                        <div className="relative inline-block">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setMessageDialog(request);
+                              setPreviousMessageCount(0);
+                            }}
+                            data-testid={`button-message-${request.id}`}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-1" />
+                            Chat
+                          </Button>
                           {(request.unreadByAdmin || 0) > 0 && (
                             <Badge 
-                              className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
+                              className="absolute -top-1 left-2 h-5 min-w-5 flex items-center justify-center p-0 px-1.5 bg-red-500 text-white text-xs font-semibold animate-pulse"
                               data-testid={`badge-unread-${request.id}`}
                             >
                               {request.unreadByAdmin}
                             </Badge>
                           )}
-                        </Button>
+                        </div>
                       )}
                     </div>
                   </CardContent>
