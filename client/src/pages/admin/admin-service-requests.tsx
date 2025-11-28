@@ -123,30 +123,27 @@ export default function AdminServiceRequests() {
     }
   }, [messageDialog]);
 
-  // Mark messages as read when chat dialog opens
-  useEffect(() => {
-    if (messageDialog?.id) {
-      // Mark all messages in this service request as read for admin
-      (async () => {
-        try {
-          await fetch(`/api/admin/service-requests/${messageDialog.id}/messages/mark-read`, {
-            method: 'POST',
-            credentials: 'include',
-          });
-          
-          // Immediately refetch all queries to update badges
-          await Promise.all([
-            queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests'] }),
-            queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] }),
-            queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-counts'] }),
-          ]);
-        } catch (error) {
-          // Silently fail - mark-as-read is not critical
-          console.error("Failed to mark messages as read:", error);
-        }
-      })();
-    }
-  }, [messageDialog?.id]);
+  // Handle opening message dialog
+  const handleOpenMessageDialog = (request: ServiceRequest) => {
+    // Immediately update local cache to set unreadByAdmin to 0 to hide badge instantly
+    queryClient.setQueryData(['/api/admin/service-requests'], (oldData: ServiceRequest[] | undefined) => {
+      if (!oldData) return oldData;
+      return oldData.map(r => 
+        r.id === request.id ? { ...r, unreadByAdmin: 0 } : r
+      );
+    });
+    
+    // Open the dialog with the request
+    setMessageDialog(request);
+    
+    // Mark as read on the backend
+    fetch(`/api/admin/service-requests/${request.id}/messages/mark-read`, {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(error => {
+      console.error("Failed to mark messages as read:", error);
+    });
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -326,7 +323,7 @@ export default function AdminServiceRequests() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setMessageDialog(request)}
+                              onClick={() => handleOpenMessageDialog(request)}
                               data-testid={`button-message-${request.id}`}
                             >
                               <MessageSquare className="w-4 h-4" />
