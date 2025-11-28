@@ -133,9 +133,9 @@ export default function AdminServiceRequests() {
       }).then(() => {
         // Immediately refetch the requests to update badge
         queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests'] });
-        // Also invalidate unread counts to update badges (Admin sidebar + any header badges)
-        queryClient.invalidateQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-counts'] });
+        // Also refetch unread counts to update badges (Admin sidebar + any header badges)
+        queryClient.refetchQueries({ queryKey: ['/api/admin/service-requests/unread-counts'] });
+        queryClient.refetchQueries({ queryKey: ['/api/notifications/unread-counts'] });
       }).catch(() => {
         // Silently fail - mark-as-read is not critical
       });
