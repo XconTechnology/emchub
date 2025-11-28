@@ -3492,6 +3492,8 @@ export class DatabaseStorage implements IStorage {
         updatedAt: serviceRequests.updatedAt,
         requesterName: requester.username,
         adminName: admin.username,
+        unreadByRequester: serviceRequests.unreadByRequester,
+        unreadByAdmin: serviceRequests.unreadByAdmin,
       })
       .from(serviceRequests)
       .leftJoin(requester, eq(serviceRequests.requesterId, requester.id))
