@@ -598,9 +598,9 @@ export default function AdminSupportTickets() {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[400px] border rounded-lg p-4 bg-muted/20">
-                    <div className="space-y-4">
+                <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+                  <ScrollArea className="flex-1 border rounded-lg bg-muted/20">
+                    <div className="space-y-4 p-4">
                       {quickMessages.length === 0 ? (
                         <div className="text-center text-muted-foreground py-8 text-sm">
                           <p>No messages yet. Send the first message to start the conversation.</p>
@@ -648,7 +648,7 @@ export default function AdminSupportTickets() {
                   </ScrollArea>
 
                   {/* Admin Reply Section */}
-                  <div className="mt-4 border-t pt-4">
+                  <div className="border-t pt-4">
                     <div className="flex gap-2">
                       <Textarea
                         placeholder="Type your reply to the user..."
