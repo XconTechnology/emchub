@@ -4676,7 +4676,7 @@ export function registerRoutes(app: Express): Server {
       // Calculate receiver: 
       // - If sender is admin → receiver is ticket owner (user)
       // - If sender is assigned staff → receiver is ticket owner (user)
-      // - If sender is user → receiver is assigned staff, or ticket owner as fallback for conversation thread
+      // - If sender is user → receiver is assigned staff, or first admin if unassigned
       let receiverId: string;
       if (isAdmin) {
         // Admin always sends to ticket owner
@@ -4685,13 +4685,22 @@ export function registerRoutes(app: Express): Server {
         // Assigned staff sends to ticket owner
         receiverId = ticket.userId;
       } else if (isTicketOwner) {
-        // User sends to assigned staff if available, otherwise self (for admin to see)
+        // User sends to assigned staff if available
         if (ticket.assignedTo) {
           receiverId = ticket.assignedTo;
         } else {
-          // For unassigned tickets, messages go to a placeholder receiver
-          // Admin will see all messages regardless of receiverId
-          receiverId = ticket.userId; // Self-reference as placeholder
+          // For unassigned tickets, route to first available admin/super-admin
+          const adminUsers = await db.select().from(usersTable)
+            .where(or(
+              eq(usersTable.role, 'admin'),
+              eq(usersTable.role, 'super-admin')
+            ))
+            .limit(1);
+          
+          if (adminUsers.length === 0) {
+            return res.status(500).json({ error: "No admin available to receive message. Please try again later." });
+          }
+          receiverId = adminUsers[0].id;
         }
       } else {
         return res.status(403).json({ error: "Unauthorized to message in this ticket" });
