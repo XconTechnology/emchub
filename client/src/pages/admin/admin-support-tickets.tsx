@@ -599,7 +599,7 @@ export default function AdminSupportTickets() {
                 </DialogHeader>
 
                 <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-                  <ScrollArea className="flex-1 border rounded-lg bg-muted/20">
+                  <div className="flex-1 border rounded-lg bg-muted/20 overflow-y-auto overflow-x-hidden">
                     <div className="space-y-4 p-4">
                       {quickMessages.length === 0 ? (
                         <div className="text-center text-muted-foreground py-8 text-sm">
@@ -645,7 +645,7 @@ export default function AdminSupportTickets() {
                       )}
                       <div ref={quickMessagesEndRef} />
                     </div>
-                  </ScrollArea>
+                  </div>
 
                   {/* Admin Reply Section */}
                   <div className="border-t pt-4">
