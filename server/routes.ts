@@ -4643,14 +4643,18 @@ export function registerRoutes(app: Express): Server {
         userId = req.user.id;
         userRole = req.user.role || 'consumer';
       } else if (isAdminSession) {
-        // Admin user via session - get system admin
+        // Admin user via session - look for existing admin/super-admin user
         const adminUsers = await db.select().from(usersTable)
-          .where(eq(usersTable.username, 'system_admin'))
+          .where(or(
+            eq(usersTable.role, 'admin'),
+            eq(usersTable.role, 'super-admin')
+          ))
           .limit(1);
         
         if (adminUsers.length === 0) {
-          return res.status(500).json({ error: "System admin not found. Please contact support." });
+          return res.status(500).json({ error: "No admin user found in the system. Please create an admin account first." });
         }
+        
         userId = adminUsers[0].id;
         userRole = 'admin';
       } else {
@@ -4658,31 +4662,37 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Check permissions and calculate receiverId
-      // Admin cannot send messages (view-only access)
-      if (isAdmin) {
-        return res.status(403).json({ error: "Admins can only view messages, not send them" });
-      }
-
       const isTicketOwner = ticket.userId === userId;
       const isAssignedStaff = ticket.assignedTo === userId;
+      const isStaffUser = req.user?.role === 'staff';
 
-      if (!isTicketOwner && !isAssignedStaff) {
+      // Admin has full access to reply to any ticket
+      // Staff can reply if assigned to the ticket
+      // Users can reply to their own tickets
+      if (!isAdmin && !isTicketOwner && !isAssignedStaff) {
         return res.status(403).json({ error: "Unauthorized to message in this ticket" });
       }
 
-      // Ticket must be assigned before messaging
-      if (!ticket.assignedTo) {
-        return res.status(400).json({ error: "Cannot send messages to unassigned tickets" });
-      }
-
       // Calculate receiver: 
-      // - If sender is staff → receiver is ticket owner (user)
-      // - If sender is user → receiver is assigned staff
+      // - If sender is admin → receiver is ticket owner (user)
+      // - If sender is assigned staff → receiver is ticket owner (user)
+      // - If sender is user → receiver is assigned staff, or ticket owner as fallback for conversation thread
       let receiverId: string;
-      if (isAssignedStaff) {
-        receiverId = ticket.userId; // Staff sends to user
+      if (isAdmin) {
+        // Admin always sends to ticket owner
+        receiverId = ticket.userId;
+      } else if (isAssignedStaff) {
+        // Assigned staff sends to ticket owner
+        receiverId = ticket.userId;
       } else if (isTicketOwner) {
-        receiverId = ticket.assignedTo; // User sends to assigned staff
+        // User sends to assigned staff if available, otherwise self (for admin to see)
+        if (ticket.assignedTo) {
+          receiverId = ticket.assignedTo;
+        } else {
+          // For unassigned tickets, messages go to a placeholder receiver
+          // Admin will see all messages regardless of receiverId
+          receiverId = ticket.userId; // Self-reference as placeholder
+        }
       } else {
         return res.status(403).json({ error: "Unauthorized to message in this ticket" });
       }

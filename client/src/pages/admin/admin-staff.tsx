@@ -60,6 +60,7 @@ const STAFF_ROLES = [
   { value: "business", label: "Business", description: "Access to Vendor Management and Coupons only" },
   { value: "support", label: "Support", description: "Access to Support Tickets only" },
   { value: "sales", label: "Sales", description: "Access to Refunds/Transactions only" },
+  { value: "listings", label: "Listings", description: "Access to Listings and Categories management only" },
   { value: "mediator", label: "Mediator", description: "Access to TimeDollar Disputes only" },
   { value: "full_admin", label: "Full Admin", description: "Access to all admin features except Super Admin settings" },
 ] as const;
@@ -182,6 +183,7 @@ export default function AdminStaff() {
       case "business": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
       case "support": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
       case "sales": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "listings": return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       case "mediator": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
       case "full_admin": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";

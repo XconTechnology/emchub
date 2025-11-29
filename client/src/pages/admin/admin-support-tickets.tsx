@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Search, LifeBuoy, User as UserIcon, Send, Clock, MessageSquare } from "lucide-react";
+import { Search, LifeBuoy, User as UserIcon, Send, Clock, MessageSquare, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
 
@@ -54,6 +54,7 @@ export default function AdminSupportTickets() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [messageDialog, setMessageDialog] = useState<SupportTicket | null>(null);
+  const [adminReply, setAdminReply] = useState("");
   const quickMessagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch all tickets
@@ -157,6 +158,33 @@ export default function AdminSupportTickets() {
     },
   });
 
+  // Send admin reply mutation
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ ticketId, message }: { ticketId: string; message: string }) => {
+      const response = await apiRequest("POST", `/api/support-tickets/${ticketId}/messages`, { message });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-tickets', messageDialog?.id, 'messages'] });
+      setAdminReply("");
+      toast({
+        title: "Reply Sent",
+        description: "Your reply has been sent successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reply.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendReply = () => {
+    if (!messageDialog?.id || !adminReply.trim()) return;
+    sendReplyMutation.mutate({ ticketId: messageDialog.id, message: adminReply.trim() });
+  };
 
   // Filter tickets
   const filteredTickets = tickets.filter(ticket => {
@@ -398,17 +426,15 @@ export default function AdminSupportTickets() {
                           >
                             View
                           </Button>
-                          {ticket.assignedTo && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setMessageDialog(ticket)}
-                              data-testid={`button-view-messages-${ticket.id}`}
-                              title="View Messages"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMessageDialog(ticket)}
+                            data-testid={`button-view-messages-${ticket.id}`}
+                            title="View/Reply to Messages"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -621,11 +647,42 @@ export default function AdminSupportTickets() {
                     </div>
                   </ScrollArea>
 
-                  {/* View-Only Information Banner */}
-                  <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                    <p className="text-xs text-blue-800 dark:text-blue-200 text-center">
-                      ℹ️ Administrators have view-only access to monitor conversations between users and staff.
-                    </p>
+                  {/* Admin Reply Section */}
+                  <div className="mt-4 border-t pt-4">
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Type your reply to the user..."
+                        value={adminReply}
+                        onChange={(e) => setAdminReply(e.target.value)}
+                        className="flex-1 min-h-[80px] resize-none"
+                        data-testid="input-admin-reply"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendReply();
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <Button
+                        onClick={handleSendReply}
+                        disabled={!adminReply.trim() || sendReplyMutation.isPending}
+                        data-testid="button-send-admin-reply"
+                      >
+                        {sendReplyMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Send Reply
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </>

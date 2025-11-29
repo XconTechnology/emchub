@@ -8,6 +8,7 @@ export const StaffRoles = {
   BUSINESS: 'business',
   SUPPORT: 'support',
   SALES: 'sales',
+  LISTINGS: 'listings',
   MEDIATOR: 'mediator',
   FULL_ADMIN: 'full_admin',
 } as const;
@@ -32,16 +33,19 @@ export const RolePermissions: Record<string, string[]> = {
   [StaffRoles.BUSINESS]: [Resources.VENDORS, Resources.COUPONS],
   [StaffRoles.SUPPORT]: [Resources.SUPPORT_TICKETS],
   [StaffRoles.SALES]: [Resources.REFUNDS],
+  [StaffRoles.LISTINGS]: [Resources.LISTINGS, Resources.CATEGORIES],
   [StaffRoles.MEDIATOR]: [Resources.DISPUTES],
   [StaffRoles.FULL_ADMIN]: [
     Resources.SUPPORT_TICKETS,
     Resources.REFUNDS,
     Resources.DISPUTES,
+    Resources.LISTINGS,
     Resources.USERS,
     Resources.COUPONS,
     Resources.VENDORS,
     Resources.ANALYTICS,
     Resources.ACTIVITY_LOGS,
+    Resources.CATEGORIES,
   ],
 };
 
@@ -112,12 +116,15 @@ export function getAccessibleMenuItems(staffRole: string | null | undefined): st
     [StaffRoles.BUSINESS]: ['vendors', 'coupons'],
     [StaffRoles.SUPPORT]: ['support-tickets'],
     [StaffRoles.SALES]: ['refunds', 'transactions'],
+    [StaffRoles.LISTINGS]: ['listings', 'categories'],
     [StaffRoles.MEDIATOR]: ['disputes'],
     [StaffRoles.FULL_ADMIN]: [
       'support-tickets',
       'refunds',
       'transactions',
       'disputes',
+      'listings',
+      'categories',
       'users',
       'vendors',
       'coupons',
