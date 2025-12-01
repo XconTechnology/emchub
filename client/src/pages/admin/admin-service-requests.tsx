@@ -529,6 +529,10 @@ export default function AdminServiceRequests() {
             ) : (
               messages.map((msg) => {
                 const isPaymentReceived = msg.message.includes("Payment received");
+                const isAdminMessage = msg.senderName === 'system_admin' || 
+                                       msg.senderName === 'System Admin' ||
+                                       msg.senderName?.toLowerCase().includes('admin');
+                const displayName = isAdminMessage ? 'Admin' : msg.senderName;
                 
                 return (
                   <div 
@@ -536,11 +540,19 @@ export default function AdminServiceRequests() {
                     className={`p-3 rounded ${
                       isPaymentReceived
                         ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                        : isAdminMessage
+                        ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
                         : "bg-gray-100 dark:bg-gray-800"
                     }`}
                   >
-                    <p className={`text-sm font-medium ${isPaymentReceived ? "text-green-900 dark:text-green-100" : ""}`}>
-                      {isPaymentReceived ? "✅ Payment Received" : msg.senderName}
+                    <p className={`text-sm font-medium ${
+                      isPaymentReceived 
+                        ? "text-green-900 dark:text-green-100" 
+                        : isAdminMessage 
+                        ? "text-blue-900 dark:text-blue-100" 
+                        : ""
+                    }`}>
+                      {isPaymentReceived ? "✅ Payment Received" : displayName}
                     </p>
                     <p className={`text-sm mt-1 ${isPaymentReceived ? "text-green-800 dark:text-green-200" : "text-gray-600 dark:text-gray-400"}`}>
                       {msg.message}
