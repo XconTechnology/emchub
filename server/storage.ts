@@ -2963,6 +2963,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteStaffUser(id: string): Promise<void> {
+    const { conversations, orders, listings, events, transactionLogs } = await import("@shared/schema");
+    
+    // Delete related records in order of dependencies
+    // First delete conversations where user is vendor or customer
+    await db.delete(conversations).where(
+      or(
+        eq(conversations.vendorId, id),
+        eq(conversations.customerId, id)
+      )
+    );
+    
+    // Delete orders where user is vendor
+    await db.delete(orders).where(eq(orders.vendorId, id));
+    
+    // Delete listings where user is vendor
+    await db.delete(listings).where(eq(listings.vendorId, id));
+    
+    // Delete events where user is vendor
+    await db.delete(events).where(eq(events.vendorId, id));
+    
+    // Delete transaction logs where user is vendor
+    await db.delete(transactionLogs).where(eq(transactionLogs.vendorId, id));
+    
+    // Finally delete the user
     await db.delete(users).where(eq(users.id, id));
   }
   
