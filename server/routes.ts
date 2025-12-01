@@ -47,6 +47,18 @@ function broadcastEvent(event: { type: string; data: any }) {
   });
 }
 
+// Health check endpoint for deployment
+function setupHealthCheck(app: Express) {
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+  
+  // Simple root health check for load balancers
+  app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+}
+
 // Debug endpoint to test domain
 function setupDebugRoutes(app: Express) {
   app.get('/api/debug', (req, res) => {
@@ -148,6 +160,9 @@ const requireVendorOrAbove = requireRole(['vendor', 'staff', 'admin']);
 export function registerRoutes(app: Express): Server {
   // Setup authentication middleware and routes (from blueprint: javascript_auth_all_persistance)
   setupAuth(app);
+
+  // Setup health check for deployment
+  setupHealthCheck(app);
 
   // Setup debug routes for troubleshooting domain issues
   setupDebugRoutes(app);
