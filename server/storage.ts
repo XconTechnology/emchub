@@ -727,7 +727,19 @@ export class DatabaseStorage implements IStorage {
   async updateListing(id: string, listingData: Partial<InsertListing>): Promise<Listing> {
     const [listing] = await db
       .update(listings)
-      .set({ ...listingData, updatedAt: new Date() })
+      .set({
+        title: listingData.title,
+        description: listingData.description,
+        price: listingData.price ? listingData.price.toString() : undefined,
+        categoryId: listingData.categoryId,
+        visibility: listingData.visibility,
+        isOnlineOnly: listingData.isOnlineOnly,
+        tdEligible: listingData.tdEligible,
+        tdValue: listingData.tdValue ? listingData.tdValue.toString() : undefined,
+        images: listingData.images,
+        location: listingData.location,
+        updatedAt: new Date()
+      } as any)
       .where(eq(listings.id, id))
       .returning();
     return listing;
@@ -1380,14 +1392,14 @@ export class DatabaseStorage implements IStorage {
     
     // Top categories
     const topCategoriesData = await db.select({
-      category: listings.category,
+      category: listings.categoryId,
       count: sql<number>`count(DISTINCT ${orderItems.orderId})`,
       revenue: sql<string>`COALESCE(SUM(CAST(${orderItems.subtotal} AS NUMERIC)), 0)`,
     })
     .from(orderItems)
     .leftJoin(listings, eq(orderItems.productId, listings.id))
-    .where(sql`${listings.category} IS NOT NULL`)
-    .groupBy(listings.category)
+    .where(sql`${listings.categoryId} IS NOT NULL`)
+    .groupBy(listings.categoryId)
     .orderBy(sql`SUM(CAST(${orderItems.subtotal} AS NUMERIC)) DESC`)
     .limit(10);
     
@@ -3311,15 +3323,13 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: tdWallet.id,
         userId: tdWallet.userId,
-        balance: tdWallet.balance,
-        totalEarned: tdWallet.totalEarned,
-        totalSpent: tdWallet.totalSpent,
+        tdBalance: tdWallet.tdBalance,
         username: users.username,
         email: users.email,
       })
       .from(tdWallet)
       .leftJoin(users, eq(tdWallet.userId, users.id))
-      .orderBy(sql`${tdWallet.balance} DESC`);
+      .orderBy(sql`${tdWallet.tdBalance} DESC`);
     return wallets;
   }
   
@@ -3486,7 +3496,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(users)
-      .where(eq(users.userType, 'staff'));
+      .where(eq(users.role, 'staff'));
   }
 
   // Service Request operations
@@ -3498,10 +3508,9 @@ export class DatabaseStorage implements IStorage {
         requesterType: data.requesterType,
         title: data.title,
         description: data.description,
-        estimatedHours: data.estimatedHours ? parseFloat(data.estimatedHours) : undefined,
-        preferredDate: data.preferredDate,
-        status: 'pending',
-      })
+        estimatedHours: data.estimatedHours ? parseFloat(data.estimatedHours) : null,
+        preferredDate: data.preferredDate || null,
+      } as any)
       .returning();
     return request;
   }
