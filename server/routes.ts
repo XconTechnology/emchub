@@ -4927,36 +4927,48 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       const { message } = req.body;
+      
+      console.log('[ADMIN-MSG] Received request to send message:', { serviceRequestId: id, messageLength: message?.length });
 
       if (!message) {
+        console.log('[ADMIN-MSG] Error: Message is required');
         return res.status(400).json({ error: "Message is required" });
       }
 
       // Get admin user ID - either from session or from authenticated user
       let senderId = req.user?.id;
+      console.log('[ADMIN-MSG] Initial senderId from req.user:', senderId);
       
       // If no user auth, get system admin
       if (!senderId) {
-        const [adminUser] = await db
+        console.log('[ADMIN-MSG] No user ID, looking up system_admin...');
+        const adminUsers = await db
           .select({ id: usersTable.id })
           .from(usersTable)
           .where(eq(usersTable.username, 'system_admin'))
           .limit(1);
         
-        if (!adminUser) {
+        console.log('[ADMIN-MSG] Admin users found:', adminUsers.length);
+        
+        if (adminUsers.length === 0) {
+          console.log('[ADMIN-MSG] Error: No system_admin user found');
           return res.status(500).json({ error: "Admin user not found" });
         }
-        senderId = adminUser.id;
+        senderId = adminUsers[0].id;
+        console.log('[ADMIN-MSG] Using system_admin ID:', senderId);
       }
 
+      console.log('[ADMIN-MSG] Creating message with senderId:', senderId);
       const msg = await storage.createServiceRequestMessage({
         serviceRequestId: id,
         senderId,
         message,
       });
+      console.log('[ADMIN-MSG] Message created:', msg.id);
 
       // Increment unread count for the requester (user/vendor) since admin is sending
       await storage.incrementServiceRequestUnreadForRequester(id);
+      console.log('[ADMIN-MSG] Unread count incremented');
 
       // Override sender name to "Admin" for admin messages
       const responseMsg = {
@@ -4965,9 +4977,10 @@ export function registerRoutes(app: Express): Server {
       };
 
       broadcastEvent({ type: 'service-request-message', data: responseMsg });
+      console.log('[ADMIN-MSG] Message sent successfully');
       res.status(201).json(responseMsg);
     } catch (error) {
-      console.error("Error creating service request message:", error);
+      console.error("[ADMIN-MSG] Error creating service request message:", error);
       res.status(500).json({ error: "Failed to create message" });
     }
   });
