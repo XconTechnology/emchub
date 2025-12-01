@@ -4939,10 +4939,10 @@ export function registerRoutes(app: Express): Server {
       let senderId = req.user?.id;
       console.log('[ADMIN-MSG] Initial senderId from req.user:', senderId);
       
-      // If no user auth, get system admin
+      // If no user auth, get or create system admin
       if (!senderId) {
         console.log('[ADMIN-MSG] No user ID, looking up system_admin...');
-        const adminUsers = await db
+        let adminUsers = await db
           .select({ id: usersTable.id })
           .from(usersTable)
           .where(eq(usersTable.username, 'system_admin'))
@@ -4950,12 +4950,30 @@ export function registerRoutes(app: Express): Server {
         
         console.log('[ADMIN-MSG] Admin users found:', adminUsers.length);
         
+        // Auto-create system_admin if it doesn't exist (fixes production issue)
         if (adminUsers.length === 0) {
-          console.log('[ADMIN-MSG] Error: No system_admin user found');
-          return res.status(500).json({ error: "Admin user not found" });
+          console.log('[ADMIN-MSG] Creating system_admin user...');
+          const hashedPassword = await hashPassword('system_admin_' + Date.now());
+          const [newAdmin] = await db
+            .insert(usersTable)
+            .values({
+              username: 'system_admin',
+              email: 'admin@system.local',
+              password: hashedPassword,
+              firstName: 'System',
+              lastName: 'Admin',
+              role: 'admin',
+              vendorStatus: 'none',
+              timeDollarBalance: 0,
+            })
+            .returning({ id: usersTable.id });
+          
+          console.log('[ADMIN-MSG] Created system_admin with ID:', newAdmin.id);
+          senderId = newAdmin.id;
+        } else {
+          senderId = adminUsers[0].id;
+          console.log('[ADMIN-MSG] Using existing system_admin ID:', senderId);
         }
-        senderId = adminUsers[0].id;
-        console.log('[ADMIN-MSG] Using system_admin ID:', senderId);
       }
 
       console.log('[ADMIN-MSG] Creating message with senderId:', senderId);
