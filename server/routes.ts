@@ -5043,6 +5043,17 @@ export function registerRoutes(app: Express): Server {
     try {
       const { id } = req.params;
       let messages = await storage.getServiceRequestMessages(id);
+      
+      // Override senderName to "Admin" for admin/system_admin messages
+      messages = messages.map((msg: any) => {
+        if (msg.senderName === 'system_admin' || 
+            msg.senderName === 'System Admin' ||
+            msg.senderName?.toLowerCase().includes('admin')) {
+          return { ...msg, senderName: 'Admin' };
+        }
+        return msg;
+      });
+      
       res.json(messages);
     } catch (error) {
       console.error("Error fetching service request messages:", error);
