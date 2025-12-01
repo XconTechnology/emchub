@@ -605,10 +605,11 @@ export default function AdminUsers() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingUser(null)} data-testid="button-cancel-edit">
+            <Button type="button" variant="outline" onClick={() => setEditingUser(null)} data-testid="button-cancel-edit">
               Cancel
             </Button>
             <Button 
+              type="button"
               onClick={handleUpdateUser} 
               disabled={updateUserMutation.isPending}
               data-testid="button-save-edit"
@@ -643,13 +644,14 @@ export default function AdminUsers() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
+            <Button type="button" variant="outline" onClick={() => {
               setResetPasswordUser(null);
               setNewPassword("");
             }} data-testid="button-cancel-reset">
               Cancel
             </Button>
             <Button 
+              type="button"
               onClick={handleResetPassword} 
               disabled={resetPasswordMutation.isPending || !newPassword}
               data-testid="button-confirm-reset"
