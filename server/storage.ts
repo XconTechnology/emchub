@@ -2963,14 +2963,26 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteStaffUser(id: string): Promise<void> {
-    // Use raw SQL to handle cascading deletes to avoid import issues
+    // Use raw SQL to handle cascading deletes
     // Delete in order of foreign key dependencies
+    
+    // Delete messages first (depends on conversations)
+    await db.execute(sql`DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE vendor_id = ${id} OR customer_id = ${id})`);
     
     // Delete conversations where user is vendor or customer
     await db.execute(sql`DELETE FROM conversations WHERE vendor_id = ${id} OR customer_id = ${id}`);
     
-    // Delete transaction logs where user is vendor
-    await db.execute(sql`DELETE FROM transaction_logs WHERE vendor_id = ${id}`);
+    // Delete service request messages where user is sender
+    await db.execute(sql`DELETE FROM service_request_messages WHERE sender_id = ${id}`);
+    
+    // Delete service requests where user is requester
+    await db.execute(sql`DELETE FROM service_requests WHERE requester_id = ${id}`);
+    
+    // Delete support ticket messages for user's tickets
+    await db.execute(sql`DELETE FROM support_ticket_messages WHERE ticket_id IN (SELECT id FROM support_tickets WHERE user_id = ${id})`);
+    
+    // Delete support tickets for this user
+    await db.execute(sql`DELETE FROM support_tickets WHERE user_id = ${id}`);
     
     // Delete order items for orders belonging to this vendor
     await db.execute(sql`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE vendor_id = ${id})`);
@@ -2978,23 +2990,44 @@ export class DatabaseStorage implements IStorage {
     // Delete orders where user is vendor
     await db.execute(sql`DELETE FROM orders WHERE vendor_id = ${id}`);
     
+    // Delete transactions where user is involved
+    await db.execute(sql`DELETE FROM transactions WHERE user_id = ${id} OR vendor_id = ${id}`);
+    
+    // Delete TD-related records
+    await db.execute(sql`DELETE FROM td_transactions WHERE user_id = ${id}`);
+    await db.execute(sql`DELETE FROM td_conversions WHERE user_id = ${id}`);
+    await db.execute(sql`DELETE FROM td_disputes WHERE user_id = ${id}`);
+    await db.execute(sql`DELETE FROM td_wallet WHERE user_id = ${id}`);
+    
+    // Delete reviews by or for this user
+    await db.execute(sql`DELETE FROM reviews WHERE user_id = ${id}`);
+    
+    // Delete cart items for this user
+    await db.execute(sql`DELETE FROM cart_items WHERE user_id = ${id}`);
+    
+    // Delete saved items for this user
+    await db.execute(sql`DELETE FROM saved_items WHERE user_id = ${id}`);
+    
+    // Delete coupon usage for this user
+    await db.execute(sql`DELETE FROM coupon_usage WHERE user_id = ${id}`);
+    
+    // Delete coupons where user is vendor
+    await db.execute(sql`DELETE FROM coupons WHERE vendor_id = ${id}`);
+    
     // Delete listings where user is vendor
     await db.execute(sql`DELETE FROM listings WHERE vendor_id = ${id}`);
     
     // Delete business listings where user is vendor
     await db.execute(sql`DELETE FROM business_listings WHERE vendor_id = ${id}`);
     
-    // Delete events where user is vendor
-    await db.execute(sql`DELETE FROM events WHERE vendor_id = ${id}`);
-    
-    // Delete coupons where user is vendor
-    await db.execute(sql`DELETE FROM coupons WHERE vendor_id = ${id}`);
-    
     // Delete vendor requests for this user
     await db.execute(sql`DELETE FROM vendor_requests WHERE user_id = ${id}`);
     
     // Delete staff audit logs for this staff member
     await db.execute(sql`DELETE FROM staff_audit_logs WHERE staff_id = ${id}`);
+    
+    // Delete activity logs for this user
+    await db.execute(sql`DELETE FROM activity_logs WHERE user_id = ${id}`);
     
     // Finally delete the user
     await db.delete(users).where(eq(users.id, id));
