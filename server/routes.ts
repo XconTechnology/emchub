@@ -2926,9 +2926,24 @@ export function registerRoutes(app: Express): Server {
   });
   
   // Approve coupon (admin only)
-  app.post("/api/admin/coupons/:id/approve", isAdminAuthenticated, async (req, res) => {
+  app.post("/api/admin/coupons/:id/approve", isAdminAuthenticated, async (req: any, res) => {
     try {
-      const coupon = await storage.approveCoupon(req.params.id, req.user.id);
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string | undefined;
+      if (req.user) {
+        adminId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : undefined;
+      }
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const coupon = await storage.approveCoupon(req.params.id, adminId);
       res.json(coupon);
     } catch (error) {
       console.error("Error approving coupon:", error);
@@ -2937,10 +2952,26 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Reject coupon (admin only)
-  app.post("/api/admin/coupons/:id/reject", isAdminAuthenticated, async (req, res) => {
+  app.post("/api/admin/coupons/:id/reject", isAdminAuthenticated, async (req: any, res) => {
     try {
       const { reason } = req.body;
-      const coupon = await storage.rejectCoupon(req.params.id, req.user.id, reason);
+      
+      // Get admin ID - handle both Passport and session-based auth
+      let adminId: string | undefined;
+      if (req.user) {
+        adminId = req.user.id;
+      } else if (req.session?.adminAuth === true) {
+        const adminUsers = await db.select().from(usersTable)
+          .where(eq(usersTable.username, 'system_admin'))
+          .limit(1);
+        adminId = adminUsers.length > 0 ? adminUsers[0].id : undefined;
+      }
+      
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const coupon = await storage.rejectCoupon(req.params.id, adminId, reason);
       res.json(coupon);
     } catch (error) {
       console.error("Error rejecting coupon:", error);
