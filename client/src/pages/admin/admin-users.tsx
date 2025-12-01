@@ -134,6 +134,7 @@ export default function AdminUsers() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       toast({
         title: "Success",
         description: "Password reset successfully",
@@ -372,6 +373,7 @@ export default function AdminUsers() {
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
+                            type="button"
                             size="sm"
                             variant="outline"
                             onClick={() => setEditingUser(user)}
@@ -381,6 +383,7 @@ export default function AdminUsers() {
                           </Button>
                           {user.status === 'active' ? (
                             <Button
+                              type="button"
                               size="sm"
                               variant="destructive"
                               onClick={() => suspendUserMutation.mutate(user.id)}
@@ -391,6 +394,7 @@ export default function AdminUsers() {
                             </Button>
                           ) : (
                             <Button
+                              type="button"
                               size="sm"
                               variant="default"
                               onClick={() => reactivateUserMutation.mutate(user.id)}
@@ -401,6 +405,7 @@ export default function AdminUsers() {
                             </Button>
                           )}
                           <Button
+                            type="button"
                             size="sm"
                             variant="outline"
                             onClick={() => setResetPasswordUser(user)}
