@@ -3616,17 +3616,16 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     
-    // Fetch sender name and role
+    // Fetch sender name and role - always show actual username
     const [senderUser] = await db
       .select({ username: users.username, role: users.role })
       .from(users)
       .where(eq(users.id, data.senderId));
     
-    const username = senderUser?.username || 'Unknown';
-    const isAdmin = senderUser?.role === 'admin' || senderUser?.role === 'staff';
     return {
       ...message,
-      senderName: isAdmin ? 'Admin' : username,
+      senderName: senderUser?.username || 'Unknown',
+      senderRole: senderUser?.role || 'user',
     };
   }
 
@@ -3649,9 +3648,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(serviceRequestMessages.serviceRequestId, serviceRequestId))
       .orderBy(sql`${serviceRequestMessages.createdAt} ASC`);
     
+    // Return actual usernames for all senders (admin, vendor, user, staff)
     return messages.map(msg => ({
       ...msg,
-      senderName: (msg.senderRole === 'admin' || msg.senderRole === 'staff') ? 'Admin' : (msg.senderName || 'Unknown')
+      senderName: msg.senderName || 'Unknown'
     }));
   }
 
