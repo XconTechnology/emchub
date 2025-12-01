@@ -5013,11 +5013,16 @@ export function registerRoutes(app: Express): Server {
       const { id } = req.params;
       let messages = await storage.getServiceRequestMessages(id);
       
-      // Get all admin user IDs for comparison
+      // Get all admin/staff user IDs for comparison (includes admin, super-admin, and staff roles)
       const adminUsers = await db
         .select({ id: usersTable.id })
         .from(usersTable)
-        .where(or(eq(usersTable.role, 'admin'), eq(usersTable.role, 'staff')));
+        .where(or(
+          eq(usersTable.role, 'admin'),
+          eq(usersTable.role, 'super-admin'),
+          eq(usersTable.role, 'staff'),
+          eq(usersTable.username, 'system_admin')
+        ));
       
       const adminUserIds = new Set(adminUsers.map(u => u.id));
       
@@ -5121,7 +5126,27 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
-      const messages = await storage.getServiceRequestMessages(id);
+      let messages = await storage.getServiceRequestMessages(id);
+      
+      // Get all admin/staff user IDs for comparison (includes admin, super-admin, and staff roles)
+      const adminUsers = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(or(
+          eq(usersTable.role, 'admin'),
+          eq(usersTable.role, 'super-admin'),
+          eq(usersTable.role, 'staff'),
+          eq(usersTable.username, 'system_admin')
+        ));
+      
+      const adminUserIds = new Set(adminUsers.map(u => u.id));
+      
+      // Ensure admin messages show as "Admin"
+      messages = messages.map(msg => ({
+        ...msg,
+        senderName: adminUserIds.has(msg.senderId) ? 'Admin' : msg.senderName
+      }));
+      
       res.json(messages);
     } catch (error) {
       console.error("Error fetching service request messages:", error);
