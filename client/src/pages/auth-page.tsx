@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2, Info } from "lucide-react";
 import {
   Dialog,
@@ -32,6 +33,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  acceptTerms: z.boolean().refine(val => val === true, "You must accept the Terms & Conditions"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -58,6 +60,7 @@ export default function AuthPage() {
       password: "",
       firstName: "",
       lastName: "",
+      acceptTerms: false,
     },
   });
 
@@ -309,6 +312,27 @@ export default function AuthPage() {
                                 data-testid="input-register-password"
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="acceptTerms"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox 
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-accept-terms"
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="font-normal cursor-pointer">
+                                I accept the Terms & Conditions
+                              </FormLabel>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
