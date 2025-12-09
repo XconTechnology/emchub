@@ -509,10 +509,10 @@ export default function ProductDetailPage() {
         </div>
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-12 gap-8">
+        <div className="grid lg:grid-cols-12 gap-4 lg:gap-8">
           {/* Left Column - Images */}
           <div className="lg:col-span-5">
-            <div className="sticky top-4">
+            <div className="lg:sticky lg:top-4">
               <Card>
                 <CardContent className="p-6">
                   {hasImages ? (
@@ -753,7 +753,7 @@ export default function ProductDetailPage() {
 
           {/* Right Column - Buy Box */}
           <div className="lg:col-span-3">
-            <div className="sticky top-4">
+            <div className="lg:sticky lg:top-4">
               <Card className="border-2">
                 <CardContent className="p-6 space-y-4">
                   <div className="text-3xl font-bold text-gray-900">
