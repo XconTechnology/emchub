@@ -27,13 +27,18 @@ The platform utilizes a React and TypeScript frontend built on a component-based
 - **Order-Based Chat**: Allows customers to message vendors about specific orders directly from the "My Purchases" page.
 - **C2Admin Support and Reporting System**: Complete support ticket system with integrated messaging for staff-user communication, including user-facing forms, admin dashboards for ticket management, and staff dashboards for handling assigned tickets. Features a dedicated `support_tickets` and `support_ticket_messages` database schema for user-staff communication, with role-based access for admins (view-only), staff (bi-directional messaging for assigned tickets), and users (bi-directional messaging for their tickets).
 - **Staff Account System with Role-Based Access Control (RBAC)**: Comprehensive RBAC for managing staff users with granular permissions. Includes roles like Individual, Business, Support, Sales, Mediator, Full Admin, and Super Admin. All staff actions are logged in an audit trail. Access is enforced at the API level.
-- **TimeDollar (TD) System**: Fully integrated digital currency system enabling users to earn and spend TimeDollars (TD) for services. Key features:
+- **TimeDollar (TD) System**: Fully integrated digital currency system with immutable ledger. Key rules:
+  - **Core Constants**: 1 TD = 1 verified hour of service = 100 TimeCents (TC) = HK$60
+  - **TD NEVER EXPIRES**: TimeDollars have no expiry date and remain in wallet indefinitely
+  - **TD IS NOT TRANSFERABLE**: TD cannot be transferred/traded between users. All TD changes must go through platform-verified flows only
+  - **Coupons CAN Expire**: Cash coupons generated from TD conversions may have `validUntil` dates
   - **Earning TD**: Sellers earn TD when orders are marked as "delivered" (TD = listing.tdValue × quantity)
   - **Spending TD**: Users can spend TD on TD-eligible listings (tdEligible=true) with automatic wallet balance updates
-  - **TD to Cash Conversion**: Users can convert TD to cash coupons (1 TD = HK$60) via API endpoint `/api/td/convert-to-coupon`
-  - **Database Tables**: `td_wallet` (balances), `td_transactions` (earn/spend records), `td_conversions` (TD→coupon conversions), `td_disputes` (dispute resolution)
-  - **Validation**: Users cannot spend more TD than available; TD payment only accepted for TD-eligible listings
-  - **Transaction Logging**: All TD operations logged in `td_transactions` with type (earn/spend), amount, listing, order, and notes
+  - **TD to Cash Conversion**: Users can convert TD to cash coupons via `/api/td/convert-to-coupon`
+  - **Immutable Ledger**: Every TD change creates an immutable ledger entry in `td_transactions` with type (earn/spend/conversion/admin_credit/admin_debit/reversal), counterpartyUserId, adminId, couponId for full audit trail
+  - **Admin Adjustments**: Admin TD adjustments require mandatory notes for audit trail, create ledger entries with adminId
+  - **Database Tables**: `td_wallet` (balances), `td_transactions` (immutable ledger), `td_conversions` (TD→coupon records), `td_disputes` (dispute resolution)
+  - **Validation**: Users cannot spend more TD than available; coupon expiry checked before redemption
 
 ## External Dependencies
 
