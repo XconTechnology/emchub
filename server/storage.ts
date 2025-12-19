@@ -227,6 +227,7 @@ export interface IStorage {
   createReview(data: { userId: string; listingId: string; vendorId: string; rating: number; comment?: string }): Promise<any>;
   getListingReviews(listingId: string): Promise<any[]>;
   getVendorReviews(vendorId: string): Promise<any[]>;
+  getUserReviews(userId: string): Promise<any[]>;
   deleteReview(reviewId: string, vendorId: string): Promise<void>;
   hasUserReviewed(userId: string, listingId: string): Promise<boolean>;
   
@@ -1968,6 +1969,38 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
   
+  async getUserReviews(userId: string): Promise<any[]> {
+    const { reviews, listings, users } = await import("@shared/schema");
+    
+    const results = await db
+      .select({
+        id: reviews.id,
+        userId: reviews.userId,
+        listingId: reviews.listingId,
+        vendorId: reviews.vendorId,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        updatedAt: reviews.updatedAt,
+        listing: {
+          id: listings.id,
+          title: listings.title,
+          images: listings.images,
+        },
+        vendor: {
+          id: users.id,
+          username: users.username,
+        },
+      })
+      .from(reviews)
+      .leftJoin(listings, eq(reviews.listingId, listings.id))
+      .leftJoin(users, eq(reviews.vendorId, users.id))
+      .where(eq(reviews.userId, userId))
+      .orderBy(reviews.createdAt);
+    
+    return results;
+  }
+
   async deleteReview(reviewId: string, vendorId: string): Promise<void> {
     const { reviews } = await import("@shared/schema");
     

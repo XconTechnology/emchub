@@ -3829,6 +3829,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // Get user's own reviews (for user dashboard)
+  app.get("/api/reviews/user", isAuthenticated, async (req, res) => {
+    try {
+      const reviews = await storage.getUserReviews(req.user.id);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error getting user reviews:", error);
+      res.status(500).json({ error: "Failed to get reviews" });
+    }
+  });
+
   // Get vendor's reviews (for vendor dashboard)
   app.get("/api/vendor/reviews", isAuthenticated, async (req, res) => {
     try {
