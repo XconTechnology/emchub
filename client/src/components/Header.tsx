@@ -98,6 +98,9 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/about-us" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </Link>
+              <Link href="/how-timedollars-work" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-timedollars">
+                TimeDollars
+              </Link>
               {user?.isAdmin && (
                 <Link href="/admin" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
                   Admin
@@ -313,6 +316,14 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               data-testid="mobile-nav-about"
             >
               About Us
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/how-timedollars-work'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-timedollars"
+            >
+              TimeDollars
             </Button>
             {user?.isAdmin && (
               <Button 
