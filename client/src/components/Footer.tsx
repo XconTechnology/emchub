@@ -70,8 +70,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/directory" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-listings">
-                  All Listings
+                <Link href="/events" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-events">
+                  Events
                 </Link>
               </li>
               <li>
