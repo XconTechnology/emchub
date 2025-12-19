@@ -433,6 +433,13 @@ export default function Profile() {
               </div>
             </div>
 
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Label className="text-sm text-gray-500">Username</Label>
+              <p className="text-xl font-semibold text-gray-900 dark:text-white" data-testid="text-username">
+                @{user?.username || 'Not set'}
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
