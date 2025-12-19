@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Link } from "wouter";
 import emcLogo from "@assets/image_1756989816731.png";
 import ContactSupportForm from "./ContactSupportForm";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,29 +65,29 @@ export default function Footer() {
             <h4 className="font-bold mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-home">
+                <Link href="/" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-home">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-listings">
+                <Link href="/directory" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-listings">
                   All Listings
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-map">
+                <Link href="/map" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-map">
                   Map View
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-blog">
-                  Blog
-                </a>
+                <Link href="/products" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-products">
+                  Products
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-about">
+                <Link href="/about-us" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-about">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
                 <button 
