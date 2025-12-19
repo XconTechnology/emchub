@@ -308,25 +308,20 @@ export interface IStorage {
   getTdWallet(userId: string): Promise<any | undefined>;
   createTdWallet(userId: string): Promise<any>;
   getOrCreateTdWallet(userId: string): Promise<any>;
-  updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend' | 'conversion'): Promise<any>;
+  updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend'): Promise<any>;
   updateTdWalletBalanceDirect(userId: string, amount: number): Promise<any>;
-  adminAdjustTdBalance(userId: string, amount: number, notes: string, adminId?: string): Promise<{ newBalance: number }>;
+  adminAdjustTdBalance(userId: string, amount: number, notes: string): Promise<{ newBalance: number }>;
   getAllTdWallets(): Promise<any[]>;
   
-  // TimeDollar Transaction operations - IMMUTABLE LEDGER
-  // TD is NOT transferable - all changes must go through platform-verified flows
+  // TimeDollar Transaction operations
   createTdTransaction(data: {
     userId: string;
-    type: 'earn' | 'spend' | 'conversion' | 'admin_credit' | 'admin_debit' | 'reversal';
+    type: 'earn' | 'spend' | 'admin_adjustment';
     amount: number;
     listingId?: string;
     orderId?: string;
-    couponId?: string;
-    counterpartyUserId?: string;
-    adminId?: string;
     note?: string;
   }): Promise<any>;
-  validateCouponNotExpired(couponId: string): Promise<boolean>;
   getTdTransactions(userId: string): Promise<any[]>;
   getTdTransactionsByUser(userId: string): Promise<any[]>;
   getAllTdTransactions(): Promise<any[]>;
@@ -3123,7 +3118,7 @@ export class DatabaseStorage implements IStorage {
     return this.createTdWallet(userId);
   }
   
-  async updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend' | 'conversion'): Promise<any> {
+  async updateTdWalletBalance(userId: string, amount: number, type: 'earn' | 'spend'): Promise<any> {
     const { tdWallet } = await import("@shared/schema");
     const wallet = await this.getOrCreateTdWallet(userId);
     
@@ -3138,15 +3133,9 @@ export class DatabaseStorage implements IStorage {
     if (type === 'earn') {
       newBalance = currentBalance + amount;
       newEarned = currentEarned + amount;
-    } else if (type === 'spend' || type === 'conversion') {
-      // Both spend and conversion deduct from balance
+    } else {
       newBalance = currentBalance - amount;
       newSpent = currentSpent + amount;
-    }
-    
-    // Validate balance doesn't go negative
-    if (newBalance < 0) {
-      throw new Error("Insufficient TD balance for this operation");
     }
     
     const [updated] = await db
@@ -3186,15 +3175,10 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
   
-  async adminAdjustTdBalance(userId: string, amount: number, notes: string, adminId?: string): Promise<{ newBalance: number }> {
-    const { tdWallet, tdTransactions, TD_CONSTANTS } = await import("@shared/schema");
-    
-    if (!notes || notes.trim().length === 0) {
-      throw new Error("Notes are required for admin TD adjustments");
-    }
+  async adminAdjustTdBalance(userId: string, amount: number, notes: string): Promise<{ newBalance: number }> {
+    const { tdWallet, tdTransactions } = await import("@shared/schema");
     
     // Execute entire adjustment in a database transaction for atomicity
-    // IMPORTANT: All TD changes MUST create a ledger entry - this is immutable
     const result = await db.transaction(async (tx) => {
       // 1. Get wallet with FOR UPDATE lock to prevent race conditions
       const [wallet] = await tx
@@ -3215,20 +3199,15 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Insufficient balance. Current: ${currentBalance} TD, Adjustment: ${amount} TD`);
       }
       
-      // 3. Determine transaction type based on direction
-      const transactionType = amount >= 0 ? 'admin_credit' : 'admin_debit';
-      
-      // 4. Create IMMUTABLE ledger entry (every TD change must be recorded)
+      // 3. Create transaction record
       await tx.insert(tdTransactions).values({
         userId,
-        type: transactionType,
+        type: 'admin_adjustment',
         amount: Math.abs(amount).toString(),
-        timeCents: Math.abs(amount) * TD_CONSTANTS.TD_TO_TC, // 1 TD = 100 TC
-        adminId: adminId || null,
-        note: `[ADMIN ${transactionType.toUpperCase()}] ${notes}`,
+        note: notes,
       });
       
-      // 5. Update wallet balance
+      // 4. Update wallet balance
       const [updated] = await tx
         .update(tdWallet)
         .set({
@@ -3244,87 +3223,35 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
   
-  // TimeDollar Transaction operations - IMMUTABLE LEDGER
-  // All TD changes MUST go through this function to ensure proper ledger recording
-  // TD is NOT transferable - no peer-to-peer transfers allowed
+  // TimeDollar Transaction operations
   async createTdTransaction(data: {
     userId: string;
-    type: 'earn' | 'spend' | 'conversion' | 'admin_credit' | 'admin_debit' | 'reversal';
+    type: 'earn' | 'spend' | 'admin_adjustment';
     amount: number;
     listingId?: string;
     orderId?: string;
-    couponId?: string;
-    counterpartyUserId?: string;
-    adminId?: string;
     note?: string;
   }): Promise<any> {
-    const { tdTransactions, TD_CONSTANTS } = await import("@shared/schema");
-    
-    // SECURITY: Block any attempt to create peer-to-peer transfers
-    // TD can only move via platform-verified order flows (earn/spend/conversion)
-    if (data.type === 'transfer' as any) {
-      throw new Error("TD transfers are not allowed. TD is not transferable or tradable.");
-    }
-    
+    const { tdTransactions } = await import("@shared/schema");
     const [transaction] = await db
       .insert(tdTransactions)
       .values({
         userId: data.userId,
         type: data.type,
         amount: data.amount.toString(),
-        timeCents: data.amount * TD_CONSTANTS.TD_TO_TC, // 1 TD = 100 TC
         listingId: data.listingId,
         orderId: data.orderId,
-        couponId: data.couponId,
-        counterpartyUserId: data.counterpartyUserId,
-        adminId: data.adminId,
         note: data.note,
       })
       .returning();
     
-    // Update wallet balance only for earn/spend/conversion, not for admin adjustments
-    // Admin adjustments update the wallet separately in a transaction for atomicity
-    if (data.type === 'earn' || data.type === 'spend' || data.type === 'conversion') {
+    // Update wallet balance only for earn/spend, not for admin adjustments
+    // Admin adjustments update the wallet separately in a transaction
+    if (data.type === 'earn' || data.type === 'spend') {
       await this.updateTdWalletBalance(data.userId, data.amount, data.type);
     }
     
     return transaction;
-  }
-  
-  // Validate coupon expiry - coupons CAN expire (unlike TD which never expires)
-  async validateCouponNotExpired(couponId: string): Promise<boolean> {
-    const { coupons } = await import("@shared/schema");
-    
-    const [coupon] = await db
-      .select()
-      .from(coupons)
-      .where(eq(coupons.id, couponId));
-    
-    if (!coupon) {
-      throw new Error("Coupon not found");
-    }
-    
-    // Check if coupon has expired
-    if (coupon.validUntil && new Date(coupon.validUntil) < new Date()) {
-      throw new Error("This coupon has expired and can no longer be redeemed");
-    }
-    
-    // Check if coupon is not yet valid
-    if (coupon.validFrom && new Date(coupon.validFrom) > new Date()) {
-      throw new Error("This coupon is not yet valid");
-    }
-    
-    // Check if coupon is approved
-    if (coupon.status !== 'approved') {
-      throw new Error("This coupon is not active");
-    }
-    
-    // Check usage limit
-    if (coupon.usageLimit !== null && coupon.usedCount !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new Error("This coupon has reached its usage limit");
-    }
-    
-    return true;
   }
   
   async getTdTransactions(userId: string): Promise<any[]> {

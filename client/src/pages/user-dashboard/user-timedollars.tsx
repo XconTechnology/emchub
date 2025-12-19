@@ -19,14 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
-// TimeDollar Constants (1 TD = 1 verified hour of service)
-const TD_TO_TC = 100;        // 1 TD = 100 TimeCents
-const TD_TO_HKD = 60;        // 1 TD = HK$60
-
 type TdTransaction = {
   id: number;
   userId: number;
-  type: 'earn' | 'spend' | 'conversion' | 'admin_credit' | 'admin_debit';
+  type: 'earn' | 'spend';
   amount: number;
   listingId: number | null;
   orderId: number | null;
@@ -132,7 +128,7 @@ export default function UserTimeDollars() {
             <DialogHeader>
               <DialogTitle>Convert TD to Cash Coupon</DialogTitle>
               <DialogDescription>
-                Convert your TimeDollars to cash coupons. 1 TD = 100 TC = HK$60
+                Convert your TimeDollars to cash coupons. 1 TD = HK$60
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -162,16 +158,10 @@ export default function UserTimeDollars() {
                     HK${cashValue}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Cash coupon ({tdAmountToConvert} TD = {parseFloat(tdAmountToConvert) * TD_TO_TC} TC = HK${cashValue})
+                    Cash coupon (1 TD = HK$60)
                   </p>
                 </div>
               )}
-              
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs">
-                <p className="text-amber-700 dark:text-amber-400">
-                  <strong>Note:</strong> Your TD never expires, but generated coupons may have expiry dates. Use coupons promptly!
-                </p>
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setConvertDialogOpen(false)} data-testid="button-cancel-convert">
@@ -300,12 +290,11 @@ export default function UserTimeDollars() {
       <Card className="bg-brand-green/5 dark:bg-brand-green/10 border-brand-green/20">
         <CardHeader>
           <CardTitle>How TimeDollars Work</CardTitle>
-          <CardDescription>1 TD = 1 verified hour of service = 100 TimeCents = HK$60</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
           <div>
             <strong className="text-brand-green">• Earning TD:</strong>
-            <p className="ml-4 mt-1">Sellers automatically earn TimeDollars when orders are marked as "delivered". The TD value is based on each product's TD rate (1 TD = 1 verified hour).</p>
+            <p className="ml-4 mt-1">Sellers automatically earn TimeDollars when orders are marked as "delivered". The TD value is based on each product's TD rate.</p>
           </div>
           <div>
             <strong className="text-brand-green">• Spending TD:</strong>
@@ -313,15 +302,7 @@ export default function UserTimeDollars() {
           </div>
           <div>
             <strong className="text-brand-green">• Convert to Cash:</strong>
-            <p className="ml-4 mt-1">Convert your TD to cash coupons at a rate of 1 TD = 100 TC = HK$60. Use these coupons for any purchase on the platform.</p>
-          </div>
-          <div>
-            <strong className="text-brand-green">• TD Never Expires:</strong>
-            <p className="ml-4 mt-1">Your TimeDollars never expire and remain in your wallet indefinitely. However, cash coupons generated from TD conversions may have expiry dates.</p>
-          </div>
-          <div>
-            <strong className="text-brand-green">• Not Transferable:</strong>
-            <p className="ml-4 mt-1">TD cannot be transferred or traded between users. All TD transactions must go through the platform's verified flows (earning through service, spending on purchases, or converting to coupons).</p>
+            <p className="ml-4 mt-1">Convert your TD to cash coupons at a rate of 1 TD = HK$60. Use these coupons for any purchase on the platform.</p>
           </div>
           <div>
             <strong className="text-brand-green">• Community Currency:</strong>

@@ -3349,31 +3349,29 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Convert TD to Cash Coupon (1 TD = HK$60, 1 TD = 100 TC, 1 TC = HK$0.60)
-  // TD never expires - only coupons can have expiry dates
+  // Convert TD to Cash Coupon (1 TD = HK$60)
   app.post("/api/td/convert-to-coupon", isAuthenticated, async (req, res) => {
     try {
       const { tdAmount } = req.body;
-      const { TD_CONSTANTS } = await import("@shared/schema");
+      const TD_TO_HKD_RATE = 60; // 1 TD = HK$60
       
       if (!tdAmount || tdAmount <= 0) {
         return res.status(400).json({ error: "Invalid TD amount" });
       }
       
       // Check if user has enough TD balance
-      const currentBalance = await storage.getTimeDollarBalance(req.user!.id);
+      const currentBalance = await storage.getTimeDollarBalance(req.user.id);
       if (currentBalance < tdAmount) {
         return res.status(400).json({ error: "Insufficient TimeDollar balance" });
       }
       
-      // Calculate cash value using TD_CONSTANTS
-      const cashValue = tdAmount * TD_CONSTANTS.TD_TO_HKD;
-      const timeCents = tdAmount * TD_CONSTANTS.TD_TO_TC;
+      // Calculate cash value
+      const cashValue = tdAmount * TD_TO_HKD_RATE;
       
       // Generate unique coupon code
       const couponCode = `TD${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
       
-      // Create cash coupon - coupons CAN expire (set validUntil if needed)
+      // Create cash coupon
       const coupon = await storage.createCoupon({
         couponType: 'cash',
         issuer: 'admin', // TD conversions are admin-issued
@@ -3382,34 +3380,33 @@ export function registerRoutes(app: Express): Server {
         productId: null,
         code: couponCode,
         title: `TimeDollar Conversion - ${tdAmount} TD`,
-        description: `Converted from ${tdAmount} TimeDollars (${timeCents} TC = HK$${cashValue}). Coupons may expire - check validity before use.`,
+        description: `Converted from ${tdAmount} TimeDollars (HK$${cashValue})`,
         discountType: null,
         discountValue: null,
         cashValue: cashValue.toString(),
         usageLimit: 1,
+        usedCount: 0,
         validFrom: new Date(),
-        validUntil: null, // No expiry by default, but can be set
+        validUntil: null,
         status: 'approved', // Auto-approved for TD conversions
-        approvedBy: req.user!.id,
+        approvedBy: req.user.id,
         rejectionReason: null,
       });
       
       // Create TD conversion record
       await storage.createTdConversion({
-        userId: req.user!.id,
+        userId: req.user.id,
         tdSpent: tdAmount,
         couponCode: couponCode,
         couponId: coupon.id,
       });
       
-      // Create IMMUTABLE ledger entry for conversion
-      // TD is not transferable - this is platform-mediated conversion only
+      // Deduct TD from user's wallet via transaction
       await storage.createTdTransaction({
-        userId: req.user!.id,
-        type: 'conversion',
+        userId: req.user.id,
+        type: 'spend',
         amount: tdAmount,
-        couponId: coupon.id,
-        note: `[CONVERSION] ${tdAmount} TD (${timeCents} TC) converted to HK$${cashValue} cash coupon (${couponCode}). TD never expires, coupons may expire.`,
+        note: `Converted ${tdAmount} TD to HK$${cashValue} cash coupon (${couponCode})`,
       });
       
       res.json({
@@ -3418,10 +3415,8 @@ export function registerRoutes(app: Express): Server {
           code: couponCode,
           cashValue: cashValue,
           tdSpent: tdAmount,
-          timeCentsUsed: timeCents,
-          expiresAt: null, // Coupon expiry (null = no expiry)
+          expiresAt: null,
         },
-        message: "TD converted successfully. Remember: TD never expires, but coupons may expire.",
       });
     } catch (error) {
       console.error("Error converting TD to coupon:", error);
@@ -3620,33 +3615,25 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Adjust user TD balance (admin only) - Creates immutable ledger entry
-  // TD is not transferable - admin adjustments must have notes for audit trail
+  // Adjust user TD balance (admin only)
   app.post("/api/admin/td/adjust-balance", isAdminAuthenticated, async (req, res) => {
     try {
       const { userId, amount, notes } = req.body;
 
-      if (!userId || amount === undefined || !notes || !notes.trim()) {
-        return res.status(400).json({ error: "User ID, amount, and notes are required. Notes are mandatory for audit trail." });
+      if (!userId || amount === undefined || !notes) {
+        return res.status(400).json({ error: "User ID, amount, and notes are required" });
       }
 
       if (amount === 0) {
         return res.status(400).json({ error: "Amount must be non-zero" });
       }
 
-      // Get admin user ID for ledger entry
-      const adminId = req.user?.id || req.session?.adminUserId;
-
-      // Execute atomic admin adjustment - creates IMMUTABLE ledger entry
+      // Execute atomic admin adjustment using database transaction
       // This ensures both transaction record and wallet update happen together or not at all
-      const result = await storage.adminAdjustTdBalance(userId, amount, notes, adminId);
+      const result = await storage.adminAdjustTdBalance(userId, amount, notes);
 
-      res.json({ 
-        success: true, 
-        newBalance: result.newBalance,
-        message: `TD ${amount >= 0 ? 'credited' : 'debited'} successfully. Ledger entry created.`
-      });
-    } catch (error: any) {
+      res.json({ success: true, newBalance: result.newBalance });
+    } catch (error) {
       console.error("Error adjusting TD balance:", error);
       res.status(500).json({ error: error.message || "Failed to adjust TD balance" });
     }

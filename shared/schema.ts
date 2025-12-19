@@ -14,34 +14,6 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// ========================================
-// TIMEDOLLAR SYSTEM CONSTANTS
-// ========================================
-// Core conversion rules (enforced throughout the platform):
-// - 1 TimeDollar (TD) = 1 verified hour of service
-// - 1 TD = 100 TimeCents (TC)
-// - 1 TC = HK$0.60
-// - 1 TD = HK$60.00
-// - TD NEVER expires (no expiry logic allowed)
-// - TD is NOT transferable, NOT tradable (platform-mediated only)
-// - Coupons CAN expire (via validUntil field)
-export const TD_CONSTANTS = {
-  TD_TO_TC: 100,           // 1 TD = 100 TimeCents
-  TC_TO_HKD: 0.60,         // 1 TimeCent = HK$0.60
-  TD_TO_HKD: 60.00,        // 1 TD = HK$60.00 (100 TC * 0.60)
-  HOURS_PER_TD: 1,         // 1 TD = 1 verified hour of service
-} as const;
-
-// TD Transaction types for immutable ledger
-export const TD_TRANSACTION_TYPES = {
-  EARN: 'earn',                    // Earned from service delivery
-  SPEND: 'spend',                  // Spent on TD-eligible purchases
-  CONVERSION: 'conversion',        // Converted TD to cash coupon
-  ADMIN_CREDIT: 'admin_credit',    // Admin manually credited TD
-  ADMIN_DEBIT: 'admin_debit',      // Admin manually debited TD
-  REVERSAL: 'reversal',            // Reversal of previous transaction
-} as const;
-
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -776,29 +748,15 @@ export const insertTdWalletSchema = createInsertSchema(tdWallet).omit({
 export type TdWallet = typeof tdWallet.$inferSelect;
 export type InsertTdWallet = z.infer<typeof insertTdWalletSchema>;
 
-// TimeDollar Transactions table - IMMUTABLE LEDGER for all TD movements
-// Every TD change MUST create a transaction record (no exceptions, including admin actions)
-// TD is NOT transferable - no peer-to-peer transfers allowed (platform-mediated only)
+// TimeDollar Transactions table - tracks all TD earnings and spending
 export const tdTransactions = pgTable("td_transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  // Transaction type: earn, spend, conversion, admin_credit, admin_debit, reversal
-  type: varchar("type").notNull(),
-  // TD amount (positive for credits, negative for debits)
+  type: varchar("type").notNull(), // 'earn' | 'spend'
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  // TimeCents equivalent for precision (1 TD = 100 TC)
-  timeCents: integer("time_cents"),
-  // Related entities for traceability
   listingId: varchar("listing_id").references(() => listings.id),
   orderId: varchar("order_id").references(() => orders.id),
-  couponId: varchar("coupon_id").references(() => coupons.id), // For conversion transactions
-  // Counterparty for platform-mediated transactions (seller for purchases, etc.)
-  counterpartyUserId: varchar("counterparty_user_id").references(() => users.id),
-  // Admin who performed the action (for admin_credit/admin_debit types)
-  adminId: varchar("admin_id").references(() => users.id),
-  // Descriptive note (required for admin adjustments)
   note: text("note"),
-  // Immutable timestamp - never updated after creation
   createdAt: timestamp("created_at").defaultNow(),
 });
 

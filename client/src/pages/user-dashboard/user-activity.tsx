@@ -1,13 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Info } from "lucide-react";
+import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
 import { format } from "date-fns";
-
-// TimeDollar Constants
-const TD_TO_TC = 100;        // 1 TD = 100 TimeCents
-const TD_TO_HKD = 60;        // 1 TD = HK$60
 
 interface TimeDollarTransaction {
   id: string;
@@ -133,43 +129,6 @@ export default function UserActivity() {
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
               Purchase products to leave reviews
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* How TimeDollars Work */}
-      <Card className="bg-brand-green/5 dark:bg-brand-green/10 border-brand-green/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="w-5 h-5 text-brand-green" />
-            How TimeDollars Work
-          </CardTitle>
-          <CardDescription>1 TD = 1 verified hour of service = {TD_TO_TC} TimeCents = HK${TD_TO_HKD}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-          <div>
-            <strong className="text-brand-green">• Earning TD:</strong>
-            <p className="ml-4 mt-1">Sellers earn TimeDollars when orders are marked as "delivered" (1 TD = 1 verified hour of service).</p>
-          </div>
-          <div>
-            <strong className="text-brand-green">• Spending TD:</strong>
-            <p className="ml-4 mt-1">Use TD to purchase TD-eligible products and services. Look for the TD badge on listings!</p>
-          </div>
-          <div>
-            <strong className="text-brand-green">• Convert to Cash:</strong>
-            <p className="ml-4 mt-1">Convert TD to cash coupons: 1 TD = {TD_TO_TC} TC = HK${TD_TO_HKD}.</p>
-          </div>
-          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
-            <strong className="text-green-700 dark:text-green-400">• TD Never Expires:</strong>
-            <p className="ml-4 mt-1 text-green-600 dark:text-green-300">Your TimeDollars never expire and remain in your wallet indefinitely.</p>
-          </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
-            <strong className="text-amber-700 dark:text-amber-400">• Coupons May Expire:</strong>
-            <p className="ml-4 mt-1 text-amber-600 dark:text-amber-300">Cash coupons generated from TD conversions may have expiry dates. Use promptly!</p>
-          </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-            <strong className="text-blue-700 dark:text-blue-400">• Not Transferable:</strong>
-            <p className="ml-4 mt-1 text-blue-600 dark:text-blue-300">TD cannot be transferred or traded between users. All TD must go through platform-verified flows.</p>
           </div>
         </CardContent>
       </Card>
