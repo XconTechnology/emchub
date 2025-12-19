@@ -12,7 +12,7 @@ export default function CallToAction() {
         <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-6">
           Ready to Join Our Community?
         </h2>
-        <p className="text-xl text-primary-foreground/90 mb-8">
+        <p className="text-xl mb-8 text-[#ffffff]">
           Whether you're a business owner looking to grow or a customer seeking authentic experiences, 
           EMC HUB is your gateway to Hong Kong's vibrant ethnic minority community.
         </p>
