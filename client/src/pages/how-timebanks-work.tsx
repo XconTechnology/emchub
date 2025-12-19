@@ -19,7 +19,7 @@ import {
   TrendingUp
 } from "lucide-react";
 
-export default function HowTimeDollarsWork() {
+export default function HowTimeBanksWork() {
   return (
     <>
       <Header forceSolid />
@@ -31,7 +31,7 @@ export default function HowTimeDollarsWork() {
               <Coins className="w-16 h-16" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              How TimeDollars Work
+              How TimeBanks Work
             </h1>
             <p className="text-xl md:text-2xl opacity-90 max-w-3xl mx-auto">
               In TimeBanking, it's the time you give and receive that counts. 

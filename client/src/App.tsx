@@ -29,7 +29,7 @@ import AccessDenied from "@/pages/access-denied";
 import NotFound from "@/pages/not-found";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
-import HowTimeDollarsWork from "@/pages/how-timedollars-work";
+import HowTimeBanksWork from "@/pages/how-timebanks-work";
 import { useEffect } from "react";
 
 function Router() {
@@ -55,7 +55,7 @@ function Router() {
       <Route path="/event/:id" component={EventDetailPage} />
       <Route path="/explore" component={Explore} />
       <Route path="/about-us" component={AboutUs} />
-      <Route path="/how-timedollars-work" component={HowTimeDollarsWork} />
+      <Route path="/how-timebanks-work" component={HowTimeBanksWork} />
       <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />

@@ -98,8 +98,8 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/about-us" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </Link>
-              <Link href="/how-timedollars-work" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-timedollars">
-                TimeDollars
+              <Link href="/how-timebanks-work" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-timebanks">
+                How TimeBanks Work
               </Link>
               {user?.isAdmin && (
                 <Link href="/admin" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-admin">
@@ -320,10 +320,10 @@ export default function Header({ forceSolid = false }: HeaderProps) {
             <Button 
               variant="ghost" 
               className="w-full justify-start" 
-              onClick={() => { setLocation('/how-timedollars-work'); setIsMobileMenuOpen(false); }}
-              data-testid="mobile-nav-timedollars"
+              onClick={() => { setLocation('/how-timebanks-work'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-timebanks"
             >
-              TimeDollars
+              How TimeBanks Work
             </Button>
             {user?.isAdmin && (
               <Button 
