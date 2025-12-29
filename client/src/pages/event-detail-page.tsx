@@ -36,7 +36,9 @@ import {
   DollarSign,
   Globe,
   ArrowLeft,
-  Coins
+  Coins,
+  Download,
+  CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Listing } from "@shared/schema";
@@ -465,19 +467,24 @@ export default function EventDetailPage() {
 
       {/* Registration Success Dialog with QR Code */}
       <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-2xl text-green-600">
-              🎉 Thank You for Registering!
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center justify-center mb-2">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl text-green-600">
+              Thank You for Registering!
             </DialogTitle>
             <DialogDescription className="text-center">
-              Your registration for {registrationData?.eventTitle} is confirmed.
+              Your registration for <strong>{registrationData?.eventTitle}</strong> is confirmed.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex flex-col items-center space-y-6 py-4">
+          <div className="flex flex-col items-center space-y-4 py-4">
             {/* QR Code */}
-            <div className="bg-white p-4 rounded-lg shadow-md">
+            <div className="bg-white p-4 rounded-lg shadow-md border" id="qr-code-container">
               <QRCodeSVG
                 value={JSON.stringify({
                   type: "EMC_HUB_EVENT_REGISTRATION",
@@ -489,28 +496,59 @@ export default function EventDetailPage() {
                   date: registrationData?.eventDate,
                   location: registrationData?.eventLocation,
                 })}
-                size={200}
+                size={180}
                 level="M"
                 includeMargin={true}
+                id="registration-qr-code"
                 data-testid="qr-code-registration"
               />
             </div>
             
             <p className="text-sm text-gray-500 text-center">
-              Scan this QR code at the event for check-in
+              Show this QR code at the event for check-in
             </p>
 
+            {/* Download Button */}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                const svg = document.getElementById('registration-qr-code');
+                if (svg) {
+                  const svgData = new XMLSerializer().serializeToString(svg);
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  const img = new Image();
+                  img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx?.drawImage(img, 0, 0);
+                    const pngFile = canvas.toDataURL('image/png');
+                    const downloadLink = document.createElement('a');
+                    downloadLink.download = `EMC-HUB-Event-Registration-${registrationData?.registrationId}.png`;
+                    downloadLink.href = pngFile;
+                    downloadLink.click();
+                  };
+                  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                }
+              }}
+              data-testid="button-download-qr"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download QR Code
+            </Button>
+
             {/* Registration Details */}
-            <div className="w-full bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Registration Details</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="w-full bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Registration Details</h4>
+              <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
                 <span className="text-gray-500">Name:</span>
                 <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-name">
                   {registrationData?.fullName}
                 </span>
                 
                 <span className="text-gray-500">Email:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-email">
+                <span className="font-medium text-gray-900 dark:text-white break-all" data-testid="text-reg-email">
                   {registrationData?.email}
                 </span>
                 
