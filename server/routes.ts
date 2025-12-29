@@ -749,14 +749,24 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Invalid QR code format" });
       }
 
-      if (!regId) {
-        return res.status(400).json({ message: "Registration ID not found in QR code" });
+      // Get the registration - first try by ID, then fall back to email+eventId lookup
+      let registration = null;
+      
+      if (regId && !regId.startsWith('REG-')) {
+        // Valid UUID registration ID
+        console.log("QR Verify - Looking up registration with ID:", regId);
+        registration = await storage.getEventRegistration(regId);
+        console.log("QR Verify - Found by ID:", registration);
       }
-
-      // Get the registration
-      console.log("QR Verify - Looking up registration with ID:", regId);
-      const registration = await storage.getEventRegistration(regId);
-      console.log("QR Verify - Found registration:", registration);
+      
+      // Fallback: lookup by email and eventId (for old QR codes with REG-timestamp format)
+      if (!registration && payload.email && eventId) {
+        console.log("QR Verify - Fallback lookup by email:", payload.email, "and eventId:", eventId);
+        const eventRegistrations = await storage.getEventRegistrationsByEvent(eventId);
+        registration = eventRegistrations.find(r => r.email === payload.email);
+        console.log("QR Verify - Found by email:", registration);
+      }
+      
       if (!registration) {
         return res.status(404).json({ message: "Registration not found" });
       }
