@@ -103,7 +103,8 @@ export default function UserEvents() {
   const verifyRegistrationMutation = useMutation({
     mutationFn: async ({ eventId, qrPayload }: { eventId: string; qrPayload: string }) => {
       const response = await apiRequest('POST', `/api/vendor/events/${eventId}/verify-registration`, { qrPayload });
-      return response as unknown as VerificationResult;
+      const data = await response.json();
+      return data as VerificationResult;
     },
     onSuccess: (data) => {
       setVerifiedRegistration(data);
