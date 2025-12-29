@@ -91,6 +91,7 @@ export interface IStorage {
   
   // Event Registration operations
   createEventRegistration(registration: InsertEventRegistration & { userId: string | null; vendorId: string; eventId: string }): Promise<EventRegistration>;
+  getEventRegistration(id: string): Promise<EventRegistration | undefined>;
   getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]>;
   getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]>;
   updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration>;
@@ -797,6 +798,14 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(listings.id, registrationData.eventId));
     
+    return registration;
+  }
+
+  async getEventRegistration(id: string): Promise<EventRegistration | undefined> {
+    const [registration] = await db
+      .select()
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.id, id));
     return registration;
   }
 

@@ -704,6 +704,114 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // QR Code Verification endpoint for event check-in
+  app.post('/api/vendor/events/:eventId/verify-registration', isAuthenticated, async (req: any, res) => {
+    try {
+      const { eventId } = req.params;
+      const userId = req.user?.id;
+      const { registrationId, qrPayload } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Verify event ownership - only the vendor who created the event can scan QR codes
+      const event = await storage.getListing(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      if (event.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to verify registrations for this event" });
+      }
+
+      // Get the registration ID from either direct input or QR payload
+      let regId = registrationId;
+      if (!regId && qrPayload) {
+        try {
+          const payload = typeof qrPayload === 'string' ? JSON.parse(qrPayload) : qrPayload;
+          if (payload.type === 'EMC_HUB_EVENT_REGISTRATION') {
+            regId = payload.registrationId;
+            // Verify the event ID in the QR matches
+            if (payload.eventId && payload.eventId !== eventId) {
+              return res.status(400).json({ message: "This QR code is for a different event" });
+            }
+          }
+        } catch (e) {
+          return res.status(400).json({ message: "Invalid QR code format" });
+        }
+      }
+
+      if (!regId) {
+        return res.status(400).json({ message: "Registration ID is required" });
+      }
+
+      // Get the registration
+      const registration = await storage.getEventRegistration(regId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Verify the registration is for this event
+      if (registration.eventId !== eventId) {
+        return res.status(400).json({ message: "This registration is for a different event" });
+      }
+
+      // Return registration details for check-in
+      res.json({
+        success: true,
+        registration: {
+          id: registration.id,
+          fullName: registration.fullName,
+          email: registration.email,
+          phone: registration.phone,
+          notes: registration.notes,
+          status: registration.status,
+          createdAt: registration.createdAt,
+        },
+        event: {
+          id: event.id,
+          title: event.title,
+          eventDate: event.eventDate,
+          address: event.address,
+        }
+      });
+    } catch (error) {
+      console.error("Error verifying registration:", error);
+      res.status(500).json({ message: "Failed to verify registration" });
+    }
+  });
+
+  // Mark registration as checked in
+  app.patch('/api/vendor/registrations/:registrationId/checkin', isAuthenticated, async (req: any, res) => {
+    try {
+      const { registrationId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Get the registration
+      const registration = await storage.getEventRegistration(registrationId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Verify event ownership
+      const event = await storage.getListing(registration.eventId);
+      if (!event || event.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to check in this registration" });
+      }
+
+      // Update registration status to checked_in
+      const updated = await storage.updateEventRegistrationStatus(registrationId, 'checked_in');
+      res.json(updated);
+    } catch (error) {
+      console.error("Error checking in registration:", error);
+      res.status(500).json({ message: "Failed to check in registration" });
+    }
+  });
+
   // Legacy business listing routes (deprecated but maintained for compatibility)
   app.post('/api/business-listings', isAuthenticated, async (req: any, res) => {
     try {

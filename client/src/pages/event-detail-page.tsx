@@ -62,6 +62,7 @@ interface RegistrationSuccessData {
   eventDate: string;
   eventLocation: string;
   registrationId: string;
+  eventId: string;
 }
 
 export default function EventDetailPage() {
@@ -105,6 +106,7 @@ export default function EventDetailPage() {
         eventDate: event?.eventDate ? format(new Date(event.eventDate), "PPP 'at' p") : 'TBA',
         eventLocation: event?.isOnlineOnly ? 'Online Event' : (event?.address || 'Location TBA'),
         registrationId: response.id || `REG-${Date.now()}`,
+        eventId: eventId || '',
       });
       setIsRegisterDialogOpen(false);
       setIsSuccessDialogOpen(true);
@@ -467,50 +469,99 @@ export default function EventDetailPage() {
 
       {/* Registration Success Dialog with QR Code */}
       <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-4 border-b">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
             <div className="flex items-center justify-center mb-2">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
             </div>
-            <DialogTitle className="text-center text-xl text-green-600">
-              Thank You for Registering!
+            <DialogTitle className="text-center text-lg text-green-600">
+              Registration Confirmed!
             </DialogTitle>
-            <DialogDescription className="text-center">
-              Your registration for <strong>{registrationData?.eventTitle}</strong> is confirmed.
+            <DialogDescription className="text-center text-sm">
+              You're registered for <strong>{registrationData?.eventTitle}</strong>
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex flex-col items-center space-y-4 py-4">
-            {/* QR Code */}
-            <div className="bg-white p-4 rounded-lg shadow-md border" id="qr-code-container">
-              <QRCodeSVG
-                value={JSON.stringify({
-                  type: "EMC_HUB_EVENT_REGISTRATION",
-                  registrationId: registrationData?.registrationId,
-                  name: registrationData?.fullName,
-                  email: registrationData?.email,
-                  phone: registrationData?.phone,
-                  event: registrationData?.eventTitle,
-                  date: registrationData?.eventDate,
-                  location: registrationData?.eventLocation,
-                })}
-                size={180}
-                level="M"
-                includeMargin={true}
-                id="registration-qr-code"
-                data-testid="qr-code-registration"
-              />
+          <div className="space-y-4">
+            {/* User Details - 2 Columns */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Name</span>
+                  <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-name">
+                    {registrationData?.fullName}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Phone</span>
+                  <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-phone">
+                    {registrationData?.phone}
+                  </span>
+                </div>
+                
+                <div className="col-span-2">
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Email</span>
+                  <span className="font-medium text-gray-900 dark:text-white break-all" data-testid="text-reg-email">
+                    {registrationData?.email}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Event</span>
+                  <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-event">
+                    {registrationData?.eventTitle}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Date</span>
+                  <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-date">
+                    {registrationData?.eventDate}
+                  </span>
+                </div>
+                
+                <div className="col-span-2">
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide mb-1">Location</span>
+                  <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-location">
+                    {registrationData?.eventLocation}
+                  </span>
+                </div>
+              </div>
             </div>
-            
-            <p className="text-sm text-gray-500 text-center">
-              Show this QR code at the event for check-in
-            </p>
+
+            {/* QR Code - Centered */}
+            <div className="flex flex-col items-center py-4">
+              <div className="bg-white p-3 rounded-lg shadow-md border" id="qr-code-container">
+                <QRCodeSVG
+                  value={JSON.stringify({
+                    type: "EMC_HUB_EVENT_REGISTRATION",
+                    registrationId: registrationData?.registrationId,
+                    eventId: registrationData?.eventId,
+                    name: registrationData?.fullName,
+                    email: registrationData?.email,
+                    phone: registrationData?.phone,
+                    event: registrationData?.eventTitle,
+                    date: registrationData?.eventDate,
+                    location: registrationData?.eventLocation,
+                  })}
+                  size={160}
+                  level="M"
+                  includeMargin={true}
+                  id="registration-qr-code"
+                  data-testid="qr-code-registration"
+                />
+              </div>
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Show this QR code at the event for check-in
+              </p>
+            </div>
 
             {/* Download Button */}
             <Button
-              variant="outline"
+              variant="default"
               className="w-full"
               onClick={() => {
                 const svg = document.getElementById('registration-qr-code');
@@ -531,55 +582,12 @@ export default function EventDetailPage() {
                   };
                   img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
                 }
+                setIsSuccessDialogOpen(false);
               }}
               data-testid="button-download-qr"
             >
               <Download className="w-4 h-4 mr-2" />
               Download QR Code
-            </Button>
-
-            {/* Registration Details */}
-            <div className="w-full bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Registration Details</h4>
-              <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
-                <span className="text-gray-500">Name:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-name">
-                  {registrationData?.fullName}
-                </span>
-                
-                <span className="text-gray-500">Email:</span>
-                <span className="font-medium text-gray-900 dark:text-white break-all" data-testid="text-reg-email">
-                  {registrationData?.email}
-                </span>
-                
-                <span className="text-gray-500">Phone:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-phone">
-                  {registrationData?.phone}
-                </span>
-                
-                <span className="text-gray-500">Event:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-event">
-                  {registrationData?.eventTitle}
-                </span>
-                
-                <span className="text-gray-500">Date:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-date">
-                  {registrationData?.eventDate}
-                </span>
-                
-                <span className="text-gray-500">Location:</span>
-                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-location">
-                  {registrationData?.eventLocation}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              className="w-full"
-              onClick={() => setIsSuccessDialogOpen(false)}
-              data-testid="button-close-success"
-            >
-              Done
             </Button>
           </div>
         </DialogContent>
