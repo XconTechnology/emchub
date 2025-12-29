@@ -718,11 +718,20 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "QR payload is required" });
       }
 
-      // Parse the QR payload
+      // Parse the QR payload (handle both string and pre-parsed object)
       let regId: string | null = null;
       let eventId: string | null = null;
+      let payload: any = null;
+      
       try {
-        const payload = typeof qrPayload === 'string' ? JSON.parse(qrPayload) : qrPayload;
+        if (typeof qrPayload === 'string') {
+          payload = JSON.parse(qrPayload);
+        } else if (typeof qrPayload === 'object' && qrPayload !== null) {
+          payload = qrPayload;
+        } else {
+          return res.status(400).json({ message: "Invalid QR code format" });
+        }
+        
         if (payload.type === 'EMC_HUB_EVENT_REGISTRATION') {
           regId = payload.registrationId;
           eventId = payload.eventId;
