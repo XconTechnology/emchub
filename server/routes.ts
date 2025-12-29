@@ -726,27 +726,36 @@ export function registerRoutes(app: Express): Server {
 
       // Get the registration ID from either direct input or QR payload
       let regId = registrationId;
+      console.log("QR Verification - Raw payload:", qrPayload);
+      console.log("QR Verification - Direct registrationId:", registrationId);
+      
       if (!regId && qrPayload) {
         try {
           const payload = typeof qrPayload === 'string' ? JSON.parse(qrPayload) : qrPayload;
+          console.log("QR Verification - Parsed payload:", payload);
           if (payload.type === 'EMC_HUB_EVENT_REGISTRATION') {
             regId = payload.registrationId;
+            console.log("QR Verification - Extracted regId:", regId);
             // Verify the event ID in the QR matches
             if (payload.eventId && payload.eventId !== eventId) {
               return res.status(400).json({ message: "This QR code is for a different event" });
             }
           }
         } catch (e) {
+          console.log("QR Verification - Parse error:", e);
           return res.status(400).json({ message: "Invalid QR code format" });
         }
       }
 
       if (!regId) {
+        console.log("QR Verification - No registration ID found");
         return res.status(400).json({ message: "Registration ID is required" });
       }
 
       // Get the registration
+      console.log("QR Verification - Looking up registration:", regId);
       const registration = await storage.getEventRegistration(regId);
+      console.log("QR Verification - Found registration:", registration);
       if (!registration) {
         return res.status(404).json({ message: "Registration not found" });
       }
