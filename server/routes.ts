@@ -704,7 +704,80 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // QR Code Verification endpoint for event check-in
+  // QR Code Verification endpoint (verifies across all vendor's events)
+  app.post('/api/vendor/verify-registration', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const { qrPayload } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      if (!qrPayload) {
+        return res.status(400).json({ message: "QR payload is required" });
+      }
+
+      // Parse the QR payload
+      let regId: string | null = null;
+      let eventId: string | null = null;
+      try {
+        const payload = typeof qrPayload === 'string' ? JSON.parse(qrPayload) : qrPayload;
+        if (payload.type === 'EMC_HUB_EVENT_REGISTRATION') {
+          regId = payload.registrationId;
+          eventId = payload.eventId;
+        } else {
+          return res.status(400).json({ message: "Invalid QR code type" });
+        }
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid QR code format" });
+      }
+
+      if (!regId) {
+        return res.status(400).json({ message: "Registration ID not found in QR code" });
+      }
+
+      // Get the registration
+      const registration = await storage.getEventRegistration(regId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Get the event and verify vendor ownership
+      const event = await storage.getListing(registration.eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      if (event.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to verify registrations for this event" });
+      }
+
+      // Return registration details for check-in
+      res.json({
+        success: true,
+        registration: {
+          id: registration.id,
+          fullName: registration.fullName,
+          email: registration.email,
+          phone: registration.phone,
+          notes: registration.notes,
+          status: registration.status,
+          createdAt: registration.createdAt,
+        },
+        event: {
+          id: event.id,
+          title: event.title,
+          eventDate: event.eventDate,
+          address: event.address,
+        }
+      });
+    } catch (error) {
+      console.error("Error verifying registration:", error);
+      res.status(500).json({ message: "Failed to verify registration" });
+    }
+  });
+
+  // QR Code Verification endpoint for event check-in (legacy - for specific event)
   app.post('/api/vendor/events/:eventId/verify-registration', isAuthenticated, async (req: any, res) => {
     try {
       const { eventId } = req.params;

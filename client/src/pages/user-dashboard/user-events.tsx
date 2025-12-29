@@ -65,7 +65,6 @@ export default function UserEvents() {
   const [eventToDelete, setEventToDelete] = useState<Listing | null>(null);
   const [viewingRegistrations, setViewingRegistrations] = useState<Listing | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scanningForEvent, setScanningForEvent] = useState<Listing | null>(null);
   const [verifiedRegistration, setVerifiedRegistration] = useState<VerificationResult | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
 
@@ -101,8 +100,8 @@ export default function UserEvents() {
   });
 
   const verifyRegistrationMutation = useMutation({
-    mutationFn: async ({ eventId, qrPayload }: { eventId: string; qrPayload: string }) => {
-      const response = await apiRequest('POST', `/api/vendor/events/${eventId}/verify-registration`, { qrPayload });
+    mutationFn: async ({ qrPayload }: { qrPayload: string }) => {
+      const response = await apiRequest('POST', `/api/vendor/verify-registration`, { qrPayload });
       const data = await response.json();
       return data as VerificationResult;
     },
@@ -124,7 +123,6 @@ export default function UserEvents() {
       toast({ title: "Attendee checked in successfully!" });
       setVerifiedRegistration(null);
       setIsScannerOpen(false);
-      setScanningForEvent(null);
       queryClient.invalidateQueries({ queryKey: ['/api/vendor/all-registrations'] });
       if (viewingRegistrations?.id) {
         queryClient.invalidateQueries({ queryKey: ['/api/vendor/events', viewingRegistrations.id, 'registrations'] });
@@ -135,18 +133,16 @@ export default function UserEvents() {
     },
   });
 
-  const handleScanQR = (event: Listing) => {
-    setScanningForEvent(event);
+  const handleScanQR = () => {
     setIsScannerOpen(true);
     setVerifiedRegistration(null);
     setScanError(null);
   };
 
   const handleQRScan = (result: any) => {
-    if (result && result[0]?.rawValue && scanningForEvent) {
+    if (result && result[0]?.rawValue) {
       const qrData = result[0].rawValue;
       verifyRegistrationMutation.mutate({
-        eventId: scanningForEvent.id,
         qrPayload: qrData,
       });
     }
@@ -154,7 +150,6 @@ export default function UserEvents() {
 
   const closeScannerDialog = () => {
     setIsScannerOpen(false);
-    setScanningForEvent(null);
     setVerifiedRegistration(null);
     setScanError(null);
   };
@@ -204,26 +199,15 @@ export default function UserEvents() {
           </div>
           <div className="flex gap-2">
             {event.status === 'published' && (event.attendeeCount || 0) > 0 && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => handleScanQR(event)}
-                  data-testid={`button-scan-qr-${event.id}`}
-                  title="Scan QR Code"
-                >
-                  <QrCode className="w-4 h-4 text-green-500" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setViewingRegistrations(event)}
-                  data-testid={`button-view-attendees-${event.id}`}
-                  title="View Attendees"
-                >
-                  <Eye className="w-4 h-4 text-blue-500" />
-                </Button>
-              </>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setViewingRegistrations(event)}
+                data-testid={`button-view-attendees-${event.id}`}
+                title="View Attendees"
+              >
+                <Eye className="w-4 h-4 text-blue-500" />
+              </Button>
             )}
             <Button 
               variant="ghost" 
@@ -342,8 +326,16 @@ export default function UserEvents() {
       {allRegistrations && allRegistrations.length > 0 && (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-xl">All Event Registrations</CardTitle>
-            <p className="text-sm text-gray-600">View and manage all registrations across your events</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-xl">All Event Registrations</CardTitle>
+                <p className="text-sm text-gray-600">View and manage all registrations across your events</p>
+              </div>
+              <Button onClick={handleScanQR} data-testid="button-scan-qr">
+                <QrCode className="w-4 h-4 mr-2" />
+                Scan QR Code
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoadingAllRegistrations ? (
@@ -506,7 +498,7 @@ export default function UserEvents() {
               Scan Attendee QR Code
             </DialogTitle>
             <DialogDescription>
-              Scan the attendee's QR code to verify their registration for {scanningForEvent?.title}
+              Scan the attendee's QR code to verify their registration and mark attendance
             </DialogDescription>
           </DialogHeader>
 
