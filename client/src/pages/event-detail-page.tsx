@@ -4,6 +4,7 @@ import { useRoute, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { QRCodeSVG } from "qrcode.react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -51,10 +52,22 @@ const registrationSchema = z.object({
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 
+interface RegistrationSuccessData {
+  fullName: string;
+  email: string;
+  phone: string;
+  eventTitle: string;
+  eventDate: string;
+  eventLocation: string;
+  registrationId: string;
+}
+
 export default function EventDetailPage() {
   const [, params] = useRoute("/event/:id");
   const eventId = params?.id;
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [registrationData, setRegistrationData] = useState<RegistrationSuccessData | null>(null);
   const { toast } = useToast();
 
   const { data: events, isLoading } = useQuery<Listing[]>({
@@ -77,14 +90,22 @@ export default function EventDetailPage() {
     mutationFn: async (data: RegistrationFormData) => {
       if (!eventId) throw new Error("Event ID is required");
       const response = await apiRequest("POST", `/api/events/${eventId}/register`, data);
-      return response;
+      return { ...response, formData: data };
     },
-    onSuccess: () => {
-      toast({
-        title: "Registration Successful!",
-        description: "You've successfully registered for this event. Check your email for confirmation.",
+    onSuccess: (response: any) => {
+      const formData = response.formData;
+      // Store registration data for QR code
+      setRegistrationData({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        eventTitle: event?.title || 'Event',
+        eventDate: event?.eventDate ? format(new Date(event.eventDate), "PPP 'at' p") : 'TBA',
+        eventLocation: event?.isOnlineOnly ? 'Online Event' : (event?.address || 'Location TBA'),
+        registrationId: response.id || `REG-${Date.now()}`,
       });
       setIsRegisterDialogOpen(false);
+      setIsSuccessDialogOpen(true);
       form.reset();
       // Invalidate events query to update attendee count
       queryClient.invalidateQueries({ queryKey: ['/api/listings'] });
@@ -439,6 +460,90 @@ export default function EventDetailPage() {
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registration Success Dialog with QR Code */}
+      <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl text-green-600">
+              🎉 Thank You for Registering!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Your registration for {registrationData?.eventTitle} is confirmed.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center space-y-6 py-4">
+            {/* QR Code */}
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <QRCodeSVG
+                value={JSON.stringify({
+                  type: "EMC_HUB_EVENT_REGISTRATION",
+                  registrationId: registrationData?.registrationId,
+                  name: registrationData?.fullName,
+                  email: registrationData?.email,
+                  phone: registrationData?.phone,
+                  event: registrationData?.eventTitle,
+                  date: registrationData?.eventDate,
+                  location: registrationData?.eventLocation,
+                })}
+                size={200}
+                level="M"
+                includeMargin={true}
+                data-testid="qr-code-registration"
+              />
+            </div>
+            
+            <p className="text-sm text-gray-500 text-center">
+              Scan this QR code at the event for check-in
+            </p>
+
+            {/* Registration Details */}
+            <div className="w-full bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Registration Details</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-gray-500">Name:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-name">
+                  {registrationData?.fullName}
+                </span>
+                
+                <span className="text-gray-500">Email:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-email">
+                  {registrationData?.email}
+                </span>
+                
+                <span className="text-gray-500">Phone:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-phone">
+                  {registrationData?.phone}
+                </span>
+                
+                <span className="text-gray-500">Event:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-event">
+                  {registrationData?.eventTitle}
+                </span>
+                
+                <span className="text-gray-500">Date:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-date">
+                  {registrationData?.eventDate}
+                </span>
+                
+                <span className="text-gray-500">Location:</span>
+                <span className="font-medium text-gray-900 dark:text-white" data-testid="text-reg-location">
+                  {registrationData?.eventLocation}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              className="w-full"
+              onClick={() => setIsSuccessDialogOpen(false)}
+              data-testid="button-close-success"
+            >
+              Done
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
