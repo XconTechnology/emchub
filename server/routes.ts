@@ -710,6 +710,9 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user?.id;
       const { qrPayload } = req.body;
 
+      console.log("QR Verify - Raw qrPayload:", qrPayload);
+      console.log("QR Verify - Type:", typeof qrPayload);
+
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
@@ -732,13 +735,17 @@ export function registerRoutes(app: Express): Server {
           return res.status(400).json({ message: "Invalid QR code format" });
         }
         
+        console.log("QR Verify - Parsed payload:", payload);
+        
         if (payload.type === 'EMC_HUB_EVENT_REGISTRATION') {
           regId = payload.registrationId;
           eventId = payload.eventId;
+          console.log("QR Verify - Extracted regId:", regId, "eventId:", eventId);
         } else {
           return res.status(400).json({ message: "Invalid QR code type" });
         }
       } catch (e) {
+        console.log("QR Verify - Parse error:", e);
         return res.status(400).json({ message: "Invalid QR code format" });
       }
 
@@ -747,7 +754,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get the registration
+      console.log("QR Verify - Looking up registration with ID:", regId);
       const registration = await storage.getEventRegistration(regId);
+      console.log("QR Verify - Found registration:", registration);
       if (!registration) {
         return res.status(404).json({ message: "Registration not found" });
       }

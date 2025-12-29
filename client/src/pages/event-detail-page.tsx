@@ -93,7 +93,8 @@ export default function EventDetailPage() {
     mutationFn: async (data: RegistrationFormData) => {
       if (!eventId) throw new Error("Event ID is required");
       const response = await apiRequest("POST", `/api/events/${eventId}/register`, data);
-      return { ...response, formData: data };
+      const registration = await response.json();
+      return { ...registration, formData: data };
     },
     onSuccess: (response: any) => {
       const formData = response.formData;
@@ -105,7 +106,7 @@ export default function EventDetailPage() {
         eventTitle: event?.title || 'Event',
         eventDate: event?.eventDate ? format(new Date(event.eventDate), "PPP 'at' p") : 'TBA',
         eventLocation: event?.isOnlineOnly ? 'Online Event' : (event?.address || 'Location TBA'),
-        registrationId: response.id || `REG-${Date.now()}`,
+        registrationId: response.id,
         eventId: eventId || '',
       });
       setIsRegisterDialogOpen(false);
