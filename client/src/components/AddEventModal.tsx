@@ -170,7 +170,7 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         timedollarPercentage: tdPercentage,
         cashPercentage: cashPercentage,
         images: imageUrl ? [imageUrl] : [],
-        status: isEditing ? editEvent.status : "pending",
+        status: "pending",
       };
       
       const res = await apiRequest(
