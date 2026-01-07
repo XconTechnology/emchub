@@ -257,267 +257,150 @@ export default function AdminPendingApprovals() {
       </Card>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Item Details</DialogTitle>
-            <DialogDescription>Review item information before approving or rejecting</DialogDescription>
+        <DialogContent className="max-w-lg">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              {selectedItem?.isEdit ? <Edit className="w-4 h-4" /> : getTypeIcon(selectedItem?.type || '')}
+              {selectedItem?.isEdit ? 'Edit Request' : 'New Submission'}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {selectedItem?.isEdit ? 'Review changes made by vendor' : 'Review before approving'}
+            </DialogDescription>
           </DialogHeader>
           
           {selectedItem && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Type</p>
-                  <Badge variant="outline" className="capitalize mt-1">
-                    {selectedItem.type}
-                  </Badge>
+            <div className="space-y-3">
+              {/* Header info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="capitalize text-xs">{selectedItem.type}</Badge>
+                  <span className="text-sm font-medium">{selectedItem.title}</span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <Badge variant="secondary" className="mt-1 capitalize">
-                    {selectedItem.status}
-                  </Badge>
-                </div>
+                <Badge variant="secondary" className="capitalize text-xs">{selectedItem.status}</Badge>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Title</p>
-                <p className="mt-1 text-lg font-semibold">{selectedItem.title}</p>
-              </div>
-
-              {selectedItem.description && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="mt-1">{selectedItem.description}</p>
-                </div>
-              )}
-
-              {selectedItem.customCategory && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Categories</p>
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    {selectedItem.customCategory.split(',').filter(cat => cat.trim()).map((cat, index) => (
-                      <Badge key={index} variant="outline">
-                        {cat.trim()}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.images && selectedItem.images.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Images</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {selectedItem.images.map((img, idx) => (
-                      <img
-                        key={idx}
-                        src={img}
-                        alt={`${selectedItem.title} ${idx + 1}`}
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.type === 'event' && (
-                <div className="border-t pt-4 mt-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Event Details
+              {/* For edit requests: Show only what changed */}
+              {selectedItem.isEdit && selectedItem.previousValues && (
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-1">
+                    <Edit className="w-3 h-3" /> Changes Made
                   </p>
-                  <div className="grid grid-cols-2 gap-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
-                    {selectedItem.eventDate && (
-                      <div className="flex items-start gap-2">
-                        <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Event Date</p>
-                          <p className="mt-1">{formatDate(selectedItem.eventDate)}</p>
+                  <div className="space-y-2 text-xs">
+                    {(() => {
+                      const prev = selectedItem.previousValues as Record<string, any>;
+                      const changes: { field: string; from: any; to: any }[] = [];
+                      
+                      const fieldLabels: Record<string, string> = {
+                        title: 'Title',
+                        description: 'Description',
+                        eventDate: 'Event Date',
+                        eventPrice: 'Price (HKD)',
+                        eventTdPrice: 'TD Price',
+                        eventHours: 'Duration (hrs)',
+                        capacity: 'Capacity',
+                        address: 'Location',
+                        website: 'Website',
+                        paymentType: 'Payment Type',
+                        price: 'Price',
+                        inventory: 'Stock',
+                      };
+                      
+                      Object.keys(fieldLabels).forEach(key => {
+                        const prevVal = prev[key];
+                        const newVal = (selectedItem as any)[key];
+                        if (prevVal !== newVal && (prevVal || newVal)) {
+                          changes.push({ field: fieldLabels[key], from: prevVal, to: newVal });
+                        }
+                      });
+                      
+                      return changes.length > 0 ? changes.map((change, idx) => (
+                        <div key={idx} className="flex items-start gap-2 py-1 border-b border-amber-200/50 last:border-0">
+                          <span className="font-medium text-amber-800 dark:text-amber-300 w-24 shrink-0">{change.field}:</span>
+                          <span className="text-red-600 dark:text-red-400 line-through">{String(change.from) || '(empty)'}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-green-600 dark:text-green-400 font-medium">{String(change.to) || '(empty)'}</span>
                         </div>
-                      </div>
-                    )}
-                    {selectedItem.eventPrice && (
-                      <div className="flex items-start gap-2">
-                        <DollarSign className="w-4 h-4 text-green-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Event Price</p>
-                          <p className="mt-1 font-semibold">${selectedItem.eventPrice}</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.eventTdPrice && (
-                      <div className="flex items-start gap-2">
-                        <Coins className="w-4 h-4 text-amber-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">TimeDollar Price</p>
-                          <p className="mt-1 font-semibold">{selectedItem.eventTdPrice} TD</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.eventHours && (
-                      <div className="flex items-start gap-2">
-                        <Clock className="w-4 h-4 text-purple-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Duration</p>
-                          <p className="mt-1">{selectedItem.eventHours} hours</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.capacity && (
-                      <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 text-indigo-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Capacity</p>
-                          <p className="mt-1">{selectedItem.capacity} attendees</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.paymentType && (
-                      <div className="flex items-start gap-2">
-                        <DollarSign className="w-4 h-4 text-teal-600 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Payment Type</p>
-                          <p className="mt-1 capitalize">{selectedItem.paymentType.replace('_', ' ')}</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.address && (
-                      <div className="flex items-start gap-2 col-span-2">
-                        <MapPin className="w-4 h-4 text-red-500 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Location</p>
-                          <p className="mt-1">{selectedItem.address}</p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.isOnlineOnly && (
-                      <div className="col-span-2">
-                        <Badge variant="secondary">Online Event</Badge>
-                        {selectedItem.website && (
-                          <a href={selectedItem.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2 text-sm">
-                            {selectedItem.website}
-                          </a>
-                        )}
-                      </div>
-                    )}
+                      )) : (
+                        <p className="text-muted-foreground">No field changes detected</p>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
 
-              {selectedItem.type === 'product' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Price</p>
-                    <p className="mt-1 text-lg font-semibold">${selectedItem.price}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Stock</p>
-                    <p className="mt-1">{selectedItem.inventory || 0} units</p>
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.type === 'product' && productCoupon && (
-                <div className="border-t pt-4 mt-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-3">📣 Product Coupon</p>
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4 space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Coupon Code</p>
-                        <p className="mt-1 font-mono font-bold text-blue-700 dark:text-blue-400">{productCoupon.code}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Status</p>
-                        <Badge variant="secondary" className="mt-1 capitalize">
-                          {productCoupon.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Title</p>
-                      <p className="mt-1">{productCoupon.title}</p>
-                    </div>
-                    {productCoupon.description && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Description</p>
-                        <p className="mt-1 text-sm">{productCoupon.description}</p>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Discount Type</p>
-                        <p className="mt-1 capitalize">{productCoupon.discountType}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Discount Value</p>
-                        <p className="mt-1 font-semibold">
-                          {productCoupon.discountType === 'percentage' ? `${productCoupon.discountValue}%` : `$${productCoupon.discountValue}`}
-                        </p>
-                      </div>
-                    </div>
-                    {productCoupon.usageLimit && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Usage Limit</p>
-                        <p className="mt-1">{productCoupon.usageLimit} times</p>
-                      </div>
-                    )}
-                    {productCoupon.validUntil && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Valid Until</p>
-                        <p className="mt-1">{formatDate(productCoupon.validUntil)}</p>
-                      </div>
-                    )}
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                      ℹ️ This coupon will be automatically approved when you approve the product
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.type === 'service' && selectedItem.price && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Price</p>
-                    <p className="mt-1 text-lg font-semibold">${selectedItem.price}</p>
-                  </div>
-                  {selectedItem.duration && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Duration</p>
-                      <p className="mt-1">{selectedItem.duration} minutes</p>
+              {/* For new submissions: Show compact summary */}
+              {!selectedItem.isEdit && (
+                <>
+                  {selectedItem.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{selectedItem.description}</p>
+                  )}
+                  
+                  {selectedItem.images && selectedItem.images.length > 0 && (
+                    <div className="flex gap-1">
+                      {selectedItem.images.slice(0, 3).map((img, idx) => (
+                        <img key={idx} src={img} alt="" className="w-16 h-16 object-cover rounded" />
+                      ))}
                     </div>
                   )}
-                </div>
+
+                  {selectedItem.type === 'event' && (
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2">
+                      {selectedItem.eventDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-blue-600" />
+                          <span>{formatDate(selectedItem.eventDate)}</span>
+                        </div>
+                      )}
+                      {selectedItem.eventPrice && (
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3 text-green-600" />
+                          <span>${selectedItem.eventPrice}</span>
+                        </div>
+                      )}
+                      {selectedItem.eventTdPrice && (
+                        <div className="flex items-center gap-1">
+                          <Coins className="w-3 h-3 text-amber-500" />
+                          <span>{selectedItem.eventTdPrice} TD</span>
+                        </div>
+                      )}
+                      {selectedItem.eventHours && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-purple-600" />
+                          <span>{selectedItem.eventHours} hrs</span>
+                        </div>
+                      )}
+                      {selectedItem.capacity && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3 text-indigo-600" />
+                          <span>{selectedItem.capacity} seats</span>
+                        </div>
+                      )}
+                      {selectedItem.address && (
+                        <div className="flex items-center gap-1 col-span-2">
+                          <MapPin className="w-3 h-3 text-red-500" />
+                          <span className="truncate">{selectedItem.address}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedItem.type === 'product' && (
+                    <div className="flex gap-4 text-xs">
+                      <span><strong>Price:</strong> ${selectedItem.price}</span>
+                      <span><strong>Stock:</strong> {selectedItem.inventory || 0}</span>
+                    </div>
+                  )}
+                </>
               )}
 
-              {(selectedItem.address || selectedItem.city) && selectedItem.type !== 'event' && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="mt-1">{selectedItem.address}{selectedItem.city ? `, ${selectedItem.city}` : ''}</p>
-                </div>
-              )}
-
-              {selectedItem.phone && (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Contact</p>
-                  <p className="mt-1">{selectedItem.phone}</p>
-                  {selectedItem.email && <p>{selectedItem.email}</p>}
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4 justify-end">
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2 justify-end border-t">
                 <Button
                   size="sm"
-                  variant="default"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    handleAccept(selectedItem.id);
-                    setViewDialogOpen(false);
-                  }}
-                  disabled={acceptMutation.isPending}
+                  variant="outline"
+                  onClick={() => setViewDialogOpen(false)}
                 >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Accept & Publish
+                  Cancel
                 </Button>
                 <Button
                   size="sm"
@@ -528,8 +411,20 @@ export default function AdminPendingApprovals() {
                   }}
                   disabled={rejectMutation.isPending}
                 >
-                  <XCircle className="w-4 h-4 mr-1" />
+                  <XCircle className="w-3 h-3 mr-1" />
                   Reject
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    handleAccept(selectedItem.id);
+                    setViewDialogOpen(false);
+                  }}
+                  disabled={acceptMutation.isPending}
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Approve
                 </Button>
               </div>
             </div>

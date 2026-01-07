@@ -726,7 +726,7 @@ export class DatabaseStorage implements IStorage {
     return listing;
   }
 
-  async updateListing(id: string, listingData: Partial<InsertListing>): Promise<Listing> {
+  async updateListing(id: string, listingData: Partial<InsertListing> & { previousValues?: any }): Promise<Listing> {
     const [listing] = await db
       .update(listings)
       .set({
@@ -754,6 +754,7 @@ export class DatabaseStorage implements IStorage {
         paymentType: listingData.paymentType,
         timedollarPercentage: listingData.timedollarPercentage,
         cashPercentage: listingData.cashPercentage,
+        previousValues: listingData.previousValues,
         updatedAt: new Date()
       } as any)
       .where(eq(listings.id, id))

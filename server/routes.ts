@@ -451,7 +451,35 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      const updatedListing = await storage.updateListing(id, listingData);
+      // For published listings being edited, store previousValues for admin comparison
+      let previousValues = null;
+      if (existingListing.status === 'published') {
+        // Store snapshot of current values before update for comparison
+        previousValues = {
+          title: existingListing.title,
+          description: existingListing.description,
+          eventDate: existingListing.eventDate,
+          eventPrice: existingListing.eventPrice,
+          eventTdPrice: existingListing.eventTdPrice,
+          eventHours: existingListing.eventHours,
+          capacity: existingListing.capacity,
+          address: existingListing.address,
+          website: existingListing.website,
+          isOnlineOnly: existingListing.isOnlineOnly,
+          paymentType: existingListing.paymentType,
+          price: existingListing.price,
+          inventory: existingListing.inventory,
+          images: existingListing.images,
+        };
+      }
+      
+      // Add previousValues to the update data
+      const updateDataWithPrevious = {
+        ...listingData,
+        previousValues: previousValues,
+      };
+      
+      const updatedListing = await storage.updateListing(id, updateDataWithPrevious);
       
       // Handle coupon update/creation if requested
       let couponUpdated = false;

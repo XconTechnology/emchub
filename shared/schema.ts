@@ -180,6 +180,9 @@ export const listings = pgTable("listings", {
   tdEligible: boolean("td_eligible").default(false), // Whether listing is eligible for TD transactions
   tdValue: integer("td_value"), // TimeDollar value for services (integer)
   
+  // Edit request tracking - stores original values before vendor edit for admin comparison
+  previousValues: jsonb("previous_values"), // JSON snapshot of original values before edit
+  
   // Status and verification
   isActive: boolean("is_active").default(true),
   isVerified: boolean("is_verified").default(false),
