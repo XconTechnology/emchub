@@ -12,7 +12,6 @@ import {
   insertVendorRequestSchema,
   insertEventRegistrationSchema,
   eventRegistrationFormSchema,
-  insertEventHostingRequestSchema,
   users as usersTable,
   serviceOffers,
   serviceRequests,
@@ -5617,74 +5616,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error cancelling service:", error);
       res.status(500).json({ error: "Failed to cancel service" });
-    }
-  });
-
-  // Event Hosting Request routes
-  app.post("/api/event-hosting-requests", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      const validatedData = insertEventHostingRequestSchema.parse(req.body);
-      const request = await storage.createEventHostingRequest({
-        ...validatedData,
-        userId,
-      });
-
-      res.status(201).json(request);
-    } catch (error: any) {
-      console.error("Error creating event hosting request:", error);
-      res.status(400).json({ error: error.message || "Failed to create request" });
-    }
-  });
-
-  app.get("/api/event-hosting-requests", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      const requests = await storage.getUserEventHostingRequests(userId);
-      res.json(requests);
-    } catch (error) {
-      console.error("Error fetching user event hosting requests:", error);
-      res.status(500).json({ error: "Failed to fetch requests" });
-    }
-  });
-
-  app.get("/api/admin/event-hosting-requests", isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const requests = await storage.getAllEventHostingRequests();
-      res.json(requests);
-    } catch (error) {
-      console.error("Error fetching all event hosting requests:", error);
-      res.status(500).json({ error: "Failed to fetch requests" });
-    }
-  });
-
-  app.patch("/api/admin/event-hosting-requests/:id", isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { status, rejectionReason } = req.body;
-      const reviewedBy = req.user?.id;
-
-      if (!reviewedBy) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      if (!['approved', 'rejected'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-
-      const updated = await storage.updateEventHostingRequestStatus(id, status, reviewedBy, rejectionReason);
-      res.json(updated);
-    } catch (error) {
-      console.error("Error updating event hosting request:", error);
-      res.status(500).json({ error: "Failed to update request" });
     }
   });
 
