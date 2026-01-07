@@ -30,6 +30,7 @@ import NotFound from "@/pages/not-found";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import HowTimeBanksWork from "@/pages/how-timebanks-work";
+import HostEventPage from "@/pages/host-event-page";
 import { useEffect } from "react";
 
 function Router() {
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/explore" component={Explore} />
       <Route path="/about-us" component={AboutUs} />
       <Route path="/how-timebanks-work" component={HowTimeBanksWork} />
+      <Route path="/host" component={HostEventPage} />
       <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />

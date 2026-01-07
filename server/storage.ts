@@ -16,6 +16,7 @@ import {
   serviceRequests,
   serviceRequestMessages,
   serviceOffers,
+  eventHostingRequests,
   type User,
   type InsertUser,
   type BusinessListing,
@@ -43,6 +44,8 @@ import {
   type InsertServiceRequestMessage,
   type ServiceOffer,
   type InsertServiceOffer,
+  type EventHostingRequest,
+  type InsertEventHostingRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ilike, inArray, sql, desc } from "drizzle-orm";
@@ -383,6 +386,13 @@ export interface IStorage {
   getServiceOffer(id: string): Promise<any | undefined>;
   getServiceOffers(serviceRequestId: string): Promise<any[]>;
   updateServiceOffer(id: string, data: any): Promise<any>;
+
+  // Event Hosting Request operations
+  createEventHostingRequest(data: InsertEventHostingRequest & { userId: string }): Promise<EventHostingRequest>;
+  getEventHostingRequest(id: string): Promise<EventHostingRequest | undefined>;
+  getUserEventHostingRequests(userId: string): Promise<EventHostingRequest[]>;
+  getAllEventHostingRequests(): Promise<EventHostingRequest[]>;
+  updateEventHostingRequestStatus(id: string, status: string, reviewedBy: string, rejectionReason?: string): Promise<EventHostingRequest>;
 
   // Legacy business listing operations (deprecated)
   createBusinessListing(listing: any): Promise<BusinessListing>;
@@ -3833,6 +3843,56 @@ export class DatabaseStorage implements IStorage {
       .update(serviceOffers)
       .set(updates)
       .where(eq(serviceOffers.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Event Hosting Request operations
+  async createEventHostingRequest(data: InsertEventHostingRequest & { userId: string }): Promise<EventHostingRequest> {
+    const [request] = await db
+      .insert(eventHostingRequests)
+      .values(data)
+      .returning();
+    return request;
+  }
+
+  async getEventHostingRequest(id: string): Promise<EventHostingRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(eventHostingRequests)
+      .where(eq(eventHostingRequests.id, id));
+    return request;
+  }
+
+  async getUserEventHostingRequests(userId: string): Promise<EventHostingRequest[]> {
+    return db
+      .select()
+      .from(eventHostingRequests)
+      .where(eq(eventHostingRequests.userId, userId))
+      .orderBy(sql`${eventHostingRequests.createdAt} DESC`);
+  }
+
+  async getAllEventHostingRequests(): Promise<EventHostingRequest[]> {
+    return db
+      .select()
+      .from(eventHostingRequests)
+      .orderBy(sql`${eventHostingRequests.createdAt} DESC`);
+  }
+
+  async updateEventHostingRequestStatus(id: string, status: string, reviewedBy: string, rejectionReason?: string): Promise<EventHostingRequest> {
+    const updates: any = {
+      status,
+      reviewedBy,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    if (rejectionReason) {
+      updates.rejectionReason = rejectionReason;
+    }
+    const [updated] = await db
+      .update(eventHostingRequests)
+      .set(updates)
+      .where(eq(eventHostingRequests.id, id))
       .returning();
     return updated;
   }

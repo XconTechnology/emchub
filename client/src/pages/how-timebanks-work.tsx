@@ -347,15 +347,35 @@ export default function HowTimeBanksWork() {
                   <div className="text-lg">TD-Eligible</div>
                   <p className="text-sm opacity-90 mt-2">Use TD on marked listings</p>
                 </div>
-              </div>
-              <Link href="/auth">
-                <Button size="lg" className="bg-white text-[#8FC24C] hover:bg-gray-100">
-                  Get Started
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
           </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+                <Link href="/auth">
+                  <Button
+                    size="lg"
+                    className="bg-white text-[#8FC24C] hover:bg-gray-100 w-full sm:w-auto"
+                  >
+                    Obtain TimeDollars
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+
+                <Link href="/host">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#8FC24C] transition-colors"
+                    variant="outline"
+                  >
+                    Host Event/Project
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+
+          </div>
+          </div>
+
+          
         </section>
 
         {/* CTA Section */}

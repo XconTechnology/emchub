@@ -888,6 +888,43 @@ export const insertServiceOfferSchema = createInsertSchema(serviceOffers).omit({
 export type ServiceOffer = typeof serviceOffers.$inferSelect;
 export type InsertServiceOffer = z.infer<typeof insertServiceOfferSchema>;
 
+// Event Hosting Requests table - for users to request hosting events/projects with admin approval
+export const eventHostingRequests = pgTable("event_hosting_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  eventType: varchar("event_type").notNull(), // 'event' | 'project' | 'workshop' | 'community_service'
+  proposedDate: timestamp("proposed_date"),
+  proposedLocation: varchar("proposed_location"),
+  expectedAttendees: integer("expected_attendees"),
+  tdPriceProposal: integer("td_price_proposal"), // Proposed TimeDollar price
+  hoursProposal: decimal("hours_proposal", { precision: 5, scale: 2 }), // Proposed hours
+  additionalNotes: text("additional_notes"),
+  contactEmail: varchar("contact_email").notNull(),
+  contactPhone: varchar("contact_phone"),
+  status: varchar("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+  rejectionReason: text("rejection_reason"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEventHostingRequestSchema = createInsertSchema(eventHostingRequests).omit({
+  id: true,
+  userId: true,
+  status: true,
+  rejectionReason: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type EventHostingRequest = typeof eventHostingRequests.$inferSelect;
+export type InsertEventHostingRequest = z.infer<typeof insertEventHostingRequestSchema>;
+
 // Types
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
