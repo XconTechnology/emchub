@@ -740,6 +740,20 @@ export class DatabaseStorage implements IStorage {
         tdValue: listingData.tdValue ? listingData.tdValue.toString() : undefined,
         images: listingData.images,
         location: listingData.location,
+        status: listingData.status,
+        type: listingData.type,
+        address: listingData.address,
+        website: listingData.website,
+        latitude: listingData.latitude,
+        longitude: listingData.longitude,
+        eventDate: listingData.eventDate,
+        eventPrice: listingData.eventPrice,
+        eventTdPrice: listingData.eventTdPrice,
+        eventHours: listingData.eventHours,
+        capacity: listingData.capacity,
+        paymentType: listingData.paymentType,
+        timedollarPercentage: listingData.timedollarPercentage,
+        cashPercentage: listingData.cashPercentage,
         updatedAt: new Date()
       } as any)
       .where(eq(listings.id, id))
