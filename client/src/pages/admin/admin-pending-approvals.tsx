@@ -257,9 +257,9 @@ export default function AdminPendingApprovals() {
       </Card>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
               {selectedItem?.isEdit ? <Edit className="w-4 h-4" /> : getTypeIcon(selectedItem?.type || '')}
               {selectedItem?.isEdit ? 'Edit Request' : 'New Submission'}
             </DialogTitle>
@@ -269,23 +269,23 @@ export default function AdminPendingApprovals() {
           </DialogHeader>
           
           {selectedItem && (
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-hidden">
               {/* Header info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize text-xs">{selectedItem.type}</Badge>
-                  <span className="text-sm font-medium">{selectedItem.title}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Badge variant="outline" className="capitalize text-xs shrink-0">{selectedItem.type}</Badge>
+                  <span className="text-sm font-medium truncate">{selectedItem.title}</span>
                 </div>
-                <Badge variant="secondary" className="capitalize text-xs">{selectedItem.status}</Badge>
+                <Badge variant="secondary" className="capitalize text-xs shrink-0">{selectedItem.status}</Badge>
               </div>
 
               {/* For edit requests: Show only what changed */}
               {selectedItem.isEdit && selectedItem.previousValues && (
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 overflow-hidden">
                   <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-1">
                     <Edit className="w-3 h-3" /> Changes Made
                   </p>
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-1 text-xs overflow-hidden">
                     {(() => {
                       const prev = selectedItem.previousValues as Record<string, any>;
                       const changes: { field: string; from: any; to: any }[] = [];
@@ -314,11 +314,13 @@ export default function AdminPendingApprovals() {
                       });
                       
                       return changes.length > 0 ? changes.map((change, idx) => (
-                        <div key={idx} className="flex items-start gap-2 py-1 border-b border-amber-200/50 last:border-0">
-                          <span className="font-medium text-amber-800 dark:text-amber-300 w-24 shrink-0">{change.field}:</span>
-                          <span className="text-red-600 dark:text-red-400 line-through">{String(change.from) || '(empty)'}</span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="text-green-600 dark:text-green-400 font-medium">{String(change.to) || '(empty)'}</span>
+                        <div key={idx} className="py-1 border-b border-amber-200/50 last:border-0">
+                          <span className="font-medium text-amber-800 dark:text-amber-300">{change.field}:</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-red-600 dark:text-red-400 line-through truncate max-w-[120px]">{String(change.from) || '(empty)'}</span>
+                            <span className="text-muted-foreground shrink-0">→</span>
+                            <span className="text-green-600 dark:text-green-400 font-medium truncate max-w-[120px]">{String(change.to) || '(empty)'}</span>
+                          </div>
                         </div>
                       )) : (
                         <p className="text-muted-foreground">No field changes detected</p>
@@ -330,54 +332,54 @@ export default function AdminPendingApprovals() {
 
               {/* For new submissions: Show compact summary */}
               {!selectedItem.isEdit && (
-                <>
+                <div className="space-y-3 overflow-hidden">
                   {selectedItem.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{selectedItem.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 break-words">{selectedItem.description}</p>
                   )}
                   
                   {selectedItem.images && selectedItem.images.length > 0 && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       {selectedItem.images.slice(0, 3).map((img, idx) => (
-                        <img key={idx} src={img} alt="" className="w-16 h-16 object-cover rounded" />
+                        <img key={idx} src={img} alt="" className="w-14 h-14 object-cover rounded shrink-0" />
                       ))}
                     </div>
                   )}
 
                   {selectedItem.type === 'event' && (
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-blue-50 dark:bg-blue-950/20 rounded-lg p-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
                       {selectedItem.eventDate && (
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-blue-600" />
-                          <span>{formatDate(selectedItem.eventDate)}</span>
+                          <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+                          <span className="truncate">{formatDate(selectedItem.eventDate)}</span>
                         </div>
                       )}
                       {selectedItem.eventPrice && (
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3 text-green-600" />
+                          <DollarSign className="w-3 h-3 text-green-600 shrink-0" />
                           <span>${selectedItem.eventPrice}</span>
                         </div>
                       )}
                       {selectedItem.eventTdPrice && (
                         <div className="flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-amber-500" />
+                          <Coins className="w-3 h-3 text-amber-500 shrink-0" />
                           <span>{selectedItem.eventTdPrice} TD</span>
                         </div>
                       )}
                       {selectedItem.eventHours && (
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-purple-600" />
+                          <Clock className="w-3 h-3 text-purple-600 shrink-0" />
                           <span>{selectedItem.eventHours} hrs</span>
                         </div>
                       )}
                       {selectedItem.capacity && (
                         <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3 text-indigo-600" />
+                          <Users className="w-3 h-3 text-indigo-600 shrink-0" />
                           <span>{selectedItem.capacity} seats</span>
                         </div>
                       )}
                       {selectedItem.address && (
                         <div className="flex items-center gap-1 col-span-2">
-                          <MapPin className="w-3 h-3 text-red-500" />
+                          <MapPin className="w-3 h-3 text-red-500 shrink-0" />
                           <span className="truncate">{selectedItem.address}</span>
                         </div>
                       )}
@@ -390,11 +392,11 @@ export default function AdminPendingApprovals() {
                       <span><strong>Stock:</strong> {selectedItem.inventory || 0}</span>
                     </div>
                   )}
-                </>
+                </div>
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-2 pt-2 justify-end border-t">
+              <div className="flex gap-2 pt-3 justify-end border-t mt-3">
                 <Button
                   size="sm"
                   variant="outline"
