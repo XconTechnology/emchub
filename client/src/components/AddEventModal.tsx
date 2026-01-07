@@ -26,6 +26,8 @@ const eventSchema = insertListingSchema.extend({
   }),
   locationDetails: z.string().min(1, "Location details are required"),
   eventPrice: z.string().optional(),
+  eventTdPrice: z.string().optional(),
+  eventHours: z.string().optional(),
   capacity: z.string().optional(),
   paymentType: z.enum(["cash_only", "timedollar_only", "both_choice", "combo"]).optional(),
   timedollarPercentage: z.string().optional(),
@@ -62,6 +64,8 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
       locationType: "in_person",
       locationDetails: "",
       eventPrice: "",
+      eventTdPrice: "",
+      eventHours: "",
       capacity: "",
       paymentType: "cash_only",
       timedollarPercentage: "",
@@ -83,6 +87,8 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         locationType: editEvent.isOnlineOnly ? "online" : (editEvent.address ? "in_person" : "in_person"),
         locationDetails: editEvent.address || editEvent.website || "",
         eventPrice: editEvent.eventPrice?.toString() || "",
+        eventTdPrice: editEvent.eventTdPrice?.toString() || "",
+        eventHours: editEvent.eventHours?.toString() || "",
         capacity: editEvent.capacity?.toString() || "",
         paymentType: editEvent.paymentType || "cash_only",
         timedollarPercentage: editEvent.timedollarPercentage?.toString() || "",
@@ -101,6 +107,8 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         locationType: "in_person",
         locationDetails: "",
         eventPrice: "",
+        eventTdPrice: "",
+        eventHours: "",
         capacity: "",
         paymentType: "cash_only",
         timedollarPercentage: "",
@@ -152,6 +160,8 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
         description: data.description,
         eventDate: eventDateTime,
         eventPrice: data.eventPrice ? parseFloat(data.eventPrice) : undefined,
+        eventTdPrice: data.eventTdPrice ? parseInt(data.eventTdPrice) : undefined,
+        eventHours: data.eventHours ? parseFloat(data.eventHours) : undefined,
         capacity: data.capacity ? parseInt(data.capacity) : undefined,
         address: data.locationType !== "online" ? data.locationDetails : null,
         website: data.locationType === "online" ? data.locationDetails : null,
@@ -320,6 +330,37 @@ export default function AddEventModal({ isOpen, onClose, editEvent }: AddEventMo
                 placeholder="Max attendees"
                 data-testid="input-capacity"
               />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="eventTdPrice">TimeDollar Price (TD)</Label>
+              <Input
+                id="eventTdPrice"
+                type="number"
+                {...form.register("eventTdPrice")}
+                placeholder="e.g., 2"
+                data-testid="input-event-td-price"
+              />
+              <p className="text-xs text-muted-foreground">
+                Fixed TimeDollar price for this event (optional)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="eventHours">Event Duration (Hours)</Label>
+              <Input
+                id="eventHours"
+                type="number"
+                step="0.5"
+                {...form.register("eventHours")}
+                placeholder="e.g., 2.5"
+                data-testid="input-event-hours"
+              />
+              <p className="text-xs text-muted-foreground">
+                Total duration of the event in hours
+              </p>
             </div>
           </div>
 

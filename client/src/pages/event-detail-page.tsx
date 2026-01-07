@@ -313,6 +313,33 @@ export default function EventDetailPage() {
                       </div>
                     )}
 
+                    {/* Event Duration */}
+                    {event.eventHours && (
+                      <div className="flex items-start gap-3">
+                        <Clock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            Duration: {event.eventHours} {parseFloat(event.eventHours.toString()) === 1 ? 'hour' : 'hours'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TimeDollar Price */}
+                    {event.eventTdPrice && (
+                      <div className="flex items-start gap-3">
+                        <Coins className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            TimeDollar Price: {event.eventTdPrice} TD
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Pay with TimeDollars
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Price */}
                     <div className="flex items-start gap-3">
                       {event.paymentType === "timedollar_only" || event.paymentType === "combo_split" ? (

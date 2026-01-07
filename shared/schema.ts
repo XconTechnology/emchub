@@ -173,6 +173,8 @@ export const listings = pgTable("listings", {
   capacity: integer("capacity"),
   attendeeCount: integer("attendee_count").default(0),
   eventPrice: decimal("event_price", { precision: 10, scale: 2 }),
+  eventTdPrice: integer("event_td_price"), // Fixed TimeDollar price for events
+  eventHours: decimal("event_hours", { precision: 5, scale: 2 }), // Total event duration in hours
   
   // TimeDollar eligibility fields
   tdEligible: boolean("td_eligible").default(false), // Whether listing is eligible for TD transactions
