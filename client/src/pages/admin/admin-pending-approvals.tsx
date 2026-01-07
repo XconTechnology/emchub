@@ -505,29 +505,30 @@ export default function AdminPendingApprovals() {
                 </div>
               )}
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-3 pt-4 justify-end">
                 <Button
+                  size="sm"
                   variant="default"
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700"
                   onClick={() => {
                     handleAccept(selectedItem.id);
                     setViewDialogOpen(false);
                   }}
                   disabled={acceptMutation.isPending}
                 >
-                  <CheckCircle className="w-4 h-4 mr-2" />
+                  <CheckCircle className="w-4 h-4 mr-1" />
                   Accept & Publish
                 </Button>
                 <Button
+                  size="sm"
                   variant="destructive"
-                  className="flex-1"
                   onClick={() => {
                     handleReject(selectedItem.id);
                     setViewDialogOpen(false);
                   }}
                   disabled={rejectMutation.isPending}
                 >
-                  <XCircle className="w-4 h-4 mr-2" />
+                  <XCircle className="w-4 h-4 mr-1" />
                   Reject
                 </Button>
               </div>
