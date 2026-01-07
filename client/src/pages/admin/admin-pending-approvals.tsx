@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Eye, Package, Store, Briefcase } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, XCircle, Eye, Package, Store, Briefcase, Calendar, Clock, Coins, MapPin, Users, DollarSign, Edit } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -17,18 +18,19 @@ interface ListingWithUser extends Listing {
     firstName?: string;
     lastName?: string;
   };
+  isEdit?: boolean;
 }
 
 export default function AdminPendingApprovals() {
   const { toast } = useToast();
   const [selectedItem, setSelectedItem] = useState<ListingWithUser | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("new");
 
   const { data: pendingItems = [], isLoading } = useQuery<ListingWithUser[]>({
     queryKey: ['/api/admin/pending-approvals'],
   });
 
-  // Fetch coupon data for the selected product
   const { data: productCoupon } = useQuery<Coupon | null>({
     queryKey: ['/api/coupons/product', selectedItem?.id],
     enabled: !!selectedItem && selectedItem.type === 'product',
@@ -69,6 +71,8 @@ export default function AdminPendingApprovals() {
         return <Package className="w-4 h-4" />;
       case 'service':
         return <Briefcase className="w-4 h-4" />;
+      case 'event':
+        return <Calendar className="w-4 h-4" />;
       default:
         return <Store className="w-4 h-4" />;
     }
@@ -99,6 +103,110 @@ export default function AdminPendingApprovals() {
     rejectMutation.mutate(itemId);
   };
 
+  const newSubmissions = pendingItems.filter(item => {
+    const createdAt = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+    const updatedAt = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+    return Math.abs(updatedAt - createdAt) < 60000;
+  });
+
+  const editRequests = pendingItems.filter(item => {
+    const createdAt = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+    const updatedAt = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+    return Math.abs(updatedAt - createdAt) >= 60000;
+  });
+
+  const renderTable = (items: ListingWithUser[], isEditRequest: boolean = false) => (
+    items.length === 0 ? (
+      <div className="text-center py-12 text-muted-foreground">
+        <CheckCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+        <p className="text-lg">No {isEditRequest ? 'edit requests' : 'pending items'} to review</p>
+        <p className="text-sm">All submissions have been processed</p>
+      </div>
+    ) : (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Type</TableHead>
+            <TableHead>Item Name</TableHead>
+            <TableHead>Submitted By</TableHead>
+            <TableHead>{isEditRequest ? 'Last Updated' : 'Date Submitted'}</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.id} data-testid={`pending-item-${item.id}`}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {getTypeIcon(item.type)}
+                  <Badge variant="outline" className="capitalize">
+                    {item.type}
+                  </Badge>
+                  {isEditRequest && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Edit className="w-3 h-3 mr-1" />
+                      Edited
+                    </Badge>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="font-medium" data-testid={`item-title-${item.id}`}>
+                {item.title}
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-medium" data-testid={`item-user-${item.id}`}>
+                    {item.user?.firstName && item.user?.lastName
+                      ? `${item.user.firstName} ${item.user.lastName}`
+                      : item.user?.username || 'Unknown'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{item.user?.email || 'N/A'}</p>
+                </div>
+              </TableCell>
+              <TableCell data-testid={`item-date-${item.id}`}>
+                {formatDate(isEditRequest ? item.updatedAt : item.createdAt)}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleView(item)}
+                    data-testid={`button-view-${item.id}`}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => handleAccept(item.id)}
+                    disabled={acceptMutation.isPending}
+                    data-testid={`button-accept-${item.id}`}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleReject(item.id)}
+                    disabled={rejectMutation.isPending}
+                    data-testid={`button-reject-${item.id}`}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Reject
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    )
+  );
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -119,95 +227,37 @@ export default function AdminPendingApprovals() {
           <p className="text-muted-foreground">Review and approve user submissions</p>
         </CardHeader>
         <CardContent>
-          {pendingItems.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">No pending items to review</p>
-              <p className="text-sm">All submissions have been processed</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead>Submitted By</TableHead>
-                  <TableHead>Date Submitted</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingItems.map((item) => (
-                  <TableRow key={item.id} data-testid={`pending-item-${item.id}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(item.type)}
-                        <Badge variant="outline" className="capitalize">
-                          {item.type}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium" data-testid={`item-title-${item.id}`}>
-                      {item.title}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium" data-testid={`item-user-${item.id}`}>
-                          {item.user?.firstName && item.user?.lastName
-                            ? `${item.user.firstName} ${item.user.lastName}`
-                            : item.user?.username || 'Unknown'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{item.user?.email || 'N/A'}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell data-testid={`item-date-${item.id}`}>
-                      {formatDate(item.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleView(item)}
-                          data-testid={`button-view-${item.id}`}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleAccept(item.id)}
-                          disabled={acceptMutation.isPending}
-                          data-testid={`button-accept-${item.id}`}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleReject(item.id)}
-                          disabled={rejectMutation.isPending}
-                          data-testid={`button-reject-${item.id}`}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="new" className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                New Submissions
+                {newSubmissions.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{newSubmissions.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="edits" className="flex items-center gap-2">
+                <Edit className="w-4 h-4" />
+                Edit Requests
+                {editRequests.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{editRequests.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="new">
+              {renderTable(newSubmissions, false)}
+            </TabsContent>
+            
+            <TabsContent value="edits">
+              {renderTable(editRequests, true)}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
-      {/* View Details Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Item Details</DialogTitle>
             <DialogDescription>Review item information before approving or rejecting</DialogDescription>
@@ -271,6 +321,90 @@ export default function AdminPendingApprovals() {
                 </div>
               )}
 
+              {selectedItem.type === 'event' && (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Event Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
+                    {selectedItem.eventDate && (
+                      <div className="flex items-start gap-2">
+                        <Calendar className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Event Date</p>
+                          <p className="mt-1">{formatDate(selectedItem.eventDate)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.eventPrice && (
+                      <div className="flex items-start gap-2">
+                        <DollarSign className="w-4 h-4 text-green-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Event Price</p>
+                          <p className="mt-1 font-semibold">${selectedItem.eventPrice}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.eventTdPrice && (
+                      <div className="flex items-start gap-2">
+                        <Coins className="w-4 h-4 text-amber-500 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">TimeDollar Price</p>
+                          <p className="mt-1 font-semibold">{selectedItem.eventTdPrice} TD</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.eventHours && (
+                      <div className="flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Duration</p>
+                          <p className="mt-1">{selectedItem.eventHours} hours</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.capacity && (
+                      <div className="flex items-start gap-2">
+                        <Users className="w-4 h-4 text-indigo-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Capacity</p>
+                          <p className="mt-1">{selectedItem.capacity} attendees</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.paymentType && (
+                      <div className="flex items-start gap-2">
+                        <DollarSign className="w-4 h-4 text-teal-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Payment Type</p>
+                          <p className="mt-1 capitalize">{selectedItem.paymentType.replace('_', ' ')}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.address && (
+                      <div className="flex items-start gap-2 col-span-2">
+                        <MapPin className="w-4 h-4 text-red-500 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">Location</p>
+                          <p className="mt-1">{selectedItem.address}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.isOnlineOnly && (
+                      <div className="col-span-2">
+                        <Badge variant="secondary">Online Event</Badge>
+                        {selectedItem.website && (
+                          <a href={selectedItem.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2 text-sm">
+                            {selectedItem.website}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {selectedItem.type === 'product' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -284,7 +418,6 @@ export default function AdminPendingApprovals() {
                 </div>
               )}
 
-              {/* Display coupon information if available */}
               {selectedItem.type === 'product' && productCoupon && (
                 <div className="border-t pt-4 mt-4">
                   <p className="text-sm font-medium text-muted-foreground mb-3">📣 Product Coupon</p>
@@ -357,10 +490,10 @@ export default function AdminPendingApprovals() {
                 </div>
               )}
 
-              {(selectedItem.address || selectedItem.city) && (
+              {(selectedItem.address || selectedItem.city) && selectedItem.type !== 'event' && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Location</p>
-                  <p className="mt-1">{selectedItem.address}, {selectedItem.city}</p>
+                  <p className="mt-1">{selectedItem.address}{selectedItem.city ? `, ${selectedItem.city}` : ''}</p>
                 </div>
               )}
 
