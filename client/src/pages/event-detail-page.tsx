@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { QRCodeSVG } from "qrcode.react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +73,8 @@ export default function EventDetailPage() {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [registrationData, setRegistrationData] = useState<RegistrationSuccessData | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: events, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings'],
@@ -366,7 +369,18 @@ export default function EventDetailPage() {
                   className="w-full" 
                   size="lg" 
                   data-testid="button-register"
-                  onClick={() => setIsRegisterDialogOpen(true)}
+                  onClick={() => {
+                    if (!user) {
+                      toast({
+                        title: "Login Required",
+                        description: "Please log in to register for this event.",
+                        variant: "destructive",
+                      });
+                      setLocation("/auth");
+                      return;
+                    }
+                    setIsRegisterDialogOpen(true);
+                  }}
                   disabled={!!(event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity)}
                 >
                   {event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity 
@@ -375,6 +389,11 @@ export default function EventDetailPage() {
                   }
                 </Button>
 
+                {!user && (
+                  <p className="text-xs text-center text-amber-600 dark:text-amber-400">
+                    You must be logged in to register for this event
+                  </p>
+                )}
                 <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                   By registering, you agree to the event terms and conditions
                 </p>

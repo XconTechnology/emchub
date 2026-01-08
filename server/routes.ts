@@ -637,10 +637,14 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Event Registration endpoints
-  app.post('/api/events/:eventId/register', async (req: any, res) => {
+  app.post('/api/events/:eventId/register', isAuthenticated, async (req: any, res) => {
     try {
       const { eventId } = req.params;
-      const userId = req.user?.id || null;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "You must be logged in to register for events" });
+      }
 
       // Get event to check capacity and vendor
       const event = await storage.getListing(eventId);
