@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Calendar, Plus, Edit, Trash2, Users, MapPin, Eye, QrCode, CheckCircle, X, Camera } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, Users, MapPin, Eye, QrCode, CheckCircle, X, Camera, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -35,6 +35,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface VerifiedRegistration {
   id: string;
@@ -67,6 +69,8 @@ export default function UserEvents() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [verifiedRegistration, setVerifiedRegistration] = useState<VerificationResult | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [tdAwardRegistration, setTdAwardRegistration] = useState<any | null>(null);
+  const [tdAwardAmount, setTdAwardAmount] = useState<string>("");
 
   const { data: userListings, isLoading } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
@@ -132,6 +136,39 @@ export default function UserEvents() {
       toast({ title: "Failed to check in attendee", variant: "destructive" });
     },
   });
+
+  const awardTdMutation = useMutation({
+    mutationFn: async ({ registrationId, amount }: { registrationId: string; amount: string }) => {
+      const response = await apiRequest('POST', `/api/vendor/registrations/${registrationId}/award-td`, { amount });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: data.message || "TimeDollar awarded successfully!" });
+      setTdAwardRegistration(null);
+      setTdAwardAmount("");
+      queryClient.invalidateQueries({ queryKey: ['/api/vendor/all-registrations'] });
+      if (viewingRegistrations?.id) {
+        queryClient.invalidateQueries({ queryKey: ['/api/vendor/events', viewingRegistrations.id, 'registrations'] });
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Failed to award TimeDollar", variant: "destructive" });
+    },
+  });
+
+  const handleAwardTd = (registration: any) => {
+    setTdAwardRegistration(registration);
+    setTdAwardAmount(registration.eventTdPrice?.toString() || "1");
+  };
+
+  const confirmAwardTd = () => {
+    if (tdAwardRegistration && tdAwardAmount) {
+      awardTdMutation.mutate({
+        registrationId: tdAwardRegistration.id,
+        amount: tdAwardAmount,
+      });
+    }
+  };
 
   const handleScanQR = () => {
     setIsScannerOpen(true);
@@ -351,9 +388,9 @@ export default function UserEvents() {
                       <TableHead>Attendee Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Phone</TableHead>
-                      <TableHead>Notes</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Registered Date</TableHead>
+                      <TableHead>TD Reward</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -370,16 +407,37 @@ export default function UserEvents() {
                         <TableCell>{registration.fullName}</TableCell>
                         <TableCell>{registration.email}</TableCell>
                         <TableCell>{registration.phone || '-'}</TableCell>
-                        <TableCell className="max-w-xs truncate" title={registration.notes || ''}>
-                          {registration.notes || '-'}
-                        </TableCell>
                         <TableCell>
-                          <Badge variant={registration.status === 'confirmed' ? 'default' : 'secondary'}>
+                          <Badge variant={registration.status === 'checked_in' ? 'default' : registration.status === 'confirmed' ? 'secondary' : 'outline'}>
                             {registration.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {registration.createdAt ? new Date(registration.createdAt).toLocaleDateString() : '-'}
+                        <TableCell>
+                          {registration.tdRewarded ? (
+                            <Badge variant="default" className="bg-green-600">
+                              <Coins className="w-3 h-3 mr-1" />
+                              {registration.tdRewardAmount} TD
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {!registration.tdRewarded && registration.userId && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAwardTd(registration)}
+                              data-testid={`button-award-td-${registration.id}`}
+                              title="Award TimeDollar"
+                            >
+                              <Coins className="w-4 h-4 mr-1" />
+                              Award TD
+                            </Button>
+                          )}
+                          {!registration.userId && (
+                            <span className="text-xs text-gray-400">Guest</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -633,6 +691,79 @@ export default function UserEvents() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* TD Award Dialog */}
+      <Dialog open={!!tdAwardRegistration} onOpenChange={(open) => !open && setTdAwardRegistration(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-yellow-500" />
+              Award TimeDollar
+            </DialogTitle>
+            <DialogDescription>
+              Award TimeDollar to {tdAwardRegistration?.fullName} for attending the event
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide">Attendee</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {tdAwardRegistration?.fullName}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block text-xs uppercase tracking-wide">Event</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {tdAwardRegistration?.eventTitle}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="td-amount">TimeDollar Amount</Label>
+              <Input
+                id="td-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={tdAwardAmount}
+                onChange={(e) => setTdAwardAmount(e.target.value)}
+                placeholder="Enter TD amount"
+                data-testid="input-td-amount"
+              />
+              {tdAwardRegistration?.eventTdPrice && (
+                <p className="text-xs text-gray-500">
+                  Suggested: {tdAwardRegistration.eventTdPrice} TD (event TD price)
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setTdAwardRegistration(null)}
+              data-testid="button-cancel-td-award"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+              onClick={confirmAwardTd}
+              disabled={awardTdMutation.isPending || !tdAwardAmount || parseFloat(tdAwardAmount) <= 0}
+              data-testid="button-confirm-td-award"
+            >
+              <Coins className="w-4 h-4 mr-2" />
+              {awardTdMutation.isPending ? "Awarding..." : `Award ${tdAwardAmount || '0'} TD`}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
