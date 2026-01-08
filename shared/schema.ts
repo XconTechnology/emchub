@@ -224,7 +224,10 @@ export const eventRegistrations = pgTable("event_registrations", {
   email: varchar("email").notNull(),
   phone: varchar("phone"),
   notes: text("notes"), // Additional notes from registrant
-  status: varchar("status").notNull().default("confirmed"), // 'confirmed', 'cancelled', 'attended'
+  status: varchar("status").notNull().default("confirmed"), // 'confirmed', 'cancelled', 'attended', 'checked_in'
+  tdRewarded: boolean("td_rewarded").default(false), // Whether TD was awarded to this attendee
+  tdRewardAmount: decimal("td_reward_amount", { precision: 10, scale: 2 }), // Amount of TD awarded
+  tdRewardedAt: timestamp("td_rewarded_at"), // When TD was awarded
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -950,6 +950,82 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Award TimeDollar to event attendee
+  app.post('/api/vendor/registrations/:registrationId/award-td', isAuthenticated, async (req: any, res) => {
+    try {
+      const { registrationId } = req.params;
+      const { amount } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid TD amount" });
+      }
+
+      const tdAmount = parseFloat(amount);
+
+      // Get the registration
+      const registration = await storage.getEventRegistration(registrationId);
+      if (!registration) {
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Check if TD was already awarded
+      if (registration.tdRewarded) {
+        return res.status(400).json({ message: "TD has already been awarded to this attendee" });
+      }
+
+      // Verify event ownership
+      const event = await storage.getListing(registration.eventId);
+      if (!event || event.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to award TD for this registration" });
+      }
+
+      // Check if the attendee has a user account (required for TD wallet)
+      if (!registration.userId) {
+        return res.status(400).json({ message: "Cannot award TD to guest registrations. User must have an account." });
+      }
+
+      // Get or create TD wallet for the attendee
+      let wallet = await storage.getTdWallet(registration.userId);
+      if (!wallet) {
+        wallet = await storage.createTdWallet({ userId: registration.userId });
+      }
+
+      // Update wallet balance
+      const newBalance = parseFloat(wallet.tdBalance?.toString() || "0") + tdAmount;
+      const newEarned = parseFloat(wallet.tdEarned?.toString() || "0") + tdAmount;
+      await storage.updateTdWallet(registration.userId, {
+        tdBalance: newBalance.toString(),
+        tdEarned: newEarned.toString(),
+      });
+
+      // Create TD transaction record
+      await storage.createTdTransaction({
+        userId: registration.userId,
+        type: 'earn',
+        amount: tdAmount.toString(),
+        listingId: registration.eventId,
+        note: `Event attendance reward for "${event.title}"`,
+      });
+
+      // Mark registration as TD rewarded
+      await storage.updateEventRegistrationTdReward(registrationId, tdAmount);
+
+      res.json({ 
+        success: true, 
+        message: `Successfully awarded ${tdAmount} TD to ${registration.fullName}`,
+        tdAmount,
+      });
+    } catch (error) {
+      console.error("Error awarding TD:", error);
+      res.status(500).json({ message: "Failed to award TimeDollar" });
+    }
+  });
+
   // Legacy business listing routes (deprecated but maintained for compatibility)
   app.post('/api/business-listings', isAuthenticated, async (req: any, res) => {
     try {

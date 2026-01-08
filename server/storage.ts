@@ -95,6 +95,7 @@ export interface IStorage {
   getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]>;
   getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]>;
   updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration>;
+  updateEventRegistrationTdReward(id: string, tdAmount: number): Promise<EventRegistration>;
   checkUserRegisteredForEvent(eventId: string, userId: string | null, email: string): Promise<boolean>;
   
   // Coupon operations
@@ -844,10 +845,14 @@ export class DatabaseStorage implements IStorage {
         phone: eventRegistrations.phone,
         notes: eventRegistrations.notes,
         status: eventRegistrations.status,
+        tdRewarded: eventRegistrations.tdRewarded,
+        tdRewardAmount: eventRegistrations.tdRewardAmount,
+        tdRewardedAt: eventRegistrations.tdRewardedAt,
         createdAt: eventRegistrations.createdAt,
         updatedAt: eventRegistrations.updatedAt,
         eventTitle: listings.title,
         eventDate: listings.eventDate,
+        eventTdPrice: listings.eventTdPrice,
       })
       .from(eventRegistrations)
       .leftJoin(listings, eq(eventRegistrations.eventId, listings.id))
@@ -859,6 +864,20 @@ export class DatabaseStorage implements IStorage {
     const [registration] = await db
       .update(eventRegistrations)
       .set({ status, updatedAt: new Date() })
+      .where(eq(eventRegistrations.id, id))
+      .returning();
+    return registration;
+  }
+
+  async updateEventRegistrationTdReward(id: string, tdAmount: number): Promise<EventRegistration> {
+    const [registration] = await db
+      .update(eventRegistrations)
+      .set({ 
+        tdRewarded: true, 
+        tdRewardAmount: tdAmount.toString(),
+        tdRewardedAt: new Date(),
+        updatedAt: new Date() 
+      })
       .where(eq(eventRegistrations.id, id))
       .returning();
     return registration;
