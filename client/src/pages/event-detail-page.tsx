@@ -82,6 +82,16 @@ export default function EventDetailPage() {
 
   const event = events?.find(e => e.id === eventId && e.type === 'event');
 
+  // Check if user is already registered for this event
+  const { data: userRegistrations } = useQuery<any[]>({
+    queryKey: ['/api/user/event-registrations'],
+    enabled: !!user,
+  });
+
+  const isAlreadyRegistered = userRegistrations?.some(
+    (reg: any) => reg.eventId === eventId
+  );
+
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
@@ -365,31 +375,48 @@ export default function EventDetailPage() {
                 </div>
 
                 {/* Register Button */}
-                <Button 
-                  className="w-full" 
-                  size="lg" 
-                  data-testid="button-register"
-                  onClick={() => {
-                    if (!user) {
-                      toast({
-                        title: "Login Required",
-                        description: "Please log in to register for this event.",
-                        variant: "destructive",
-                      });
-                      setLocation("/auth");
-                      return;
+                {isAlreadyRegistered ? (
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-600 cursor-default" 
+                    size="lg" 
+                    data-testid="button-already-registered"
+                    disabled
+                  >
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Already Registered
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    data-testid="button-register"
+                    onClick={() => {
+                      if (!user) {
+                        toast({
+                          title: "Login Required",
+                          description: "Please log in to register for this event.",
+                          variant: "destructive",
+                        });
+                        setLocation("/auth");
+                        return;
+                      }
+                      setIsRegisterDialogOpen(true);
+                    }}
+                    disabled={!!(event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity)}
+                  >
+                    {event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity 
+                      ? "Event Full" 
+                      : "Register for Event"
                     }
-                    setIsRegisterDialogOpen(true);
-                  }}
-                  disabled={!!(event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity)}
-                >
-                  {event.capacity && event.attendeeCount && event.attendeeCount >= event.capacity 
-                    ? "Event Full" 
-                    : "Register for Event"
-                  }
-                </Button>
+                  </Button>
+                )}
 
-                {!user && (
+                {isAlreadyRegistered && (
+                  <p className="text-xs text-center text-green-600 dark:text-green-400">
+                    You are already registered for this event
+                  </p>
+                )}
+                {!user && !isAlreadyRegistered && (
                   <p className="text-xs text-center text-amber-600 dark:text-amber-400">
                     You must be logged in to register for this event
                   </p>

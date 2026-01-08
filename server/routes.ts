@@ -694,6 +694,23 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get user's own event registrations
+  app.get('/api/user/event-registrations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const registrations = await storage.getEventRegistrationsByUser(userId);
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching user event registrations:", error);
+      res.status(500).json({ message: "Failed to fetch event registrations" });
+    }
+  });
+
   app.get('/api/vendor/events/:eventId/registrations', isAuthenticated, async (req: any, res) => {
     try {
       const { eventId } = req.params;

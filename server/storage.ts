@@ -93,6 +93,7 @@ export interface IStorage {
   createEventRegistration(registration: InsertEventRegistration & { userId: string | null; vendorId: string; eventId: string }): Promise<EventRegistration>;
   getEventRegistration(id: string): Promise<EventRegistration | undefined>;
   getEventRegistrationsByEvent(eventId: string): Promise<EventRegistration[]>;
+  getEventRegistrationsByUser(userId: string): Promise<EventRegistration[]>;
   getVendorEventRegistrations(vendorId: string): Promise<EventRegistration[]>;
   updateEventRegistrationStatus(id: string, status: string): Promise<EventRegistration>;
   updateEventRegistrationTdReward(id: string, tdAmount: number): Promise<EventRegistration>;
@@ -831,6 +832,14 @@ export class DatabaseStorage implements IStorage {
       .from(eventRegistrations)
       .where(eq(eventRegistrations.eventId, eventId))
       .orderBy(eventRegistrations.createdAt);
+  }
+
+  async getEventRegistrationsByUser(userId: string): Promise<EventRegistration[]> {
+    return db
+      .select()
+      .from(eventRegistrations)
+      .where(eq(eventRegistrations.userId, userId))
+      .orderBy(desc(eventRegistrations.createdAt));
   }
 
   async getVendorEventRegistrations(vendorId: string): Promise<any[]> {
