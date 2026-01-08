@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Coins, TrendingUp, TrendingDown, RefreshCw, History, Users } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, RefreshCw, History, Users, Store } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,8 @@ interface TdWallet {
   totalSpent: number;
   username: string;
   email: string;
+  role?: string;
+  tdBalance?: number;
 }
 
 interface TdTransaction {
@@ -166,10 +168,14 @@ export default function AdminTimeDollars() {
       </div>
 
       <Tabs defaultValue="wallets" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="wallets" data-testid="tab-td-wallets">
             <Users className="w-4 h-4 mr-2" />
             User Balances
+          </TabsTrigger>
+          <TabsTrigger value="vendors" data-testid="tab-td-vendors">
+            <Store className="w-4 h-4 mr-2" />
+            Vendor Balances
           </TabsTrigger>
           <TabsTrigger value="transactions" data-testid="tab-td-transactions">
             <History className="w-4 h-4 mr-2" />
@@ -239,6 +245,64 @@ export default function AdminTimeDollars() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Vendor Balances Tab */}
+        <TabsContent value="vendors" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendor TimeDollar Balances</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {walletsLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading vendor wallets...</div>
+              ) : !wallets || wallets.filter(w => w.role === 'business').length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No vendor wallets found</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {wallets
+                      .filter(wallet => wallet.role === 'business')
+                      .map((wallet) => (
+                        <TableRow key={wallet.id} data-testid={`row-vendor-wallet-${wallet.userId}`}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <Store className="w-4 h-4 text-blue-600" />
+                              {wallet.username}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-600 dark:text-gray-400">{wallet.email}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            <div className="flex items-center justify-end gap-1">
+                              <Coins className="w-4 h-4 text-yellow-600" />
+                              {wallet.tdBalance ?? wallet.balance ?? 0} TD
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAdjustBalance(wallet)}
+                              data-testid={`button-adjust-vendor-balance-${wallet.userId}`}
+                            >
+                              Add TD
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               )}

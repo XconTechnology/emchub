@@ -3403,7 +3403,7 @@ export class DatabaseStorage implements IStorage {
   
   async getAllTdWallets(): Promise<any[]> {
     const { tdWallet } = await import("@shared/schema");
-    // Join with users table to get user info
+    // Join with users table to get user info including role
     const wallets = await db
       .select({
         id: tdWallet.id,
@@ -3411,6 +3411,7 @@ export class DatabaseStorage implements IStorage {
         tdBalance: tdWallet.tdBalance,
         username: users.username,
         email: users.email,
+        role: users.role,
       })
       .from(tdWallet)
       .leftJoin(users, eq(tdWallet.userId, users.id))
