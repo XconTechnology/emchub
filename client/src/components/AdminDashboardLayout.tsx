@@ -20,6 +20,7 @@ import {
   Calendar,
   ExternalLink,
   Wrench,
+  Coins,
 } from "lucide-react";
 import {
   Sidebar,
@@ -138,6 +139,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Staff",
       url: "/admin/staff",
       icon: UserCog,
+    },
+    {
+      title: "TimeDollars",
+      url: "/admin/timedollars",
+      icon: Coins,
     },
     {
       title: "Recycle Bin",
