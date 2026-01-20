@@ -107,11 +107,11 @@ export default function Footer() {
             <ul className="space-y-2">
               <li className="flex items-center text-background/80">
                 <Mail className="w-4 h-4 mr-3" />
-                <span data-testid="contact-email">info@emchub.hk</span>
+                <span data-testid="contact-email">emchub@ilm.org.hk</span>
               </li>
               <li className="flex items-center text-background/80">
                 <Phone className="w-4 h-4 mr-3" />
-                <span data-testid="contact-phone">+852 1234 5678</span>
+                <span data-testid="contact-phone">+852 9260 5885</span>
               </li>
               <li className="flex items-center text-background/80">
                 <MapPin className="w-4 h-4 mr-3" />
