@@ -373,6 +373,7 @@ export const reviews = pgTable("reviews", {
   vendorId: varchar("vendor_id").notNull().references(() => users.id), // Vendor who owns the listing
   rating: integer("rating").notNull(), // 1-5 stars
   comment: text("comment"),
+  images: text("images").array(), // Optional array of image URLs
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
