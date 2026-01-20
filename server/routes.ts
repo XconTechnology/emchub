@@ -4143,7 +4143,7 @@ export function registerRoutes(app: Express): Server {
   // Submit a review (authenticated users only)
   app.post("/api/reviews", isAuthenticated, async (req, res) => {
     try {
-      const { listingId, rating, comment } = req.body;
+      const { listingId, rating, comment, images } = req.body;
       
       if (!listingId) {
         return res.status(400).json({ error: "Listing ID is required" });
@@ -4158,12 +4158,16 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ error: "Listing not found" });
       }
       
+      // Validate images array if provided
+      const validImages = images && Array.isArray(images) ? images.filter((url: string) => typeof url === 'string' && url.trim()) : null;
+      
       const review = await storage.createReview({
         userId: req.user.id,
         listingId,
         vendorId: listing.userId,
         rating: parseInt(rating),
         comment: comment || null,
+        images: validImages,
       });
       
       res.json(review);
