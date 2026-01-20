@@ -147,11 +147,11 @@ export default function AboutUs() {
                     <div>
                       <p className="font-semibold text-foreground">Email</p>
                       <a 
-                        href="mailto:info@emchub.com.hk" 
+                        href="mailto:emchub@ilm.org.hk" 
                         className="text-primary hover:underline"
                         data-testid="link-email"
                       >
-                        info@emchub.com.hk
+                        emchub@ilm.org.hk
                       </a>
                     </div>
                   </div>
@@ -163,11 +163,11 @@ export default function AboutUs() {
                     <div>
                       <p className="font-semibold text-foreground">Phone</p>
                       <a 
-                        href="tel:+85298765432" 
+                        href="tel:+852 9260 5885" 
                         className="text-primary hover:underline"
                         data-testid="link-phone"
                       >
-                        +852 9876 5432
+                        +852 9260 5885
                       </a>
                     </div>
                   </div>
