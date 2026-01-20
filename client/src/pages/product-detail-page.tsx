@@ -27,8 +27,12 @@ import {
   DollarSign,
   Coins,
   MessageCircle,
-  X
+  X,
+  Upload,
+  ImageIcon
 } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 import type { Listing, User } from "@shared/schema";
 import { normalizeImageUrls } from "@/lib/imageUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +79,7 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -102,6 +107,7 @@ export default function ProductDetailPage() {
     vendorId: string;
     rating: number;
     comment: string | null;
+    images: string[] | null;
     createdAt: string;
     user: {
       id: string;
@@ -133,6 +139,7 @@ export default function ProductDetailPage() {
         listingId: productId,
         rating: reviewRating,
         comment: reviewText || null,
+        images: reviewImages.length > 0 ? reviewImages : null,
       });
     },
     onSuccess: () => {
@@ -143,6 +150,7 @@ export default function ProductDetailPage() {
       setShowReviewForm(false);
       setReviewText("");
       setReviewRating(5);
+      setReviewImages([]);
       queryClient.invalidateQueries({ queryKey: [`/api/reviews/listing/${productId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/reviews/check/${productId}`] });
     },
@@ -975,6 +983,79 @@ export default function ProductDetailPage() {
                     />
                   </div>
                   
+                  {/* Optional Image Upload */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">
+                      <ImageIcon className="w-4 h-4 inline mr-1" />
+                      Add Photos (optional)
+                    </label>
+                    <div className="space-y-3">
+                      <ObjectUploader
+                        maxNumberOfFiles={3}
+                        maxFileSize={5242880}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch('/api/objects/upload', {
+                            method: 'POST',
+                            credentials: 'include',
+                          });
+                          if (!response.ok) throw new Error('Failed to get upload URL');
+                          const { uploadURL } = await response.json();
+                          return { method: 'PUT' as const, url: uploadURL };
+                        }}
+                        onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                          const urls = result.successful?.map(file => file.uploadURL) || [];
+                          for (const url of urls) {
+                            try {
+                              const response = await fetch('/api/listing-images', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ imageURL: url }),
+                              });
+                              if (response.ok) {
+                                const { objectPath } = await response.json();
+                                setReviewImages(prev => [...prev, objectPath]);
+                              }
+                            } catch (error) {
+                              console.error('Error processing upload:', error);
+                            }
+                          }
+                          toast({
+                            title: "Images Uploaded",
+                            description: `${urls.length} image(s) uploaded successfully`,
+                          });
+                        }}
+                        buttonClassName="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Photos
+                      </ObjectUploader>
+                      
+                      {reviewImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {reviewImages.map((imagePath, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={imagePath} 
+                                alt={`Review upload ${index + 1}`} 
+                                className="w-20 h-20 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== index))}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                data-testid={`button-remove-review-image-${index}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500">Max 3 photos, 5MB each</p>
+                    </div>
+                  </div>
+                  
                   <Button 
                     onClick={handleSubmitReview} 
                     className="bg-[#8FC24C] hover:bg-[#7AB23C]"
@@ -1040,6 +1121,26 @@ export default function ProductDetailPage() {
                             <p className="mt-2 text-gray-700" data-testid={`review-comment-${review.id}`}>
                               {review.comment}
                             </p>
+                          )}
+                          {review.images && review.images.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {review.images.map((imageUrl, imgIndex) => (
+                                <a 
+                                  key={imgIndex} 
+                                  href={imageUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <img 
+                                    src={imageUrl} 
+                                    alt={`Review photo ${imgIndex + 1}`}
+                                    className="w-24 h-24 object-cover rounded border hover:opacity-90 transition-opacity cursor-pointer"
+                                    data-testid={`review-image-${review.id}-${imgIndex}`}
+                                  />
+                                </a>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>
