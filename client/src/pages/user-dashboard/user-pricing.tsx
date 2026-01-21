@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
-import { Receipt, DollarSign, Coins } from "lucide-react";
+import { Receipt, DollarSign, Coins, Info } from "lucide-react";
+import { Link } from "wouter";
 import { useState } from "react";
 
 export default function UserPricing() {
@@ -35,6 +36,17 @@ export default function UserPricing() {
       <div>
         <h2 className="text-2xl font-bold">Pricing Settings</h2>
         <p className="text-gray-600">Configure default payment options for your offerings</p>
+      </div>
+
+      {/* Beta Notice */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2">
+        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          TimeDollars is currently in Beta phase.{" "}
+          <Link href="/about-us" className="font-medium underline hover:no-underline">
+            Click here to learn more
+          </Link>
+        </p>
       </div>
 
       <Card>

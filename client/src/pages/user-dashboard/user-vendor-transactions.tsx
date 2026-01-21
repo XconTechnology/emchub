@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Calendar, User, Package } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, User, Package, Info } from "lucide-react";
+import { Link } from "wouter";
 import { format } from "date-fns";
 
 interface Transaction {
@@ -82,6 +83,17 @@ export default function UserVendorTransactions() {
         <h1 className="text-3xl font-bold mb-2">Transactions & Earnings</h1>
         <p className="text-muted-foreground">
           View your sales history and track your earnings
+        </p>
+      </div>
+
+      {/* Beta Notice */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2">
+        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          TimeDollars is currently in Beta phase.{" "}
+          <Link href="/about-us" className="font-medium underline hover:no-underline">
+            Click here to learn more
+          </Link>
         </p>
       </div>
 

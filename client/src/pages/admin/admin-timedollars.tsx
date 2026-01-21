@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Coins, TrendingUp, TrendingDown, RefreshCw, History, Users, Store } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, RefreshCw, History, Users, Store, Info } from "lucide-react";
+import { Link } from "wouter";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -164,6 +165,17 @@ export default function AdminTimeDollars() {
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">TimeDollar Management</h2>
         <p className="text-gray-600 dark:text-gray-400">
           Manage user TimeDollar balances, view transactions, and monitor conversions
+        </p>
+      </div>
+
+      {/* Beta Notice */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2">
+        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          TimeDollars is currently in Beta phase.{" "}
+          <Link href="/about-us" className="font-medium underline hover:no-underline">
+            Click here to learn more
+          </Link>
         </p>
       </div>
 

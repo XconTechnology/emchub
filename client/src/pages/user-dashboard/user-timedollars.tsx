@@ -14,7 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Gift, Calendar, Package } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Gift, Calendar, Package, Info } from "lucide-react";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -107,6 +108,17 @@ export default function UserTimeDollars() {
 
   return (
     <div className="space-y-6">
+      {/* Beta Notice */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2">
+        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          TimeDollars is currently in Beta phase.{" "}
+          <Link href="/about-us" className="font-medium underline hover:no-underline">
+            Click here to learn more
+          </Link>
+        </p>
+      </div>
+
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-page-title">

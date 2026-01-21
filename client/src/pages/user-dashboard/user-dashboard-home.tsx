@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin, Calendar, Warehouse, Ticket, Receipt } from "lucide-react";
+import { ShoppingBag, Star, DollarSign, Briefcase, Plus, Store, Package, Edit, Trash2, MapPin, Calendar, Warehouse, Ticket, Receipt, Info } from "lucide-react";
+import { Link } from "wouter";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -321,6 +322,15 @@ export default function UserDashboardHome() {
                 {timeDollarData?.balance || 0} TD
               </p>
               <p className="text-yellow-100 mt-2">Available to spend</p>
+              <div className="mt-3 bg-yellow-600/50 rounded p-2 flex items-center gap-2">
+                <Info className="w-4 h-4 flex-shrink-0" />
+                <p className="text-xs">
+                  TimeDollars is currently in Beta phase.{" "}
+                  <Link href="/about-us" className="underline hover:no-underline font-medium">
+                    Click here to learn more
+                  </Link>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
