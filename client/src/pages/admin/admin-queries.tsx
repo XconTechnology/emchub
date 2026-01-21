@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { MessageSquare, Mail, Clock, CheckCircle, Eye } from "lucide-react";
+import { MessageSquare, Mail, CheckCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -39,16 +39,20 @@ export default function AdminQueries() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const { data: queries, isLoading } = useQuery<ContactQuery[]>({
-    queryKey: ['/api/admin/contact-queries'],
+    queryKey: ["/api/admin/contact-queries"],
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await apiRequest("PATCH", `/api/admin/contact-queries/${id}/status`, { status });
+      const res = await apiRequest(
+        "PATCH",
+        `/api/admin/contact-queries/${id}/status`,
+        { status }
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/contact-queries'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/contact-queries"] });
       toast({
         title: "Status Updated",
         description: "Query status has been updated successfully",
@@ -65,12 +69,16 @@ export default function AdminQueries() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'new':
+      case "new":
         return <Badge variant="destructive">New</Badge>;
-      case 'read':
+      case "read":
         return <Badge variant="secondary">Read</Badge>;
-      case 'replied':
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Replied</Badge>;
+      case "replied":
+        return (
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            Replied
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -79,13 +87,13 @@ export default function AdminQueries() {
   const handleViewQuery = (query: ContactQuery) => {
     setSelectedQuery(query);
     setViewDialogOpen(true);
-    if (query.status === 'new') {
-      updateStatusMutation.mutate({ id: query.id, status: 'read' });
+    if (query.status === "new") {
+      updateStatusMutation.mutate({ id: query.id, status: "read" });
     }
   };
 
   const handleMarkAsReplied = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'replied' });
+    updateStatusMutation.mutate({ id, status: "replied" });
   };
 
   if (isLoading) {
@@ -93,27 +101,32 @@ export default function AdminQueries() {
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+            <div
+              key={i}
+              className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"
+            ></div>
           ))}
         </div>
       </div>
     );
   }
 
-  const newCount = queries?.filter(q => q.status === 'new').length || 0;
-  const readCount = queries?.filter(q => q.status === 'read').length || 0;
-  const repliedCount = queries?.filter(q => q.status === 'replied').length || 0;
+  const newCount = queries?.filter((q) => q.status === "new").length || 0;
+  const repliedCount = queries?.filter((q) => q.status === "replied").length || 0;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Contact Queries</h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Contact Queries
+        </h2>
         <p className="text-gray-600 dark:text-gray-400">
           View and manage contact form submissions from the About page
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* ✅ UPDATED: Removed "Read" Card */}
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Queries</CardTitle>
@@ -124,16 +137,7 @@ export default function AdminQueries() {
             <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Read</CardTitle>
-            <Eye className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{readCount}</div>
-            <p className="text-xs text-muted-foreground">Pending reply</p>
-          </CardContent>
-        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Replied</CardTitle>
@@ -165,18 +169,30 @@ export default function AdminQueries() {
               </TableHeader>
               <TableBody>
                 {queries.map((query) => (
-                  <TableRow key={query.id} className={query.status === 'new' ? 'bg-red-50 dark:bg-red-900/10' : ''}>
+                  <TableRow
+                    key={query.id}
+                    className={
+                      query.status === "new"
+                        ? "bg-red-50 dark:bg-red-900/10"
+                        : ""
+                    }
+                  >
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(query.createdAt), 'MMM dd, yyyy HH:mm')}
+                      {format(new Date(query.createdAt), "MMM dd, yyyy HH:mm")}
                     </TableCell>
                     <TableCell className="font-medium">{query.name}</TableCell>
                     <TableCell>
-                      <a href={`mailto:${query.email}`} className="text-blue-600 hover:underline flex items-center gap-1">
+                      <a
+                        href={`mailto:${query.email}`}
+                        className="text-blue-600 hover:underline flex items-center gap-1"
+                      >
                         <Mail className="w-3 h-3" />
                         {query.email}
                       </a>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">{query.subject}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {query.subject}
+                    </TableCell>
                     <TableCell>{getStatusBadge(query.status)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -188,7 +204,8 @@ export default function AdminQueries() {
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Button>
-                        {query.status !== 'replied' && (
+
+                        {query.status !== "replied" && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -219,46 +236,74 @@ export default function AdminQueries() {
           <DialogHeader>
             <DialogTitle>Query Details</DialogTitle>
             <DialogDescription>
-              Submitted on {selectedQuery && format(new Date(selectedQuery.createdAt), 'MMMM dd, yyyy at HH:mm')}
+              Submitted on{" "}
+              {selectedQuery &&
+                format(
+                  new Date(selectedQuery.createdAt),
+                  "MMMM dd, yyyy 'at' HH:mm"
+                )}
             </DialogDescription>
           </DialogHeader>
+
           {selectedQuery && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </label>
                   <p className="text-lg">{selectedQuery.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </label>
                   <p className="text-lg">
-                    <a href={`mailto:${selectedQuery.email}`} className="text-blue-600 hover:underline">
+                    <a
+                      href={`mailto:${selectedQuery.email}`}
+                      className="text-blue-600 hover:underline"
+                    >
                       {selectedQuery.email}
                     </a>
                   </p>
                 </div>
               </div>
+
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Subject</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Subject
+                </label>
                 <p className="text-lg">{selectedQuery.subject}</p>
               </div>
+
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Message</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Message
+                </label>
                 <div className="mt-1 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <p className="whitespace-pre-wrap">{selectedQuery.message}</p>
                 </div>
               </div>
+
               <div className="flex justify-between items-center pt-4">
                 <div>{getStatusBadge(selectedQuery.status)}</div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => window.open(`mailto:${selectedQuery.email}?subject=Re: ${selectedQuery.subject}`, '_blank')}
+                    onClick={() =>
+                      window.open(
+                        `mailto:${selectedQuery.email}?subject=Re: ${encodeURIComponent(
+                          selectedQuery.subject
+                        )}`,
+                        "_blank"
+                      )
+                    }
                   >
                     <Mail className="w-4 h-4 mr-2" />
                     Reply via Email
                   </Button>
-                  {selectedQuery.status !== 'replied' && (
+
+                  {selectedQuery.status !== "replied" && (
                     <Button
                       onClick={() => {
                         handleMarkAsReplied(selectedQuery.id);
