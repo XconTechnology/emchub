@@ -913,6 +913,26 @@ export type InsertCoupon = z.infer<typeof insertCouponSchema>;
 
 export type CouponUsage = typeof couponUsage.$inferSelect;
 
+// Contact Queries table - stores contact form submissions from About page
+export const contactQueries = pgTable("contact_queries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  email: varchar("email").notNull(),
+  subject: varchar("subject").notNull(),
+  message: text("message").notNull(),
+  status: varchar("status").notNull().default("new"), // 'new' | 'read' | 'replied'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertContactQuerySchema = createInsertSchema(contactQueries).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
+export type ContactQuery = typeof contactQueries.$inferSelect;
+export type InsertContactQuery = z.infer<typeof insertContactQuerySchema>;
+
 // Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
 export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;

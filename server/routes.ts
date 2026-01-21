@@ -12,10 +12,12 @@ import {
   insertVendorRequestSchema,
   insertEventRegistrationSchema,
   eventRegistrationFormSchema,
+  insertContactQuerySchema,
   users as usersTable,
   serviceOffers,
   serviceRequests,
-  serviceRequestFees
+  serviceRequestFees,
+  contactQueries
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, or, desc } from "drizzle-orm";
@@ -5749,6 +5751,52 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error cancelling service:", error);
       res.status(500).json({ error: "Failed to cancel service" });
+    }
+  });
+
+  // Contact Query endpoints (public submission, admin viewing)
+  app.post('/api/contact-queries', async (req: any, res) => {
+    try {
+      const parsed = insertContactQuerySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid form data", details: parsed.error.errors });
+      }
+      const [query] = await db.insert(contactQueries).values(parsed.data).returning();
+      res.status(201).json(query);
+    } catch (error) {
+      console.error("Error saving contact query:", error);
+      res.status(500).json({ error: "Failed to save contact query" });
+    }
+  });
+
+  app.get('/api/admin/contact-queries', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const queries = await db.select().from(contactQueries).orderBy(desc(contactQueries.createdAt));
+      res.json(queries);
+    } catch (error) {
+      console.error("Error fetching contact queries:", error);
+      res.status(500).json({ error: "Failed to fetch contact queries" });
+    }
+  });
+
+  app.patch('/api/admin/contact-queries/:id/status', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!['new', 'read', 'replied'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      const [updated] = await db.update(contactQueries)
+        .set({ status })
+        .where(eq(contactQueries.id, id))
+        .returning();
+      if (!updated) {
+        return res.status(404).json({ error: "Query not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating contact query status:", error);
+      res.status(500).json({ error: "Failed to update query status" });
     }
   });
 

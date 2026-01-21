@@ -106,6 +106,7 @@ function Router() {
       <Route path="/admin/audit-logs" component={AdminRouter} />
       <Route path="/admin/timedollars" component={AdminRouter} />
       <Route path="/admin/disputes" component={AdminRouter} />
+      <Route path="/admin/queries" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />
       <Route path="/admin/listings/new" component={AdminRouter} />
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />

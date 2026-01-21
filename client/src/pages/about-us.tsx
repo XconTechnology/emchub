@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, Send, CheckCircle, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AboutUs() {
   const { toast } = useToast();
@@ -25,24 +27,37 @@ export default function AboutUs() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const submitMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const res = await apiRequest("POST", "/api/contact-queries", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent!",
+        description: "Thank you for contacting us. We'll get back to you soon."
+      });
+      setIsSubmitted(true);
+      setFormData({ name: "", email: "", subject: "", message: "" });
+      setTimeout(() => setIsSubmitted(false), 5000);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    toast({
-      title: "Message sent!",
-      description: "Thank you for contacting us. We'll get back to you soon."
-    });
-
-    setIsSubmitted(true);
-    setIsSubmitting(false);
-    setFormData({ name: "", email: "", subject: "", message: "" });
-
-    // Reset success state after 5 seconds
-    setTimeout(() => setIsSubmitted(false), 5000);
+    try {
+      await submitMutation.mutateAsync(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

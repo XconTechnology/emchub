@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Wrench,
   Coins,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -144,6 +145,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "TimeDollars",
       url: "/admin/timedollars",
       icon: Coins,
+    },
+    {
+      title: "Queries",
+      url: "/admin/queries",
+      icon: MessageSquare,
     },
     {
       title: "Recycle Bin",
