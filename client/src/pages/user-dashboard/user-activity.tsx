@@ -2,7 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Star, ShoppingBag, Package } from "lucide-react";
+import {
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Clock,
+  Star,
+  ShoppingBag,
+  Package
+} from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 
@@ -10,7 +18,7 @@ interface TimeDollarTransaction {
   id: string;
   userId: string;
   amount: number;
-  type: 'earn' | 'spend';
+  type: "earn" | "spend";
   description: string;
   createdAt: string;
 }
@@ -44,23 +52,23 @@ export default function UserActivity() {
   const { user } = useAuth();
 
   const { data: transactions, isLoading } = useQuery<TimeDollarTransaction[]>({
-    queryKey: ['/api/timedollars/transactions'],
-    enabled: !!user,
+    queryKey: ["/api/timedollars/transactions"],
+    enabled: !!user
   });
 
   const { data: balanceData } = useQuery<{ balance: number }>({
-    queryKey: ['/api/timedollars/balance'],
-    enabled: !!user,
+    queryKey: ["/api/timedollars/balance"],
+    enabled: !!user
   });
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ['/api/orders'],
-    enabled: !!user,
+    queryKey: ["/api/orders"],
+    enabled: !!user
   });
 
   const { data: reviews, isLoading: reviewsLoading } = useQuery<Review[]>({
-    queryKey: ['/api/reviews/user'],
-    enabled: !!user,
+    queryKey: ["/api/reviews/user"],
+    enabled: !!user
   });
 
   if (isLoading) {
@@ -78,7 +86,9 @@ export default function UserActivity() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Activity</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          My Activity
+        </h2>
         <p className="text-gray-600 dark:text-gray-400">
           Track your TimeDollar transactions and activity history
         </p>
@@ -97,6 +107,16 @@ export default function UserActivity() {
             {balanceData?.balance || 0} TD
           </p>
           <p className="text-yellow-100 mt-2">Available to spend</p>
+
+          {/* ✅ ADDED LINE + LINK */}
+          <p className="text-yellow-100/90 text-sm mt-2">
+            * TimeDollars is currently in Beta phase{" "}
+            <Link href="/about-us">
+              <span className="underline font-semibold cursor-pointer hover:text-white">
+                Click here to learn more
+              </span>
+            </Link>
+          </p>
         </CardContent>
       </Card>
 
@@ -120,12 +140,14 @@ export default function UserActivity() {
                   data-testid={`transaction-${transaction.id}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${
-                      transaction.type === 'earn' 
-                        ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
-                        : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
-                    }`}>
-                      {transaction.type === 'earn' ? (
+                    <div
+                      className={`p-2 rounded-full ${
+                        transaction.type === "earn"
+                          ? "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400"
+                          : "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400"
+                      }`}
+                    >
+                      {transaction.type === "earn" ? (
                         <ArrowDownLeft className="w-5 h-5" />
                       ) : (
                         <ArrowUpRight className="w-5 h-5" />
@@ -136,15 +158,18 @@ export default function UserActivity() {
                         {transaction.description}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(new Date(transaction.createdAt), 'PPp')}
+                        {format(new Date(transaction.createdAt), "PPp")}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold text-lg ${
-                      transaction.type === 'earn' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'earn' ? '+' : '-'}{transaction.amount} TD
+                    <p
+                      className={`font-semibold text-lg ${
+                        transaction.type === "earn" ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {transaction.type === "earn" ? "+" : "-"}
+                      {transaction.amount} TD
                     </p>
                   </div>
                 </div>
@@ -199,7 +224,7 @@ export default function UserActivity() {
                         Order #{order.id.slice(0, 8)}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(new Date(order.createdAt), 'PPp')}
+                        {format(new Date(order.createdAt), "PPp")}
                       </p>
                     </div>
                   </div>
@@ -207,13 +232,16 @@ export default function UserActivity() {
                     <p className="font-semibold text-lg text-gray-900 dark:text-white">
                       HK${order.totalAmount}
                     </p>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className={`text-xs ${
-                        order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                        order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        order.status === "delivered"
+                          ? "bg-green-100 text-green-800"
+                          : order.status === "shipped"
+                          ? "bg-blue-100 text-blue-800"
+                          : order.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {order.status}
@@ -276,7 +304,7 @@ export default function UserActivity() {
                       <div className="flex items-center justify-between">
                         <Link href={`/product/${review.listing?.id}`}>
                           <h4 className="font-medium text-gray-900 dark:text-white hover:text-primary cursor-pointer">
-                            {review.listing?.title || 'Product'}
+                            {review.listing?.title || "Product"}
                           </h4>
                         </Link>
                         <div className="flex items-center gap-1">
@@ -285,15 +313,15 @@ export default function UserActivity() {
                               key={i}
                               className={`w-4 h-4 ${
                                 i < review.rating
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-gray-300'
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
                               }`}
                             />
                           ))}
                         </div>
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Sold by @{review.vendor?.username || 'Vendor'}
+                        Sold by @{review.vendor?.username || "Vendor"}
                       </p>
                       {review.comment && (
                         <p className="text-gray-700 dark:text-gray-300 mt-2">
@@ -301,7 +329,7 @@ export default function UserActivity() {
                         </p>
                       )}
                       <p className="text-xs text-gray-400 mt-2">
-                        {format(new Date(review.createdAt), 'PPp')}
+                        {format(new Date(review.createdAt), "PPp")}
                       </p>
                     </div>
                   </div>
