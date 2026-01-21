@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { AdminAuthProvider } from "@/hooks/use-admin-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import ProfileRedirect from "@/pages/profile-redirect";
@@ -30,6 +31,10 @@ import NotFound from "@/pages/not-found";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import HowTimeBanksWork from "@/pages/how-timebanks-work";
+
+// ✅ ADD THIS IMPORT
+import PrivacyPolicy from "@/pages/privacypolicy";
+
 import { useEffect } from "react";
 
 function Router() {
@@ -42,25 +47,36 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+
       <Route path="/auth" component={AuthPage} />
       <Route path="/login" component={AuthPage} />
+
       <Route path="/staff-login" component={StaffLogin} />
       <Route path="/staff-dashboard" component={StaffDashboard} />
+
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+
       <Route path="/directory" component={DirectoryPage} />
       <Route path="/map" component={MapPage} />
       <Route path="/products" component={ProductsPage} />
       <Route path="/events" component={EventsPage} />
       <Route path="/event/:id" component={EventDetailPage} />
       <Route path="/explore" component={Explore} />
+
       <Route path="/about-us" component={AboutUs} />
       <Route path="/how-timebanks-work" component={HowTimeBanksWork} />
+
+      {/* ✅ Privacy Policy route */}
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+
       <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/business/:id" component={BusinessDetail} />
       <Route path="/product/:id" component={ProductDetailPage} />
+
       <ProtectedRoute path="/profile" component={ProfileRedirect} />
+
       <Route path="/dashboard" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-orders" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-transactions" component={UserDashboardRouter} />
@@ -90,6 +106,7 @@ function Router() {
       <Route path="/dashboard/vendor-support-tickets/:id" component={UserDashboardRouter} />
       <Route path="/dashboard/saved-items" component={UserDashboardRouter} />
       <Route path="/dashboard/recycle-bin" component={UserDashboardRouter} />
+
       <Route path="/admin" component={AdminRouter} />
       <Route path="/admin/analytics" component={AdminRouter} />
       <Route path="/admin/transactions" component={AdminRouter} />
@@ -112,7 +129,9 @@ function Router() {
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />
       <Route path="/admin/users" component={AdminRouter} />
       <Route path="/admin/recycle-bin" component={AdminRouter} />
+
       <Route path="/access-denied" component={AccessDenied} />
+
       <Route component={NotFound} />
     </Switch>
   );
