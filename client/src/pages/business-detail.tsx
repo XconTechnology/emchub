@@ -11,6 +11,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
+import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, 
   Phone, 
@@ -25,7 +28,9 @@ import {
   Package,
   CheckCircle,
   MessageSquare,
-  Flag
+  Flag,
+  Upload,
+  X
 } from "lucide-react";
 import type { Listing, Category } from "@shared/schema";
 import "leaflet/dist/leaflet.css";
@@ -46,12 +51,15 @@ export default function BusinessDetail() {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewName, setReviewName] = useState("");
   const [reviewText, setReviewText] = useState("");
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const { toast } = useToast();
   const [reviews, setReviews] = useState<Array<{
     id: string;
     name: string;
     rating: number;
     text: string;
     date: string;
+    images?: string[];
   }>>([]);
 
   const { data: listing, isLoading, error } = useQuery<Listing>({
@@ -142,13 +150,19 @@ export default function BusinessDetail() {
       name: reviewName,
       rating: rating,
       text: reviewText,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      images: reviewImages.length > 0 ? [...reviewImages] : undefined
     };
 
     setReviews([newReview, ...reviews]);
     setReviewName("");
     setReviewText("");
     setRating(0);
+    setReviewImages([]);
+    toast({
+      title: "Review submitted!",
+      description: "Thank you for your feedback",
+    });
   };
 
   const StarRating = ({ value, onRate, readonly = false }: { value: number; onRate?: (rating: number) => void; readonly?: boolean }) => {
@@ -592,6 +606,77 @@ export default function BusinessDetail() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Add Photos (optional)
+                    </label>
+                    <div className="space-y-3">
+                      <ObjectUploader
+                        maxNumberOfFiles={3}
+                        maxFileSize={5242880}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch('/api/objects/upload', {
+                            method: 'POST',
+                            credentials: 'include',
+                          });
+                          if (!response.ok) throw new Error('Failed to get upload URL');
+                          const { uploadURL } = await response.json();
+                          return { method: 'PUT' as const, url: uploadURL };
+                        }}
+                        onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                          const urls = result.successful?.map(file => file.uploadURL) || [];
+                          for (const url of urls) {
+                            try {
+                              const response = await fetch('/api/listing-images', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ imageURL: url }),
+                              });
+                              if (response.ok) {
+                                const { objectPath } = await response.json();
+                                setReviewImages(prev => [...prev, objectPath]);
+                              }
+                            } catch (error) {
+                              console.error('Error processing upload:', error);
+                            }
+                          }
+                          toast({
+                            title: "Images Uploaded",
+                            description: `${urls.length} image(s) uploaded successfully`,
+                          });
+                        }}
+                        buttonClassName="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Photos
+                      </ObjectUploader>
+                      
+                      {reviewImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {reviewImages.map((imagePath, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={imagePath} 
+                                alt={`Review upload ${index + 1}`} 
+                                className="w-20 h-20 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== index))}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                data-testid={`button-remove-review-image-${index}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500">Max 3 photos, 5MB each</p>
+                    </div>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="bg-primary hover:bg-primary/90"
@@ -621,6 +706,19 @@ export default function BusinessDetail() {
                           <span className="text-sm text-muted-foreground">{review.date}</span>
                         </div>
                         <p className="text-muted-foreground mt-3 leading-relaxed">{review.text}</p>
+                        {review.images && review.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-4">
+                            {review.images.map((imagePath, index) => (
+                              <img 
+                                key={index}
+                                src={imagePath} 
+                                alt={`Review image ${index + 1}`} 
+                                className="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => window.open(imagePath, '_blank')}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))
