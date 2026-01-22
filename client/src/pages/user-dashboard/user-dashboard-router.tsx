@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  Star, 
-  DollarSign, 
-  Briefcase, 
+import {
+  Search,
+  Star,
+  DollarSign,
+  Briefcase,
   MessageCircle,
   Menu,
   X,
@@ -32,14 +32,7 @@ import {
   Heart,
   ExternalLink
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import UserDashboardHome from "./user-dashboard-home";
 import UserBrowse from "./user-browse";
 import UserReviews from "./user-reviews";
@@ -80,16 +73,16 @@ export default function UserDashboardRouter() {
 
   // Fetch unread message count (B2C conversations)
   const { data: unreadCountData } = useQuery<{ count: number }>({
-    queryKey: ['/api/messages/unread/count'],
+    queryKey: ["/api/messages/unread/count"],
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 5000,
   });
 
   // Fetch service request unread counts
   const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
-    queryKey: ['/api/service-requests/unread-counts'],
+    queryKey: ["/api/service-requests/unread-counts"],
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
@@ -98,9 +91,7 @@ export default function UserDashboardRouter() {
     }
   }, [user, setLocation]);
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const unreadCount = unreadCountData?.count || 0;
   const serviceUnreadCount = serviceRequestUnread?.totalUnread || 0;
@@ -127,16 +118,20 @@ export default function UserDashboardRouter() {
     { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
     { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
     { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
-    { name: "Profile", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+
+    // ✅ CHANGED TEXT
+    { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+
     { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
     { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
     { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services", badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined },
     { name: "WhatsApp Group", path: "/dashboard/whatsapp", icon: MessageCircle, testId: "nav-whatsapp" },
-    { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
+
+    // ❌ REMOVED SETTINGS TAB
+    // { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];
 
-  const navigation = user?.vendorStatus === 'verified' ? vendorNavigation : normalUserNavigation;
-
+  const navigation = user?.vendorStatus === "verified" ? vendorNavigation : normalUserNavigation;
   const isActive = (path: string) => location === path;
 
   return (
@@ -152,10 +147,8 @@ export default function UserDashboardRouter() {
 
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 transition-transform duration-200 ease-in-out flex flex-col`}
-        style={{ backgroundColor: '#8FC24C' }}
+        className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 transition-transform duration-200 ease-in-out flex flex-col`}
+        style={{ backgroundColor: "#8FC24C" }}
       >
         {/* EMC HUB Logo/Link */}
         <div className="p-6 pl-20 lg:pl-6 border-b border-white/10">
@@ -164,7 +157,7 @@ export default function UserDashboardRouter() {
               <h3 className="font-bold text-white text-xl" data-testid="text-emc-hub">
                 EMC HUB
               </h3>
-              {user.vendorStatus === 'verified' && (
+              {user.vendorStatus === "verified" && (
                 <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
               )}
             </div>
@@ -178,7 +171,7 @@ export default function UserDashboardRouter() {
               const Icon = item.icon;
               return (
                 <li key={item.path}>
-                  <Link 
+                  <Link
                     href={item.path}
                     className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive(item.path)
@@ -192,9 +185,10 @@ export default function UserDashboardRouter() {
                       <Icon className="w-5 h-5 flex-shrink-0" />
                       <span className="font-medium">{item.name}</span>
                     </div>
+
                     {item.badge && (
-                      <Badge 
-                        variant="destructive" 
+                      <Badge
+                        variant="destructive"
                         className="ml-auto bg-red-500 text-white text-xs"
                         data-testid={`badge-unread-${item.testId}`}
                       >
@@ -208,14 +202,14 @@ export default function UserDashboardRouter() {
           </ul>
         </nav>
 
-        {/* Logout button at the bottom of sidebar */}
+        {/* Logout button */}
         <div className="p-3 border-t border-white/10">
           <Button
             onClick={() => {
               logoutMutation.mutate(undefined, {
                 onSuccess: () => {
                   setLocation("/");
-                }
+                },
               });
             }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-white/90 hover:bg-white/15 hover:text-white hover:shadow-sm bg-transparent border-0"
@@ -231,8 +225,10 @@ export default function UserDashboardRouter() {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 z-30 pl-14 pr-3 lg:px-8 py-3 flex items-center justify-between border-b border-white/20 shadow-md" style={{ backgroundColor: '#8FC24C' }}>
-          {/* Centered heading */}
+        <header
+          className="sticky top-0 z-30 pl-14 pr-3 lg:px-8 py-3 flex items-center justify-between border-b border-white/20 shadow-md"
+          style={{ backgroundColor: "#8FC24C" }}
+        >
           <h1 className="flex-1 text-lg sm:text-xl font-semibold text-white text-center px-2">
             {location === "/dashboard" && "Dashboard"}
             {location === "/dashboard/purchases" && "My Purchases"}
@@ -255,7 +251,7 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/pricing" && "Pricing Settings"}
             {location === "/dashboard/vendor-orders" && "Vendor Orders"}
             {location === "/dashboard/vendor-transactions" && "Transactions"}
-            {location === "/dashboard/messages" && (user?.vendorStatus === 'verified' ? "Messages" : "My Chats")}
+            {location === "/dashboard/messages" && (user?.vendorStatus === "verified" ? "Messages" : "My Chats")}
             {location === "/dashboard/support-tickets" && "Support Tickets"}
             {location === "/dashboard/vendor-support-tickets" && "Assigned Tickets"}
             {location.startsWith("/dashboard/vendor-support-tickets/") && "Ticket Chat"}
@@ -264,10 +260,8 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
             {location === "/dashboard/saved-items" && "Saved Items"}
           </h1>
-          
-          {/* Right side buttons */}
+
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* View Live Site button */}
             <Button
               onClick={() => window.open("/", "_blank")}
               size="sm"
@@ -277,9 +271,8 @@ export default function UserDashboardRouter() {
               <ExternalLink className="w-4 h-4" />
               <span className="hidden sm:inline ml-1.5">View Site</span>
             </Button>
-            
-            {/* Show Become a Vendor button for normal users only */}
-            {user?.vendorStatus !== 'verified' && (
+
+            {user?.vendorStatus !== "verified" && (
               <Button
                 onClick={() => setLocation("/dashboard/become-vendor")}
                 size="sm"
@@ -306,11 +299,11 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/settings" component={UserSettings} />
             <Route path="/dashboard/browse" component={UserBrowse} />
             <Route path="/dashboard/reviews">
-              {user?.vendorStatus === 'verified' ? <VendorReviews /> : <UserReviews />}
+              {user?.vendorStatus === "verified" ? <VendorReviews /> : <UserReviews />}
             </Route>
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
             <Route path="/dashboard/services">
-              {user?.vendorStatus === 'verified' ? <VendorServices /> : <UserServices />}
+              {user?.vendorStatus === "verified" ? <VendorServices /> : <UserServices />}
             </Route>
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
             <Route path="/dashboard/my-listings" component={UserMyListings} />
@@ -329,7 +322,7 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/vendor-support-tickets/:id" component={VendorSupportTicketChat} />
             <Route path="/dashboard/vendor-support-tickets" component={VendorSupportTickets} />
             <Route path="/dashboard/messages">
-              {user?.vendorStatus === 'verified' ? <VendorMessages /> : <UserChats />}
+              {user?.vendorStatus === "verified" ? <VendorMessages /> : <UserChats />}
             </Route>
           </Switch>
         </div>
