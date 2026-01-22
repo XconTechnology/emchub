@@ -32,8 +32,11 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import HowTimeBanksWork from "@/pages/how-timebanks-work";
 
-// ✅ ADD THIS IMPORT
+// ✅ Existing
 import PrivacyPolicy from "@/pages/privacypolicy";
+
+// ✅ ADD THIS (file name: termsofuse.tsx)
+import TermsOfUse from "@/pages/termsofuse";
 
 import { useEffect } from "react";
 
@@ -69,6 +72,9 @@ function Router() {
 
       {/* ✅ Privacy Policy route */}
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+
+      {/* ✅ Terms of Use route (THIS IS THE LINK) */}
+      <Route path="/terms-of-use" component={TermsOfUse} />
 
       <Route path="/categories" component={AllCategoriesPage} />
       <Route path="/category/:id" component={CategoryPage} />

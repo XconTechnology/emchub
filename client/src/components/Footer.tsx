@@ -9,6 +9,11 @@ export default function Footer() {
   const { user } = useAuth();
   const [showSupportForm, setShowSupportForm] = useState(false);
 
+  const handleSupportClick = () => {
+    if (user) setShowSupportForm(true);
+    else window.location.href = "/auth";
+  };
+
   return (
     <>
       <footer className="bg-foreground text-background">
@@ -92,7 +97,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <button
-                    onClick={() => (user ? setShowSupportForm(true) : (window.location.href = "/auth"))}
+                    onClick={handleSupportClick}
                     className="text-background/80 hover:text-primary transition-colors text-left"
                     data-testid="footer-link-contact-support"
                   >
@@ -130,16 +135,34 @@ export default function Footer() {
             <p className="text-background/60 text-sm" data-testid="copyright">
               © 2024 EMC HUB. All rights reserved.
             </p>
+
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="text-background/60 hover:text-primary transition-colors text-sm" data-testid="footer-link-privacy">
+              {/* ✅ Privacy Policy Link */}
+              <Link
+                href="/privacy-policy"
+                className="text-background/60 hover:text-primary transition-colors text-sm"
+                data-testid="footer-link-privacy"
+              >
                 Privacy Policy
-              </a>
-              <a href="#" className="text-background/60 hover:text-primary transition-colors text-sm" data-testid="footer-link-terms">
+              </Link>
+
+              {/* ✅ Terms of Service Link */}
+              <Link
+                href="/terms-of-use"
+                className="text-background/60 hover:text-primary transition-colors text-sm"
+                data-testid="footer-link-terms"
+              >
                 Terms of Service
-              </a>
-              <a href="#" className="text-background/60 hover:text-primary transition-colors text-sm" data-testid="footer-link-support">
+              </Link>
+
+              {/* ✅ Support -> opens same support form */}
+              <button
+                onClick={handleSupportClick}
+                className="text-background/60 hover:text-primary transition-colors text-sm"
+                data-testid="footer-link-support"
+              >
                 Support
-              </a>
+              </button>
             </div>
           </div>
         </div>

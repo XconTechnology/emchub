@@ -301,20 +301,17 @@ export default function UserTimeDollars() {
 
       <Card className="bg-brand-green/5 dark:bg-brand-green/10 border-brand-green/20">
         <CardHeader>
+          <CardTitle>(Under Development)</CardTitle>
           <CardTitle>How TimeDollars Work</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
           <div>
             <strong className="text-brand-green">• Earning TD:</strong>
-            <p className="ml-4 mt-1">Sellers automatically earn TimeDollars when orders are marked as "delivered". The TD value is based on each product's TD rate.</p>
+            <p className="ml-4 mt-1">Sellers can gain TDs from being verified, successful application for event hosting or request TDs to distribute during events etc. 1 TD is around HK $60 Redemption Value</p>
           </div>
           <div>
             <strong className="text-brand-green">• Spending TD:</strong>
             <p className="ml-4 mt-1">Use your TD to purchase TD-eligible products and services. Look for the TD badge on listings!</p>
-          </div>
-          <div>
-            <strong className="text-brand-green">• Convert to Cash:</strong>
-            <p className="ml-4 mt-1">Convert your TD to cash coupons at a rate of 1 TD = HK$60. Use these coupons for any purchase on the platform.</p>
           </div>
           <div>
             <strong className="text-brand-green">• Community Currency:</strong>
