@@ -22,7 +22,7 @@ Separate config, server entry, and S3 storage for Railway. Replit uses its own e
    - `DATABASE_URL` (from PostgreSQL)
    - `SESSION_SECRET`, `STRIPE_SECRET_KEY`, `VITE_STRIPE_PUBLIC_KEY`
    - `ALLOWED_ORIGINS` – your Railway URL
-   - `S3_BUCKET`, `AWS_REGION` (and `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` if not from Railway AWS plugin)
+   - `AWS_BUCKET`, `AWS_REGION` (and `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` if not from Railway AWS plugin)
 3. **S3 bucket** – for uploads (or Cloudflare R2, MinIO)
 
 ## Build & Deploy
@@ -43,4 +43,4 @@ git push deploy main
 | Provider | Env | Used on |
 |----------|-----|---------|
 | Replit (GCS) | `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR` | Replit |
-| S3 | `S3_BUCKET`, `AWS_REGION` | Railway |
+| S3 | `AWS_BUCKET`, `AWS_REGION` | Railway |

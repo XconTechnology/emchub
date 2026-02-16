@@ -67,6 +67,7 @@ export class S3ObjectStorageService implements IObjectStorageService {
     this.bucket = config.bucket;
     this.client = new S3Client({
       region: config.region,
+      credentials: config.credentials,
       ...(config.endpoint && { endpoint: config.endpoint }),
       ...(config.forcePathStyle && { forcePathStyle: true }),
     });
