@@ -21,7 +21,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, or, desc } from "drizzle-orm";
-import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+import { getObjectStorage, ObjectNotFoundError } from "./storage/factory";
 import { geocodeAddress, delay } from "./geocoding";
 import Stripe from "stripe";
 import multer from "multer";
@@ -2361,42 +2361,15 @@ export function registerRoutes(app: Express): Server {
 
       console.log(`Document URL: ${documentUrl}`);
 
-      // Extract bucket and object path from URL
-      // URL format: https://storage.googleapis.com/bucket-name/.private/uploads/filename
-      const urlParts = new URL(documentUrl);
-      const pathParts = urlParts.pathname.split('/').filter(p => p);
-      const bucketName = pathParts[0];
-      const objectPath = pathParts.slice(1).join('/');
-
-      console.log(`Bucket: ${bucketName}, Path: ${objectPath}`);
-
-      // Download from Google Cloud Storage
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectPath);
-
-      // Get file metadata
+      const storage = getObjectStorage();
+      if (!storage.getDocumentAsDataUrl) {
+        return res.status(501).json({ message: "Document preview not supported" });
+      }
       try {
-        const [metadata] = await file.getMetadata();
-        const contentType = metadata.contentType || 'application/octet-stream';
-        const fileName = objectPath.split('/').pop() || 'document';
-        
-        console.log(`File metadata - Type: ${contentType}, Name: ${fileName}`);
-
-        // Download file content
-        const [content] = await file.download();
-        
-        // Convert buffer to base64 for transfer
-        const base64Content = content.toString('base64');
-        const dataUrl = `data:${contentType};base64,${base64Content}`;
-
-        // Return data URL with metadata
-        res.json({ 
-          url: dataUrl,
-          contentType,
-          fileName
-        });
+        const result = await storage.getDocumentAsDataUrl(documentUrl);
+        res.json(result);
       } catch (error) {
-        console.error("Error downloading file:", error);
+        console.error("Error downloading document:", error);
         return res.status(404).json({ message: "Document file not found in storage" });
       }
     } catch (error) {
@@ -2918,7 +2891,7 @@ export function registerRoutes(app: Express): Server {
   // Object Storage routes - for listing images (accessible to all authenticated users)
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ uploadURL });
     } catch (error) {
@@ -2930,7 +2903,7 @@ export function registerRoutes(app: Express): Server {
   // Profile picture upload - accessible to all authenticated users
   app.post("/api/profile/upload", isAuthenticated, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ uploadURL });
     } catch (error) {
@@ -2945,7 +2918,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.imageURL,
         {
@@ -2970,7 +2943,7 @@ export function registerRoutes(app: Express): Server {
   // Vendor document upload - accessible to all authenticated users
   app.post("/api/vendor/upload", isAuthenticated, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ uploadURL });
     } catch (error) {
@@ -2985,7 +2958,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.imageURL,
         {
@@ -3030,7 +3003,7 @@ export function registerRoutes(app: Express): Server {
   // Object storage upload URL for user listings - accessible to all authenticated users
   app.post("/api/object-storage/upload-url", isAuthenticated, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ url: uploadURL });
     } catch (error) {
@@ -3040,7 +3013,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get("/objects/:objectPath(*)", async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
+    const objectStorageService = getObjectStorage();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(
         req.path,
@@ -3061,7 +3034,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const objectStorageService = new ObjectStorageService();
+      const objectStorageService = getObjectStorage();
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.imageURL,
         {

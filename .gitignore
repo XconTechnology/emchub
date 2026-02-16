@@ -4,3 +4,7 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Ignore everything in attached_assets except the logo
+attached_assets/*
+!attached_assets/logo.png

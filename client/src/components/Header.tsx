@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X, User, LogOut, LayoutDashboard, Settings, ShoppingCart, MessageSquare } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, Settings, ShoppingCart, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import AddListingModal from "./AddListingModal";
 import { BecomeVendorModal } from "./BecomeVendorModal";
-import emcLogo from "@assets/image_1756989816731.png";
+import emcLogo from "@assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {

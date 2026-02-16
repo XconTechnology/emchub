@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "wouter";
-import emcLogo from "@assets/image_1756989816731.png";
+import emcLogo from "@assets/logo.png";
 import ContactSupportForm from "./ContactSupportForm";
 import { useAuth } from "@/hooks/use-auth";
 

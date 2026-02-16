@@ -1,44 +1,47 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import { initObjectStorage } from "./storage/factory";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
 // CORS configuration - allow both custom domains and replit domains
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      "https://emchub.com.hk",
-      "https://testingprojects.site",
-      "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev"
-    ];
-    
-    // In development, allow all origins
-    if (process.env.NODE_ENV !== "production") {
-      return callback(null, true);
-    }
-    
-    // In production, check against allowed origins
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+      const allowedOrigins = [
+        "https://emchub.com.hk",
+        "https://testingprojects.site",
+        "https://41a7536a-ada3-4253-9206-a7bee5d9ce02-00-1nkc0w293094p.spock.replit.dev",
+      ];
+
+      // In development, allow all origins
+      if (process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+
+      // In production, check against allowed origins
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  }),
+);
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
 // Serve static files from public directory (for support attachments, etc.)
-app.use(express.static('public'));
+app.use(express.static("public"));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -73,18 +76,19 @@ app.use((req, res, next) => {
 (async () => {
   // Auto-sync database schema on startup (development only)
   // In production, migrations should be applied before deployment
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     try {
-      const { execSync } = await import('child_process');
-      console.log('🔄 Checking database schema...');
-      execSync('npm run db:push --force', { stdio: 'inherit' });
-      console.log('✅ Database schema synced successfully');
+      const { execSync } = await import("child_process");
+      console.log("🔄 Checking database schema...");
+      execSync("npm run db:push --force", { stdio: "inherit" });
+      console.log("✅ Database schema synced successfully");
     } catch (error) {
-      console.error('⚠️  Database schema sync failed:', error);
-      console.log('Continuing anyway - manual db:push may be needed');
+      console.error("⚠️  Database schema sync failed:", error);
+      console.log("Continuing anyway - manual db:push may be needed");
     }
   }
 
+  await initObjectStorage();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -108,12 +112,15 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  const port = parseInt(process.env.PORT || "5000", 10);
+  server.listen(
+    {
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    },
+    () => {
+      log(`serving on port ${port}`);
+    },
+  );
 })();
