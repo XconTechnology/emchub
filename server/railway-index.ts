@@ -66,24 +66,35 @@ app.use((req, res, next) => {
   next();
 });
 
+// Minimal /health before any async init - so it's registered first (no DB/session dependency)
+app.get("/health", (_req, res) => res.status(200).send("OK"));
+app.get("/api/health", (_req, res) =>
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() })
+);
+
 (async () => {
-  await initObjectStorage();
-  const server = await registerRoutes(app);
+  try {
+    await initObjectStorage();
+    const server = await registerRoutes(app);
 
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const status =
-      (err as { status?: number; statusCode?: number }).status ??
-      (err as { statusCode?: number }).statusCode ??
-      500;
-    const message = (err as Error).message ?? "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
+    app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      const status =
+        (err as { status?: number; statusCode?: number }).status ??
+        (err as { statusCode?: number }).statusCode ??
+        500;
+      const message = (err as Error).message ?? "Internal Server Error";
+      res.status(status).json({ message });
+      throw err;
+    });
 
-  serveStatic(app);
+    serveStatic(app);
 
-  const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
-    log(`serving on port ${port} (Railway)`);
-  });
+    const port = parseInt(process.env.PORT || "5000", 10);
+    server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+      log(`serving on port ${port} (Railway)`);
+    });
+  } catch (err) {
+    console.error("Railway startup failed:", err);
+    process.exit(1);
+  }
 })();

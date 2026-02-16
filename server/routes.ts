@@ -160,11 +160,11 @@ const requireStaffOrAbove = requireRole(['staff', 'admin']);
 const requireVendorOrAbove = requireRole(['vendor', 'staff', 'admin']);
 
 export function registerRoutes(app: Express): Server {
+  // Health check BEFORE auth so it doesn't depend on DB/session (critical for Railway healthchecks)
+  setupHealthCheck(app);
+
   // Setup authentication middleware and routes (from blueprint: javascript_auth_all_persistance)
   setupAuth(app);
-
-  // Setup health check for deployment
-  setupHealthCheck(app);
 
   // Setup debug routes for troubleshooting domain issues
   setupDebugRoutes(app);
