@@ -15,7 +15,7 @@ const app = express();
 
 const baseOrigins = [
   "https://emchub.com.hk",
-  "https://testingprojects.site",
+  "https://emchub-production.up.railway.app",
 ];
 const envOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
@@ -23,19 +23,21 @@ const envOrigins = (process.env.ALLOWED_ORIGINS || "")
   .filter(Boolean);
 const allowedOrigins = [...baseOrigins, ...envOrigins];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  }),
+);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
@@ -46,9 +48,9 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, unknown> | undefined;
   const originalResJson = res.json;
-  res.json = function (bodyJson: unknown, ...args: unknown[]) {
+  res.json = function (bodyJson?: unknown) {
     capturedJsonResponse = bodyJson as Record<string, unknown>;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+    return originalResJson.call(res, bodyJson);
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
@@ -69,7 +71,10 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const status = (err as { status?: number; statusCode?: number }).status ?? (err as { statusCode?: number }).statusCode ?? 500;
+    const status =
+      (err as { status?: number; statusCode?: number }).status ??
+      (err as { statusCode?: number }).statusCode ??
+      500;
     const message = (err as Error).message ?? "Internal Server Error";
     res.status(status).json({ message });
     throw err;
