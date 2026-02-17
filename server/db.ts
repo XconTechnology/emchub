@@ -16,6 +16,6 @@ export const pool = new Pool({
     process.env.DATABASE_URL?.includes("localhost") ||
     process.env.DATABASE_URL?.includes("127.0.0.1")
       ? undefined
-      : { rejectUnauthorized: true },
+      : { rejectUnauthorized: process.env.DB_REJECT_UNAUTHORIZED === "true" },
 });
 export const db = drizzle(pool, { schema });
