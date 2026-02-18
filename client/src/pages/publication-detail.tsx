@@ -143,9 +143,6 @@ export default function PublicationDetailPage() {
           }
         }
         .publication-content h2 {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
           font-size: 1.5rem;
           font-weight: 700;
           margin-top: 2.5rem;
@@ -153,7 +150,7 @@ export default function PublicationDetailPage() {
           color: var(--foreground, #1a1a1a);
           padding-bottom: 0.75rem;
           border-bottom: 2px solid hsl(var(--primary) / 0.2);
-          line-height: 1.3;
+          line-height: 1.6;
         }
         @media (min-width: 768px) {
           .publication-content h2 {
@@ -295,22 +292,24 @@ export default function PublicationDetailPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 2.25rem;
-          height: 2.25rem;
+          width: 2rem;
+          height: 2rem;
           background: hsl(var(--primary));
           color: hsl(var(--primary-foreground));
           border-radius: 50%;
           font-weight: 700;
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-family: inherit;
           flex-shrink: 0;
           line-height: 1;
+          vertical-align: middle;
+          margin-right: 0.5rem;
         }
         @media (min-width: 768px) {
           .publication-content .section-number {
-            min-width: 2.5rem;
-            height: 2.5rem;
-            font-size: 1.125rem;
+            width: 2.25rem;
+            height: 2.25rem;
+            font-size: 1rem;
           }
         }
         .publication-content img,
