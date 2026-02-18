@@ -60,8 +60,6 @@ export default function PublicationDetailPage() {
     );
   }
 
-  const isHtmlContent = publication.content.includes('<') && publication.content.includes('>');
-
   return (
     <div className="min-h-screen bg-background">
       <Header forceSolid={true} />
@@ -103,20 +101,13 @@ export default function PublicationDetailPage() {
             )}
           </div>
 
-          {isHtmlContent ? (
-            <div
-              className="publication-content"
-              dangerouslySetInnerHTML={{ __html: publication.content }}
-            />
-          ) : (
-            <div className="prose prose-lg max-w-none">
-              {publication.content.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4 text-foreground leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          )}
+          <div className="prose prose-lg max-w-none">
+            {publication.content.split('\n').map((paragraph, index) => (
+              <p key={index} className="mb-4 text-foreground leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+          </div>
 
           {publication.tags && publication.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t">
@@ -130,193 +121,6 @@ export default function PublicationDetailPage() {
         </div>
       </main>
       <Footer />
-
-      <style>{`
-        .publication-content {
-          color: var(--foreground, #1a1a1a);
-          line-height: 1.8;
-          font-size: 1rem;
-        }
-        @media (min-width: 768px) {
-          .publication-content {
-            font-size: 1.125rem;
-          }
-        }
-        .publication-content h2 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-top: 2.5rem;
-          margin-bottom: 1rem;
-          color: var(--foreground, #1a1a1a);
-          padding-bottom: 0.5rem;
-          border-bottom: 2px solid hsl(var(--primary) / 0.2);
-        }
-        @media (min-width: 768px) {
-          .publication-content h2 {
-            font-size: 1.75rem;
-          }
-        }
-        .publication-content h3 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-top: 2rem;
-          margin-bottom: 0.75rem;
-          color: var(--foreground, #1a1a1a);
-        }
-        @media (min-width: 768px) {
-          .publication-content h3 {
-            font-size: 1.375rem;
-          }
-        }
-        .publication-content p {
-          margin-bottom: 1rem;
-          line-height: 1.8;
-        }
-        .publication-content .bilingual-text {
-          color: hsl(var(--muted-foreground));
-          font-size: 0.9375rem;
-          line-height: 1.7;
-          margin-top: -0.5rem;
-          margin-bottom: 1.25rem;
-        }
-        @media (min-width: 768px) {
-          .publication-content .bilingual-text {
-            font-size: 1rem;
-          }
-        }
-        .publication-content ul {
-          list-style: none;
-          padding-left: 0;
-          margin-bottom: 1.25rem;
-        }
-        .publication-content ul li {
-          position: relative;
-          padding-left: 1.5rem;
-          margin-bottom: 0.75rem;
-          line-height: 1.7;
-        }
-        .publication-content ul li::before {
-          content: "•";
-          position: absolute;
-          left: 0;
-          color: hsl(var(--primary));
-          font-weight: bold;
-          font-size: 1.2em;
-        }
-        .publication-content ol {
-          counter-reset: item;
-          list-style: none;
-          padding-left: 0;
-          margin-bottom: 1.25rem;
-        }
-        .publication-content ol > li {
-          counter-increment: item;
-          position: relative;
-          padding-left: 2rem;
-          margin-bottom: 1rem;
-        }
-        .publication-content ol > li::before {
-          content: counter(item) ".";
-          position: absolute;
-          left: 0;
-          color: hsl(var(--primary));
-          font-weight: 700;
-        }
-        .publication-content .section-card {
-          background: hsl(var(--muted) / 0.3);
-          border-radius: 0.75rem;
-          padding: 1.25rem;
-          margin-bottom: 1.5rem;
-          border: 1px solid hsl(var(--border));
-        }
-        @media (min-width: 768px) {
-          .publication-content .section-card {
-            padding: 1.5rem 2rem;
-          }
-        }
-        .publication-content .phrase-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 1.5rem 0;
-          font-size: 0.875rem;
-          border-radius: 0.5rem;
-          overflow: hidden;
-          border: 1px solid hsl(var(--border));
-        }
-        @media (min-width: 768px) {
-          .publication-content .phrase-table {
-            font-size: 1rem;
-          }
-        }
-        .publication-content .phrase-table th {
-          background: hsl(var(--primary));
-          color: hsl(var(--primary-foreground));
-          padding: 0.75rem;
-          text-align: left;
-          font-weight: 600;
-          font-size: 0.8125rem;
-        }
-        @media (min-width: 768px) {
-          .publication-content .phrase-table th {
-            padding: 0.75rem 1rem;
-            font-size: 0.9375rem;
-          }
-        }
-        .publication-content .phrase-table td {
-          padding: 0.625rem 0.75rem;
-          border-bottom: 1px solid hsl(var(--border));
-          vertical-align: top;
-        }
-        @media (min-width: 768px) {
-          .publication-content .phrase-table td {
-            padding: 0.75rem 1rem;
-          }
-        }
-        .publication-content .phrase-table tr:nth-child(even) {
-          background: hsl(var(--muted) / 0.3);
-        }
-        .publication-content .phrase-table tr:last-child td {
-          border-bottom: none;
-        }
-        .publication-content .highlight-box {
-          background: hsl(var(--primary) / 0.05);
-          border-left: 4px solid hsl(var(--primary));
-          padding: 1rem 1.25rem;
-          margin: 1.25rem 0;
-          border-radius: 0 0.5rem 0.5rem 0;
-        }
-        .publication-content .section-number {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 2rem;
-          height: 2rem;
-          background: hsl(var(--primary));
-          color: hsl(var(--primary-foreground));
-          border-radius: 50%;
-          font-weight: 700;
-          font-size: 0.875rem;
-          margin-right: 0.75rem;
-          flex-shrink: 0;
-        }
-        .publication-content .section-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-        .publication-content img,
-        .publication-content .article-image {
-          width: 100%;
-          max-width: 100%;
-          height: auto;
-          border-radius: 0.75rem;
-          margin: 1.5rem 0;
-        }
-        .publication-content strong {
-          color: var(--foreground, #1a1a1a);
-          font-weight: 600;
-        }
-      `}</style>
     </div>
   );
 }
