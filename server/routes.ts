@@ -17,8 +17,7 @@ import {
   serviceOffers,
   serviceRequests,
   serviceRequestFees,
-  contactQueries,
-  publications
+  contactQueries
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, or, desc } from "drizzle-orm";
@@ -5771,85 +5770,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating contact query status:", error);
       res.status(500).json({ error: "Failed to update query status" });
-    }
-  });
-
-  // ===== Publications / Blog API =====
-  app.get('/api/publications', async (req: any, res) => {
-    try {
-      const allPubs = await db.select().from(publications).where(eq(publications.status, 'published')).orderBy(desc(publications.publishedAt));
-      res.json(allPubs);
-    } catch (error) {
-      console.error("Error fetching publications:", error);
-      res.status(500).json({ error: "Failed to fetch publications" });
-    }
-  });
-
-  app.get('/api/publications/:slug', async (req: any, res) => {
-    try {
-      const [pub] = await db.select().from(publications).where(eq(publications.slug, req.params.slug));
-      if (!pub) return res.status(404).json({ error: "Publication not found" });
-      res.json(pub);
-    } catch (error) {
-      console.error("Error fetching publication:", error);
-      res.status(500).json({ error: "Failed to fetch publication" });
-    }
-  });
-
-  app.get('/api/admin/publications', isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const allPubs = await db.select().from(publications).orderBy(desc(publications.createdAt));
-      res.json(allPubs);
-    } catch (error) {
-      console.error("Error fetching publications:", error);
-      res.status(500).json({ error: "Failed to fetch publications" });
-    }
-  });
-
-  app.post('/api/admin/publications', isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const data = req.body;
-      const slug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const [pub] = await db.insert(publications).values({
-        ...data,
-        slug,
-        publishedAt: data.status === 'published' ? new Date() : null,
-      }).returning();
-      res.json(pub);
-    } catch (error) {
-      console.error("Error creating publication:", error);
-      res.status(500).json({ error: "Failed to create publication" });
-    }
-  });
-
-  app.patch('/api/admin/publications/:id', isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const data = req.body;
-      if (data.title && !data.slug) {
-        data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      }
-      if (data.status === 'published' && !data.publishedAt) {
-        data.publishedAt = new Date();
-      }
-      data.updatedAt = new Date();
-      const [updated] = await db.update(publications).set(data).where(eq(publications.id, id)).returning();
-      if (!updated) return res.status(404).json({ error: "Publication not found" });
-      res.json(updated);
-    } catch (error) {
-      console.error("Error updating publication:", error);
-      res.status(500).json({ error: "Failed to update publication" });
-    }
-  });
-
-  app.delete('/api/admin/publications/:id', isAdminAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      await db.delete(publications).where(eq(publications.id, id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting publication:", error);
-      res.status(500).json({ error: "Failed to delete publication" });
     }
   });
 
