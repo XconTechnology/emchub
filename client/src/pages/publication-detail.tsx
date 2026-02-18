@@ -148,9 +148,8 @@ export default function PublicationDetailPage() {
           margin-top: 2.5rem;
           margin-bottom: 1rem;
           color: var(--foreground, #1a1a1a);
-          padding-bottom: 0.75rem;
+          padding-bottom: 0.5rem;
           border-bottom: 2px solid hsl(var(--primary) / 0.2);
-          line-height: 1.6;
         }
         @media (min-width: 768px) {
           .publication-content h2 {
@@ -158,17 +157,15 @@ export default function PublicationDetailPage() {
           }
         }
         .publication-content h3 {
-          font-size: 1.125rem;
-          font-weight: 700;
-          margin-top: 1.5rem;
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-top: 2rem;
           margin-bottom: 0.75rem;
-          color: hsl(var(--primary));
-          font-family: inherit;
-          line-height: 1.4;
+          color: var(--foreground, #1a1a1a);
         }
         @media (min-width: 768px) {
           .publication-content h3 {
-            font-size: 1.25rem;
+            font-size: 1.375rem;
           }
         }
         .publication-content p {
@@ -299,18 +296,13 @@ export default function PublicationDetailPage() {
           border-radius: 50%;
           font-weight: 700;
           font-size: 0.875rem;
-          font-family: inherit;
+          margin-right: 0.75rem;
           flex-shrink: 0;
-          line-height: 1;
-          vertical-align: middle;
-          margin-right: 0.5rem;
         }
-        @media (min-width: 768px) {
-          .publication-content .section-number {
-            width: 2.25rem;
-            height: 2.25rem;
-            font-size: 1rem;
-          }
+        .publication-content .section-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 1rem;
         }
         .publication-content img,
         .publication-content .article-image {
