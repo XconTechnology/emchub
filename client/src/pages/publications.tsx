@@ -78,8 +78,13 @@ export default function Publications() {
                           </>
                         )}
                       </div>
-                      <h2 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                        {pub.title}
+                      <h2 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
+                        {pub.title.split('\n').map((line, idx) => (
+                          <span key={idx}>
+                            {idx > 0 && <br />}
+                            {line}
+                          </span>
+                        ))}
                       </h2>
                       <p className="text-muted-foreground line-clamp-3 mb-4">
                         {pub.excerpt}

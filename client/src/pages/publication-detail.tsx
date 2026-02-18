@@ -83,7 +83,12 @@ export default function PublicationDetail() {
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 lg:p-12">
               <div className="max-w-4xl mx-auto">
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
-                  {publication.title}
+                  {publication.title.split('\n').map((line, idx) => (
+                    <span key={idx}>
+                      {idx > 0 && <br />}
+                      {line}
+                    </span>
+                  ))}
                 </h1>
                 <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm">
                   <div className="flex items-center gap-2">
@@ -111,7 +116,14 @@ export default function PublicationDetail() {
           </Link>
 
           {!publication.featuredImage && (
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4">{publication.title}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
+              {publication.title.split('\n').map((line, idx) => (
+                <span key={idx}>
+                  {idx > 0 && <br />}
+                  {line}
+                </span>
+              ))}
+            </h1>
           )}
 
           {publication.tags && publication.tags.length > 0 && (
