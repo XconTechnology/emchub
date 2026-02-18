@@ -12,11 +12,7 @@ export default function PublicationDetail() {
   const { slug } = useParams();
 
   const { data: publication, isLoading, error } = useQuery<Publication>({
-    queryKey: ['/api/publications', slug],
-    queryFn: () => fetch(`/api/publications/${slug}`).then(res => {
-      if (!res.ok) throw new Error('Publication not found');
-      return res.json();
-    }),
+    queryKey: [`/api/publications/${slug}`],
     enabled: !!slug,
   });
 
