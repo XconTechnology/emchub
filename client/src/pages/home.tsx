@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import FeaturedBusinesses from "@/components/FeaturedBusinesses";
+import PublicationsPreview from "@/components/PublicationsPreview";
 import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
 import CallToAction from "@/components/CallToAction";
@@ -12,6 +13,7 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
+        <PublicationsPreview />
         <FeaturedBusinesses />
         <HowItWorks />
         <Testimonials />

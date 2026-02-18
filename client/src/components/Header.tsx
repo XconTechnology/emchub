@@ -95,6 +95,9 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               <Link href="/explore" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-explore">
                 Explore
               </Link>
+              <Link href="/publications" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-publications">
+                Publications
+              </Link>
               <Link href="/about-us" className={`nav-link text-sm xl:text-base font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-gray-900 hover:text-primary' : 'text-white hover:text-white/80'}`} data-testid="nav-about">
                 About Us
               </Link>
@@ -308,6 +311,14 @@ export default function Header({ forceSolid = false }: HeaderProps) {
               data-testid="mobile-nav-explore"
             >
               Explore
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={() => { setLocation('/publications'); setIsMobileMenuOpen(false); }}
+              data-testid="mobile-nav-publications"
+            >
+              Publications
             </Button>
             <Button 
               variant="ghost" 

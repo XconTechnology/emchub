@@ -933,6 +933,32 @@ export const insertContactQuerySchema = createInsertSchema(contactQueries).omit(
 export type ContactQuery = typeof contactQueries.$inferSelect;
 export type InsertContactQuery = z.infer<typeof insertContactQuerySchema>;
 
+// Publications / Blog posts
+export const publications = pgTable("publications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  slug: varchar("slug").notNull(),
+  excerpt: text("excerpt").notNull(),
+  content: text("content").notNull(),
+  coverImage: varchar("cover_image"),
+  author: varchar("author").notNull(),
+  category: varchar("category").default("general"),
+  tags: text("tags").array(),
+  status: varchar("status").notNull().default("draft"), // 'draft' | 'published'
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPublicationSchema = createInsertSchema(publications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Publication = typeof publications.$inferSelect;
+export type InsertPublication = z.infer<typeof insertPublicationSchema>;
+
 // Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
 export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;

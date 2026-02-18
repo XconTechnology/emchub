@@ -31,6 +31,8 @@ import NotFound from "@/pages/not-found";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import HowTimeBanksWork from "@/pages/how-timebanks-work";
+import PublicationsPage from "@/pages/publications";
+import PublicationDetailPage from "@/pages/publication-detail";
 
 // ✅ Existing
 import PrivacyPolicy from "@/pages/privacypolicy";
@@ -69,6 +71,8 @@ function Router() {
 
       <Route path="/about-us" component={AboutUs} />
       <Route path="/how-timebanks-work" component={HowTimeBanksWork} />
+      <Route path="/publications" component={PublicationsPage} />
+      <Route path="/publications/:slug" component={PublicationDetailPage} />
 
       {/* ✅ Privacy Policy route */}
       <Route path="/privacy-policy" component={PrivacyPolicy} />
@@ -130,6 +134,7 @@ function Router() {
       <Route path="/admin/timedollars" component={AdminRouter} />
       <Route path="/admin/disputes" component={AdminRouter} />
       <Route path="/admin/queries" component={AdminRouter} />
+      <Route path="/admin/publications" component={AdminRouter} />
       <Route path="/admin/listings" component={AdminRouter} />
       <Route path="/admin/listings/new" component={AdminRouter} />
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />

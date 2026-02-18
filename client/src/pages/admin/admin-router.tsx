@@ -21,6 +21,7 @@ import AdminEvents from "./admin-events";
 import AdminTimeDollars from "./admin-timedollars";
 import AdminDisputes from "./admin-disputes";
 import AdminQueries from "./admin-queries";
+import AdminPublications from "./admin-publications";
 import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +72,7 @@ export default function AdminRouter() {
         <Route path="/admin/timedollars" component={AdminTimeDollars} />
         <Route path="/admin/disputes" component={AdminDisputes} />
         <Route path="/admin/queries" component={AdminQueries} />
+        <Route path="/admin/publications" component={AdminPublications} />
         <Route path="/admin/listings/new" component={AdminAddListing} />
         <Route path="/admin/listings/edit/:id" component={AdminEditListing} />
         <Route path="/admin/listings" component={AdminListings} />

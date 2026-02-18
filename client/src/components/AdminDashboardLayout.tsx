@@ -22,6 +22,7 @@ import {
   Wrench,
   Coins,
   MessageSquare,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -150,6 +151,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       title: "Queries",
       url: "/admin/queries",
       icon: MessageSquare,
+    },
+    {
+      title: "Publications",
+      url: "/admin/publications",
+      icon: BookOpen,
     },
     {
       title: "Recycle Bin",
