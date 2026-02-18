@@ -150,7 +150,8 @@ export default function PublicationDetail() {
                   prose-th:bg-primary/10 prose-th:p-3 prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-border
                   prose-td:p-3 prose-td:border prose-td:border-border
                   prose-hr:border-primary/20 prose-hr:my-8
-                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg"
+                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
+                  prose-img:rounded-xl prose-img:mx-auto prose-img:max-w-full"
                 dangerouslySetInnerHTML={{ __html: publication.content }}
               />
             </CardContent>
