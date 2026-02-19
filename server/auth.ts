@@ -138,7 +138,7 @@ export function setupAuth(app: Express) {
         });
       }
 
-      const { username, email, password, firstName, lastName } = validationResult.data;
+      const { username, email, password, firstName, lastName, whatsappNumber } = validationResult.data;
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -161,6 +161,7 @@ export function setupAuth(app: Express) {
         vendorStatus: "none",
         timeDollarBalance: 0,
         phone: null,
+        whatsappNumber: whatsappNumber || null,
         bio: null,
         resetPasswordToken: null,
         resetPasswordExpires: null,

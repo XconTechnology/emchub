@@ -13,11 +13,13 @@ import {
   insertEventRegistrationSchema,
   eventRegistrationFormSchema,
   insertContactQuerySchema,
+  insertPublicationSchema,
   users as usersTable,
   serviceOffers,
   serviceRequests,
   serviceRequestFees,
-  contactQueries
+  contactQueries,
+  publications
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, or, desc } from "drizzle-orm";
@@ -5770,6 +5772,48 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating contact query status:", error);
       res.status(500).json({ error: "Failed to update query status" });
+    }
+  });
+
+  // Publications endpoints
+  app.get('/api/publications', async (req: any, res) => {
+    try {
+      const allPubs = await db.select().from(publications)
+        .where(eq(publications.status, 'published'))
+        .orderBy(desc(publications.createdAt));
+      res.json(allPubs);
+    } catch (error) {
+      console.error("Error fetching publications:", error);
+      res.status(500).json({ error: "Failed to fetch publications" });
+    }
+  });
+
+  app.get('/api/publications/:slug', async (req: any, res) => {
+    try {
+      const { slug } = req.params;
+      const [pub] = await db.select().from(publications)
+        .where(eq(publications.slug, slug));
+      if (!pub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+      res.json(pub);
+    } catch (error) {
+      console.error("Error fetching publication:", error);
+      res.status(500).json({ error: "Failed to fetch publication" });
+    }
+  });
+
+  app.post('/api/admin/publications', isAdminAuthenticated, async (req: any, res) => {
+    try {
+      const parsed = insertPublicationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid data", details: parsed.error.errors });
+      }
+      const [pub] = await db.insert(publications).values(parsed.data).returning();
+      res.status(201).json(pub);
+    } catch (error) {
+      console.error("Error creating publication:", error);
+      res.status(500).json({ error: "Failed to create publication" });
     }
   });
 

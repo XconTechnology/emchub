@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Phone } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -30,6 +30,7 @@ const signUpSchema = z.object({
   confirmPassword: z.string(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  whatsappNumber: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -66,6 +67,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: A
       confirmPassword: "",
       firstName: "",
       lastName: "",
+      whatsappNumber: "",
     },
   });
 
@@ -378,6 +380,21 @@ export default function AuthModal({ isOpen, onClose, initialMode = "signin" }: A
                     {signUpForm.formState.errors.email.message}
                   </p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-whatsapp">WhatsApp Number</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-green-600" />
+                  <Input
+                    id="signup-whatsapp"
+                    type="tel"
+                    placeholder="+852 XXXX XXXX"
+                    className="pl-10"
+                    data-testid="input-signup-whatsapp"
+                    {...signUpForm.register("whatsappNumber")}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

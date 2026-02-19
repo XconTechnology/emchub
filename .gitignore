@@ -10,3 +10,5 @@ attached_assets/*
 !attached_assets/logo.png
 .env
 dumps/
+
+*.sql
