@@ -12,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Loader2, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Info, Phone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  whatsappNumber: z.string().optional(),
   acceptTerms: z.boolean().refine(val => val === true, "You must accept the Terms & Conditions"),
 });
 
@@ -60,6 +61,7 @@ export default function AuthPage() {
       password: "",
       firstName: "",
       lastName: "",
+      whatsappNumber: "",
       acceptTerms: false,
     },
   });
@@ -293,6 +295,28 @@ export default function AuthPage() {
                                 {...field} 
                                 data-testid="input-email"
                               />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="whatsappNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>WhatsApp Number</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-600" />
+                                <Input 
+                                  type="tel"
+                                  placeholder="+852 XXXX XXXX" 
+                                  className="pl-10"
+                                  {...field} 
+                                  data-testid="input-whatsapp"
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
