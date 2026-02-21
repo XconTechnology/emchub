@@ -8,3 +8,5 @@ vite.config.ts.*
 # Ignore everything in attached_assets except the logo
 attached_assets/*
 !attached_assets/logo.png
+
+.env

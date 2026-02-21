@@ -1,9 +1,13 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
 import * as schema from "@shared/schema";
+import ws from "ws";
 
-neonConfig.webSocketConstructor = ws;
+if (process.env.NODE_ENV === "production") {
+  neonConfig.webSocketConstructor = ws;
+}
+
+neonConfig.pipelineConnect = false;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -11,15 +15,15 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ 
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 5,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
 });
 
-pool.on('error', (err) => {
-  console.error('Database pool error:', err.message);
+pool.on("error", (err) => {
+  console.error("Database pool error:", err.message);
 });
 
 export const db = drizzle({ client: pool, schema });
