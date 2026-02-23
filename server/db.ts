@@ -18,4 +18,9 @@ export const pool = new Pool({
       ? undefined
       : { rejectUnauthorized: process.env.DB_REJECT_UNAUTHORIZED === "true" },
 });
+
+pool.on("error", (err) => {
+  console.error("Database pool error:", err.message);
+});
+
 export const db = drizzle(pool, { schema });

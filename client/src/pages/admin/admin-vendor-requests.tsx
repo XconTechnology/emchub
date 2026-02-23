@@ -58,6 +58,20 @@ interface VendorRequestWithUser {
   userEmail: string;
 }
 
+function getDocUrlForType(request: VendorRequestWithUser, docType: string): string | null | undefined {
+  switch (docType) {
+    case 'id': return request.identificationDoc;
+    case 'business': return request.businessRegistrationDoc;
+    case 'address': return request.addressProofDoc;
+    default: return undefined;
+  }
+}
+
+/** True only when the stored value is a full URL (e.g. S3). Paths like /objects/... use the document API (Replit behavior). */
+function isDirectDocUrl(url: string | null | undefined): url is string {
+  return typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://"));
+}
+
 export default function AdminVendorRequests() {
   const { toast } = useToast();
   const { subscribe } = useWebSocket();
@@ -178,13 +192,23 @@ export default function AdminVendorRequests() {
   };
 
   const handleViewDocument = async (requestId: string, docType: string, title: string) => {
+    const request = pendingRequests.find((r) => r.id === requestId);
+    const docUrl = request && getDocUrlForType(request, docType);
+    if (isDirectDocUrl(docUrl)) {
+      setDocumentToView({
+        url: docUrl,
+        title,
+        contentType: '',
+        fileName: title || 'document'
+      });
+      return;
+    }
     setLoadingDocument(true);
     try {
       const response = await fetch(`/api/admin/vendor-requests/${requestId}/document/${docType}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch document');
-      
       const data = await response.json();
       setDocumentToView({
         url: data.url,
@@ -204,15 +228,21 @@ export default function AdminVendorRequests() {
   };
 
   const handleDownload = async (requestId: string, docType: string, fileName: string) => {
+    const request = pendingRequests.find((r) => r.id === requestId);
+    const docUrl = request && getDocUrlForType(request, docType);
+    if (isDirectDocUrl(docUrl)) {
+      const link = document.createElement('a');
+      link.href = docUrl;
+      link.download = fileName;
+      link.click();
+      return;
+    }
     try {
       const response = await fetch(`/api/admin/vendor-requests/${requestId}/document/${docType}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Download failed');
-      
       const data = await response.json();
-      
-      // Download using signed URL
       const link = document.createElement('a');
       link.href = data.url;
       link.download = fileName;
