@@ -14,7 +14,14 @@ interface FileUploadProps {
   testId?: string;
 }
 
-export function FileUpload({ label, accept, onUploadComplete, value, required, testId }: FileUploadProps) {
+export function FileUpload({
+  label,
+  accept,
+  onUploadComplete,
+  value,
+  required,
+  testId,
+}: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState(value || "");
   const { toast } = useToast();
@@ -25,22 +32,28 @@ export function FileUpload({ label, accept, onUploadComplete, value, required, t
 
     setUploading(true);
     try {
+      // ✅ Send file metadata so backend can sign the URL with the correct Content-Type
       const uploadUrlResponse = await fetch("/api/vendor/upload", {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        }),
       });
 
       if (!uploadUrlResponse.ok) {
         throw new Error("Failed to get upload URL");
       }
 
-      const { uploadURL } = await uploadUrlResponse.json();
+      const { uploadURL, key } = await uploadUrlResponse.json();
 
+      // ✅ Content-Type matches what was signed — no S3 signature mismatch
       const uploadResponse = await fetch(uploadURL, {
         method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
+        headers: { "Content-Type": file.type },
         body: file,
       });
 
@@ -48,9 +61,9 @@ export function FileUpload({ label, accept, onUploadComplete, value, required, t
         throw new Error("Failed to upload file");
       }
 
-      const fileUrl = uploadURL.split("?")[0];
-      setUploadedUrl(fileUrl);
-      onUploadComplete(fileUrl);
+      // ✅ Store the permanent S3 key, not the expiring signed URL
+      setUploadedUrl(key);
+      onUploadComplete(key);
 
       toast({
         title: "Upload successful",
@@ -59,7 +72,8 @@ export function FileUpload({ label, accept, onUploadComplete, value, required, t
     } catch (error) {
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload file",
+        description:
+          error instanceof Error ? error.message : "Failed to upload file",
         variant: "destructive",
       });
     } finally {
@@ -77,11 +91,13 @@ export function FileUpload({ label, accept, onUploadComplete, value, required, t
       <Label>
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
-      
+
       {uploadedUrl ? (
         <div className="flex items-center gap-2 p-3 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-md">
           <FileCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
-          <span className="text-sm text-green-700 dark:text-green-300 flex-1">File uploaded successfully</span>
+          <span className="text-sm text-green-700 dark:text-green-300 flex-1">
+            File uploaded successfully
+          </span>
           <Button
             type="button"
             variant="ghost"
@@ -109,7 +125,7 @@ export function FileUpload({ label, accept, onUploadComplete, value, required, t
           )}
         </div>
       )}
-      
+
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Accepted formats: {accept || "PDF, JPG, PNG"}. Max size: 10MB
       </p>
