@@ -5,12 +5,25 @@ import { Redirect, Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2, Info, Phone } from "lucide-react";
 import {
@@ -21,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import TermsAndConditionsModal from "@/components/TermsAndConditionsModal";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -34,7 +48,9 @@ const registerSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   whatsappNumber: z.string().optional(),
-  acceptTerms: z.boolean().refine(val => val === true, "You must accept the Terms & Conditions"),
+  acceptTerms: z
+    .boolean()
+    .refine((val) => val === true, "You must accept the Terms & Conditions"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -43,6 +59,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState("signin");
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginForm>({
@@ -95,19 +112,24 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Mobile Header with back navigation */}
       <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
-        <button 
-          onClick={() => setLocation("/")} 
+        <button
+          onClick={() => setLocation("/")}
           className="flex items-center text-gray-600 hover:text-gray-900"
           data-testid="button-back"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Back
         </button>
-        
+
         {/* Info button to show promotional content as popup */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2" data-testid="button-info">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              data-testid="button-info"
+            >
               <Info className="w-4 h-4" />
               About EMC HUB
             </Button>
@@ -118,17 +140,22 @@ export default function AuthPage() {
                 Discover Halal Businesses in Hong Kong
               </DialogTitle>
               <DialogDescription className="text-white/90 text-base">
-                Connect with authentic halal restaurants, shops, and services across Hong Kong's vibrant ethnic minority community.
+                Connect with authentic halal restaurants, shops, and services
+                across Hong Kong's vibrant ethnic minority community.
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
               <div className="bg-white/20 rounded-lg p-4">
                 <h3 className="font-semibold mb-2">For Business Owners</h3>
-                <p className="opacity-90">List your halal business and reach new customers</p>
+                <p className="opacity-90">
+                  List your halal business and reach new customers
+                </p>
               </div>
               <div className="bg-white/20 rounded-lg p-4">
                 <h3 className="font-semibold mb-2">For Customers</h3>
-                <p className="opacity-90">Find verified halal businesses near you</p>
+                <p className="opacity-90">
+                  Find verified halal businesses near you
+                </p>
               </div>
             </div>
           </DialogContent>
@@ -139,11 +166,19 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome to EMC HUB</h1>
-            <p className="mt-2 text-gray-600">Connect with Hong Kong's ethnic minority community</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome to EMC HUB
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Connect with Hong Kong's ethnic minority community
+            </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -159,7 +194,10 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                    <form
+                      onSubmit={loginForm.handleSubmit(handleLogin)}
+                      className="space-y-4"
+                    >
                       <FormField
                         control={loginForm.control}
                         name="username"
@@ -167,9 +205,9 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Enter your username" 
-                                {...field} 
+                              <Input
+                                placeholder="Enter your username"
+                                {...field}
                                 data-testid="input-username"
                               />
                             </FormControl>
@@ -184,19 +222,19 @@ export default function AuthPage() {
                           <FormItem>
                             <div className="flex items-center justify-between">
                               <FormLabel>Password</FormLabel>
-                              <Link 
-                                href="/forgot-password" 
-                                className="text-sm text-[hsl(86,49%,53%)] hover:underline" 
+                              <Link
+                                href="/forgot-password"
+                                className="text-sm text-[hsl(86,49%,53%)] hover:underline"
                                 data-testid="link-forgot-password"
                               >
                                 Forgot Password?
                               </Link>
                             </div>
                             <FormControl>
-                              <Input 
-                                type="password" 
-                                placeholder="Enter your password" 
-                                {...field} 
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                {...field}
                                 data-testid="input-password"
                               />
                             </FormControl>
@@ -204,8 +242,8 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
                         disabled={loginMutation.isPending}
                         data-testid="button-signin"
@@ -228,7 +266,10 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                    <form
+                      onSubmit={registerForm.handleSubmit(handleRegister)}
+                      className="space-y-4"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={registerForm.control}
@@ -237,9 +278,9 @@ export default function AuthPage() {
                             <FormItem>
                               <FormLabel>First Name</FormLabel>
                               <FormControl>
-                                <Input 
-                                  placeholder="First name" 
-                                  {...field} 
+                                <Input
+                                  placeholder="First name"
+                                  {...field}
                                   data-testid="input-firstname"
                                 />
                               </FormControl>
@@ -254,9 +295,9 @@ export default function AuthPage() {
                             <FormItem>
                               <FormLabel>Last Name</FormLabel>
                               <FormControl>
-                                <Input 
-                                  placeholder="Last name" 
-                                  {...field} 
+                                <Input
+                                  placeholder="Last name"
+                                  {...field}
                                   data-testid="input-lastname"
                                 />
                               </FormControl>
@@ -272,9 +313,9 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Choose a username" 
-                                {...field} 
+                              <Input
+                                placeholder="Choose a username"
+                                {...field}
                                 data-testid="input-register-username"
                               />
                             </FormControl>
@@ -289,10 +330,10 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="email" 
-                                placeholder="Enter your email" 
-                                {...field} 
+                              <Input
+                                type="email"
+                                placeholder="Enter your email"
+                                {...field}
                                 data-testid="input-email"
                               />
                             </FormControl>
@@ -309,11 +350,11 @@ export default function AuthPage() {
                             <FormControl>
                               <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-600" />
-                                <Input 
+                                <Input
                                   type="tel"
-                                  placeholder="+852 XXXX XXXX" 
+                                  placeholder="+852 XXXX XXXX"
                                   className="pl-10"
-                                  {...field} 
+                                  {...field}
                                   data-testid="input-whatsapp"
                                 />
                               </div>
@@ -329,10 +370,10 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="password" 
-                                placeholder="Create a password" 
-                                {...field} 
+                              <Input
+                                type="password"
+                                placeholder="Create a password"
+                                {...field}
                                 data-testid="input-register-password"
                               />
                             </FormControl>
@@ -346,28 +387,54 @@ export default function AuthPage() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                             <FormControl>
-                              <Checkbox 
+                              <Checkbox
                                 checked={field.value}
-                                onCheckedChange={field.onChange}
+                                // Open the modal instead of directly toggling
+                                onCheckedChange={() => {
+                                  if (!field.value) {
+                                    // If not yet accepted → open modal to read & accept
+                                    setTermsModalOpen(true);
+                                  } else {
+                                    // Allow unchecking directly
+                                    field.onChange(false);
+                                  }
+                                }}
                                 data-testid="checkbox-accept-terms"
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
-                              <FormLabel className="font-normal cursor-pointer">
-                                I accept the Terms & Conditions
+                              <FormLabel
+                                className="font-normal cursor-pointer"
+                                onClick={() =>
+                                  !field.value && setTermsModalOpen(true)
+                                }
+                              >
+                                I accept the{" "}
+                                <button
+                                  type="button"
+                                  className="text-primary underline underline-offset-2 font-medium"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setTermsModalOpen(true);
+                                  }}
+                                >
+                                  Terms &amp; Conditions
+                                </button>
                               </FormLabel>
                             </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full bg-[hsl(86,49%,53%)] hover:bg-[hsl(86,49%,48%)]"
                         disabled={registerMutation.isPending}
                         data-testid="button-signup"
                       >
-                        {registerMutation.isPending ? "Creating Account..." : "Create Account"}
+                        {registerMutation.isPending
+                          ? "Creating Account..."
+                          : "Create Account"}
                       </Button>
                     </form>
                   </Form>
@@ -385,20 +452,36 @@ export default function AuthPage() {
             Discover Halal Businesses in Hong Kong
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Connect with authentic halal restaurants, shops, and services across Hong Kong's vibrant ethnic minority community.
+            Connect with authentic halal restaurants, shops, and services across
+            Hong Kong's vibrant ethnic minority community.
           </p>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="bg-white/20 rounded-lg p-4">
               <h3 className="font-semibold mb-2">For Business Owners</h3>
-              <p className="opacity-90">List your halal business and reach new customers</p>
+              <p className="opacity-90">
+                List your halal business and reach new customers
+              </p>
             </div>
             <div className="bg-white/20 rounded-lg p-4">
               <h3 className="font-semibold mb-2">For Customers</h3>
-              <p className="opacity-90">Find verified halal businesses near you</p>
+              <p className="opacity-90">
+                Find verified halal businesses near you
+              </p>
             </div>
           </div>
         </div>
       </div>
+      {termsModalOpen && (
+        <TermsAndConditionsModal
+          open={termsModalOpen}
+          onOpenChange={setTermsModalOpen}
+          onAccept={() => {
+            registerForm.setValue("acceptTerms", true, {
+              shouldValidate: true,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
