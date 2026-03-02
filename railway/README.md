@@ -23,7 +23,30 @@ Separate config, server entry, and S3 storage for Railway. Replit uses its own e
    - `SESSION_SECRET`, `STRIPE_SECRET_KEY`, `VITE_STRIPE_PUBLIC_KEY`
    - `ALLOWED_ORIGINS` – your Railway URL
    - `AWS_BUCKET`, `AWS_REGION` (and `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` if not from Railway AWS plugin)
-3. **S3 bucket** – for uploads (or Cloudflare R2, MinIO)
+3. **S3 bucket** – for uploads (or Cloudflare R2, MinIO). **Important:** set CORS on the bucket so the browser can read the PUT response; otherwise uploads can reach 100% and never “complete” in production. See [CORS for uploads](#cors-for-uploads) below.
+
+## CORS for uploads
+
+If uploads show “Uploading: 100%” but never finish (modal doesn’t close, no success toast), the bucket is missing CORS. The browser sends the file to the presigned URL but then blocks the response without CORS.
+
+**AWS S3** – Bucket → Permissions → CORS, add:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "HEAD"],
+    "AllowedOrigins": ["https://your-production-domain.com", "https://www.your-production-domain.com"],
+    "ExposeHeaders": ["ETag"]
+  }
+]
+```
+
+Use your real app origin(s). For local testing you can add `http://localhost:5174` (and 5173, etc.).
+
+**Cloudflare R2** – Bucket → Settings → CORS policy, same idea: allow your origin(s), methods `GET`, `PUT`, `HEAD`, and expose `ETag` if needed.
+
+After saving CORS, retry the upload.
 
 ## Build & Deploy
 

@@ -14,7 +14,7 @@ interface ObjectUploaderProps {
     url: string;
   }>;
   onComplete?: (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
+    result: UploadResult<Record<string, unknown>, Record<string, unknown>>,
   ) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -34,7 +34,7 @@ export function ObjectUploader({
       restrictions: {
         maxNumberOfFiles,
         maxFileSize,
-        allowedFileTypes: ['image/*'],
+        allowedFileTypes: ["image/*"],
       },
       autoProceed: false,
     })
@@ -44,20 +44,31 @@ export function ObjectUploader({
       })
       .on("complete", (result) => {
         onComplete?.(result);
-        setShowModal(false);
-      })
+        // Only close on full success so users can see errors when something failed
+        if (result.failed.length === 0) {
+          setShowModal(false);
+        }
+      }),
   );
 
   return (
     <div>
-      <Button type="button" onClick={() => setShowModal(true)} className={buttonClassName} data-testid="button-upload-image">
+      <Button
+        type="button"
+        onClick={() => setShowModal(true)}
+        className={buttonClassName}
+        data-testid="button-upload-image"
+      >
         {children}
       </Button>
 
       <DashboardModal
         uppy={uppy}
         open={showModal}
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={() => {
+          setShowModal(false);
+          console.log("onRequestClose");
+        }}
         proudlyDisplayPoweredByUppy={false}
       />
     </div>
