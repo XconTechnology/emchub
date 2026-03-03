@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { getObjectUploadParameters } from "@/lib/upload";
 import type { UploadResult } from "@uppy/core";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -614,15 +615,7 @@ export default function BusinessDetail() {
                       <ObjectUploader
                         maxNumberOfFiles={3}
                         maxFileSize={5242880}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch('/api/objects/upload', {
-                            method: 'POST',
-                            credentials: 'include',
-                          });
-                          if (!response.ok) throw new Error('Failed to get upload URL');
-                          const { uploadURL } = await response.json();
-                          return { method: 'PUT' as const, url: uploadURL };
-                        }}
+                        onGetUploadParameters={getObjectUploadParameters}
                         onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
                           const urls = result.successful?.map(file => file.uploadURL) || [];
                           for (const url of urls) {

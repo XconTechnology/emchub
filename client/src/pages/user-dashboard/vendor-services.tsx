@@ -17,6 +17,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { format } from "date-fns";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -230,6 +231,7 @@ export default function VendorServices() {
     preferredDate: "",
   });
 
+  const isActive = useActivity();
   // Fetch only vendor service requests
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/vendor-service-requests'],
@@ -246,7 +248,7 @@ export default function VendorServices() {
       return response.json();
     },
     enabled: !!messageDialog?.id,
-    refetchInterval: 3000,
+    refetchInterval: isActive ? 3000 : false,
   });
 
   const { data: offers = [] } = useQuery<any[]>({

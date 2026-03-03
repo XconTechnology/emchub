@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Store, MapPin, Phone, Mail, Globe, Edit, Trash2, Plus, Clock, CheckCircle, XCircle, Package, Briefcase, DollarSign, ShieldCheck, AlertCircle, User as UserIcon, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useActivity } from "@/contexts/ActivityContext";
 import { useState, useEffect } from "react";
 import AddListingModal from "@/components/AddListingModal";
 import AddProductModal from "@/components/AddProductModal";
@@ -64,10 +65,11 @@ export default function Profile() {
     }
   }, [user]);
 
+  const isActive = useActivity();
   const { data: listings, isLoading: loadingListings, refetch } = useQuery<Listing[]>({
     queryKey: ['/api/listings/user'],
     enabled: !!user,
-    refetchInterval: 5000,
+    refetchInterval: isActive ? 5000 : false,
   });
 
   const updateProfileMutation = useMutation({

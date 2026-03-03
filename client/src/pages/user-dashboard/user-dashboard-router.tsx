@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Route, Switch, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useActivity } from "@/contexts/ActivityContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,7 +31,7 @@ import {
   Truck,
   LifeBuoy,
   Heart,
-  ExternalLink
+  ExternalLink,
 } from "lucide-react";
 
 import UserDashboardHome from "./user-dashboard-home";
@@ -70,19 +71,23 @@ export default function UserDashboardRouter() {
   const { user, logoutMutation } = useAuth();
   const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isActive = useActivity();
 
-  // Fetch unread message count (B2C conversations)
+  // Fetch unread message count (stops after 1 min inactivity)
   const { data: unreadCountData } = useQuery<{ count: number }>({
     queryKey: ["/api/messages/unread/count"],
     enabled: !!user,
-    refetchInterval: 5000,
+    refetchInterval: isActive ? 5000 : false,
   });
 
-  // Fetch service request unread counts
-  const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
+  // Fetch service request unread counts (stops after 1 min inactivity)
+  const { data: serviceRequestUnread } = useQuery<{
+    totalUnread: number;
+    requests: any[];
+  }>({
     queryKey: ["/api/service-requests/unread-counts"],
     enabled: !!user,
-    refetchInterval: 5000,
+    refetchInterval: isActive ? 30000 : false,
   });
 
   useEffect(() => {
@@ -98,41 +103,151 @@ export default function UserDashboardRouter() {
 
   // Navigation items for normal users (non-vendors)
   const normalUserNavigation = [
-    { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
-    { name: "Saved Items", path: "/dashboard/saved-items", icon: Heart, testId: "nav-saved-items" },
-    { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
-    { name: "My Chats", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
-    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services", badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined },
-    { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
-    { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
-    { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+    {
+      name: "My Dashboard",
+      path: "/dashboard",
+      icon: LayoutDashboard,
+      testId: "nav-dashboard",
+    },
+    {
+      name: "Saved Items",
+      path: "/dashboard/saved-items",
+      icon: Heart,
+      testId: "nav-saved-items",
+    },
+    {
+      name: "My Purchases",
+      path: "/dashboard/purchases",
+      icon: ShoppingBag,
+      testId: "nav-purchases",
+    },
+    {
+      name: "My Chats",
+      path: "/dashboard/messages",
+      icon: MessageCircle,
+      testId: "nav-messages",
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      name: "Request Service",
+      path: "/dashboard/services",
+      icon: Briefcase,
+      testId: "nav-services",
+      badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined,
+    },
+    {
+      name: "Support Tickets",
+      path: "/dashboard/support-tickets",
+      icon: LifeBuoy,
+      testId: "nav-support-tickets",
+    },
+    {
+      name: "My Activity",
+      path: "/dashboard/activity",
+      icon: Activity,
+      testId: "nav-activity",
+    },
+    {
+      name: "Profile & Settings",
+      path: "/dashboard/profile",
+      icon: UserIcon,
+      testId: "nav-profile",
+    },
   ];
 
   // Navigation items for verified vendors
   const vendorNavigation = [
-    { name: "My Dashboard", path: "/dashboard", icon: LayoutDashboard, testId: "nav-dashboard" },
-    { name: "Vendor Orders", path: "/dashboard/vendor-orders", icon: Truck, testId: "nav-vendor-orders" },
-    { name: "Messages", path: "/dashboard/messages", icon: MessageCircle, testId: "nav-messages", badge: unreadCount > 0 ? unreadCount : undefined },
-    { name: "Transactions", path: "/dashboard/vendor-transactions", icon: Receipt, testId: "nav-vendor-transactions" },
-    { name: "Saved Items", path: "/dashboard/saved-items", icon: Heart, testId: "nav-saved-items" },
-    { name: "My Purchases", path: "/dashboard/purchases", icon: ShoppingBag, testId: "nav-purchases" },
-    { name: "Support Tickets", path: "/dashboard/support-tickets", icon: LifeBuoy, testId: "nav-support-tickets" },
-    { name: "My Activity", path: "/dashboard/activity", icon: Activity, testId: "nav-activity" },
+    {
+      name: "My Dashboard",
+      path: "/dashboard",
+      icon: LayoutDashboard,
+      testId: "nav-dashboard",
+    },
+    {
+      name: "Vendor Orders",
+      path: "/dashboard/vendor-orders",
+      icon: Truck,
+      testId: "nav-vendor-orders",
+    },
+    {
+      name: "Messages",
+      path: "/dashboard/messages",
+      icon: MessageCircle,
+      testId: "nav-messages",
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
+    {
+      name: "Transactions",
+      path: "/dashboard/vendor-transactions",
+      icon: Receipt,
+      testId: "nav-vendor-transactions",
+    },
+    {
+      name: "Saved Items",
+      path: "/dashboard/saved-items",
+      icon: Heart,
+      testId: "nav-saved-items",
+    },
+    {
+      name: "My Purchases",
+      path: "/dashboard/purchases",
+      icon: ShoppingBag,
+      testId: "nav-purchases",
+    },
+    {
+      name: "Support Tickets",
+      path: "/dashboard/support-tickets",
+      icon: LifeBuoy,
+      testId: "nav-support-tickets",
+    },
+    {
+      name: "My Activity",
+      path: "/dashboard/activity",
+      icon: Activity,
+      testId: "nav-activity",
+    },
 
     // ✅ CHANGED TEXT
-    { name: "Profile & Settings", path: "/dashboard/profile", icon: UserIcon, testId: "nav-profile" },
+    {
+      name: "Profile & Settings",
+      path: "/dashboard/profile",
+      icon: UserIcon,
+      testId: "nav-profile",
+    },
 
-    { name: "My Reviews", path: "/dashboard/reviews", icon: Star, testId: "nav-reviews" },
-    { name: "TimeDollars", path: "/dashboard/timedollars", icon: DollarSign, testId: "nav-timedollars" },
-    { name: "Request Service", path: "/dashboard/services", icon: Briefcase, testId: "nav-services", badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined },
-    { name: "WhatsApp Group", path: "/dashboard/whatsapp", icon: MessageCircle, testId: "nav-whatsapp" },
+    {
+      name: "My Reviews",
+      path: "/dashboard/reviews",
+      icon: Star,
+      testId: "nav-reviews",
+    },
+    {
+      name: "TimeDollars",
+      path: "/dashboard/timedollars",
+      icon: DollarSign,
+      testId: "nav-timedollars",
+    },
+    {
+      name: "Request Service",
+      path: "/dashboard/services",
+      icon: Briefcase,
+      testId: "nav-services",
+      badge: serviceUnreadCount > 0 ? serviceUnreadCount : undefined,
+    },
+    {
+      name: "WhatsApp Group",
+      path: "/dashboard/whatsapp",
+      icon: MessageCircle,
+      testId: "nav-whatsapp",
+    },
 
     // ❌ REMOVED SETTINGS TAB
     // { name: "Settings", path: "/dashboard/settings", icon: Settings, testId: "nav-settings" },
   ];
 
-  const navigation = user?.vendorStatus === "verified" ? vendorNavigation : normalUserNavigation;
-  const isActive = (path: string) => location === path;
+  const navigation =
+    user?.vendorStatus === "verified" ? vendorNavigation : normalUserNavigation;
+  const isActivePath = (path: string) => location === path;
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
@@ -154,11 +269,17 @@ export default function UserDashboardRouter() {
         <div className="p-6 pl-20 lg:pl-6 border-b border-white/10">
           <Link href="/" data-testid="link-emc-hub-home">
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
-              <h3 className="font-bold text-white text-xl" data-testid="text-emc-hub">
+              <h3
+                className="font-bold text-white text-xl"
+                data-testid="text-emc-hub"
+              >
                 EMC HUB
               </h3>
               {user.vendorStatus === "verified" && (
-                <BadgeCheck className="w-5 h-5 fill-blue-500 text-white flex-shrink-0" data-testid="badge-verified-vendor-sidebar" />
+                <BadgeCheck
+                  className="w-5 h-5 fill-blue-500 text-white flex-shrink-0"
+                  data-testid="badge-verified-vendor-sidebar"
+                />
               )}
             </div>
           </Link>
@@ -174,7 +295,7 @@ export default function UserDashboardRouter() {
                   <Link
                     href={item.path}
                     className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                      isActive(item.path)
+                      isActivePath(item.path)
                         ? "bg-white text-[#8FC24C] font-semibold shadow-md"
                         : "text-white/90 hover:bg-white/30 hover:text-white hover:shadow-md"
                     }`}
@@ -251,10 +372,13 @@ export default function UserDashboardRouter() {
             {location === "/dashboard/pricing" && "Pricing Settings"}
             {location === "/dashboard/vendor-orders" && "Vendor Orders"}
             {location === "/dashboard/vendor-transactions" && "Transactions"}
-            {location === "/dashboard/messages" && (user?.vendorStatus === "verified" ? "Messages" : "My Chats")}
+            {location === "/dashboard/messages" &&
+              (user?.vendorStatus === "verified" ? "Messages" : "My Chats")}
             {location === "/dashboard/support-tickets" && "Support Tickets"}
-            {location === "/dashboard/vendor-support-tickets" && "Assigned Tickets"}
-            {location.startsWith("/dashboard/vendor-support-tickets/") && "Ticket Chat"}
+            {location === "/dashboard/vendor-support-tickets" &&
+              "Assigned Tickets"}
+            {location.startsWith("/dashboard/vendor-support-tickets/") &&
+              "Ticket Chat"}
             {location === "/dashboard/cart" && "My Cart"}
             {location === "/dashboard/checkout" && "Checkout"}
             {location === "/dashboard/recycle-bin" && "Recycle Bin"}
@@ -290,24 +414,44 @@ export default function UserDashboardRouter() {
         <div className="flex-1 container mx-auto p-4 lg:p-8">
           <Switch>
             <Route path="/dashboard" component={UserDashboardHome} />
-            <Route path="/dashboard/vendor-orders" component={UserVendorOrders} />
-            <Route path="/dashboard/vendor-transactions" component={UserVendorTransactions} />
+            <Route
+              path="/dashboard/vendor-orders"
+              component={UserVendorOrders}
+            />
+            <Route
+              path="/dashboard/vendor-transactions"
+              component={UserVendorTransactions}
+            />
             <Route path="/dashboard/purchases" component={UserPurchases} />
             <Route path="/dashboard/activity" component={UserActivity} />
-            <Route path="/dashboard/become-vendor" component={UserBecomeVendor} />
+            <Route
+              path="/dashboard/become-vendor"
+              component={UserBecomeVendor}
+            />
             <Route path="/dashboard/profile" component={Profile} />
             <Route path="/dashboard/settings" component={UserSettings} />
             <Route path="/dashboard/browse" component={UserBrowse} />
             <Route path="/dashboard/reviews">
-              {user?.vendorStatus === "verified" ? <VendorReviews /> : <UserReviews />}
+              {user?.vendorStatus === "verified" ? (
+                <VendorReviews />
+              ) : (
+                <UserReviews />
+              )}
             </Route>
             <Route path="/dashboard/timedollars" component={UserTimeDollars} />
             <Route path="/dashboard/services">
-              {user?.vendorStatus === "verified" ? <VendorServices /> : <UserServices />}
+              {user?.vendorStatus === "verified" ? (
+                <VendorServices />
+              ) : (
+                <UserServices />
+              )}
             </Route>
             <Route path="/dashboard/whatsapp" component={UserWhatsApp} />
             <Route path="/dashboard/my-listings" component={UserMyListings} />
-            <Route path="/dashboard/create-listing" component={UserCreateListing} />
+            <Route
+              path="/dashboard/create-listing"
+              component={UserCreateListing}
+            />
             <Route path="/dashboard/products" component={UserProducts} />
             <Route path="/dashboard/my-services" component={UserMyServices} />
             <Route path="/dashboard/events" component={UserEvents} />
@@ -318,11 +462,24 @@ export default function UserDashboardRouter() {
             <Route path="/dashboard/checkout" component={UserCheckout} />
             <Route path="/dashboard/recycle-bin" component={UserRecycleBin} />
             <Route path="/dashboard/saved-items" component={UserSavedItems} />
-            <Route path="/dashboard/support-tickets" component={UserSupportTickets} />
-            <Route path="/dashboard/vendor-support-tickets/:id" component={VendorSupportTicketChat} />
-            <Route path="/dashboard/vendor-support-tickets" component={VendorSupportTickets} />
+            <Route
+              path="/dashboard/support-tickets"
+              component={UserSupportTickets}
+            />
+            <Route
+              path="/dashboard/vendor-support-tickets/:id"
+              component={VendorSupportTicketChat}
+            />
+            <Route
+              path="/dashboard/vendor-support-tickets"
+              component={VendorSupportTickets}
+            />
             <Route path="/dashboard/messages">
-              {user?.vendorStatus === "verified" ? <VendorMessages /> : <UserChats />}
+              {user?.vendorStatus === "verified" ? (
+                <VendorMessages />
+              ) : (
+                <UserChats />
+              )}
             </Route>
           </Switch>
         </div>

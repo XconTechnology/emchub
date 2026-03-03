@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { Search, LifeBuoy, User as UserIcon, Send, Clock, MessageSquare, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket, User } from "@shared/schema";
@@ -72,7 +73,8 @@ export default function AdminSupportTickets() {
     queryKey: ['/api/admin/users'],
   });
 
-  // Fetch messages for view-only quick message dialog
+  const isActive = useActivity();
+  // Fetch messages for view-only quick message dialog (stops after 1 min inactivity)
   const { data: quickMessages = [] } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', messageDialog?.id, 'messages'],
     queryFn: async () => {
@@ -84,7 +86,7 @@ export default function AdminSupportTickets() {
       return response.json();
     },
     enabled: !!messageDialog?.id,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchInterval: isActive ? 3000 : false,
   });
 
   // Auto-scroll to bottom when new quick messages arrive

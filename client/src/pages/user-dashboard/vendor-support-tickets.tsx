@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { LifeBuoy, MessageSquare, Send, User as UserIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import type { SupportTicket } from "@shared/schema";
@@ -43,7 +44,8 @@ export default function VendorSupportTickets() {
     queryKey: ['/api/support-tickets/vendor/assigned'],
   });
 
-  // Fetch ticket messages when a ticket is selected
+  const isActive = useActivity();
+  // Fetch ticket messages when a ticket is selected (stops after 1 min inactivity)
   const { data: messages = [] } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'],
     queryFn: async () => {
@@ -55,8 +57,8 @@ export default function VendorSupportTickets() {
       return response.json();
     },
     enabled: !!selectedTicket?.id,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
-    refetchOnMount: true, // Force fresh fetch when dialog opens
+    refetchInterval: isActive ? 3000 : false,
+    refetchOnMount: true,
   });
 
   // Send message mutation

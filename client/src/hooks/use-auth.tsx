@@ -8,6 +8,7 @@ import {
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 
 const SAVED_ITEMS_KEY = 'emchub_saved_items';
 
@@ -52,6 +53,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const isActive = useActivity();
   const {
     data: user,
     error,
@@ -59,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<(SelectUser & { isAdmin?: boolean }) | undefined, Error>({
     queryKey: ["/api/me"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    refetchInterval: 5000, // Poll every 5 seconds for real-time vendor status updates
+    refetchInterval: isActive ? 5000 : false,
   });
 
   const loginMutation = useMutation({

@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { ArrowLeft, Send, User as UserIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { Link, useParams } from "wouter";
@@ -38,7 +39,8 @@ export default function VendorSupportTicketChat() {
     enabled: !!ticketId,
   });
 
-  // Fetch ticket messages
+  const isActive = useActivity();
+  // Fetch ticket messages (stops after 1 min inactivity)
   const { data: messages = [], isLoading: messagesLoading } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', ticketId, 'messages'],
     queryFn: async () => {
@@ -49,7 +51,7 @@ export default function VendorSupportTicketChat() {
       return response.json();
     },
     enabled: !!ticketId,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchInterval: isActive ? 3000 : false,
   });
 
   // Send message mutation

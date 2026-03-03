@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Ticket, AlertCircle, LogOut, Send, User as UserIcon, Clock, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -67,7 +68,8 @@ export default function StaffDashboard() {
     enabled: user?.role === "staff",
   });
 
-  // Fetch ticket messages when a ticket is selected
+  const isActive = useActivity();
+  // Fetch ticket messages when a ticket is selected (stops after 1 min inactivity)
   const { data: messages = [], isLoading: messagesLoading } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'],
     queryFn: async () => {
@@ -78,7 +80,7 @@ export default function StaffDashboard() {
       return response.json();
     },
     enabled: !!selectedTicket?.id,
-    refetchInterval: selectedTicket ? 3000 : false,
+    refetchInterval: selectedTicket && isActive ? 3000 : false,
   });
 
   // Send message mutation for full chat

@@ -27,7 +27,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calendar, Mail, User, Phone, Search, Filter, Edit, Ban, CheckCircle, Key } from "lucide-react";
+import {
+  Calendar,
+  Mail,
+  User,
+  Phone,
+  Search,
+  Filter,
+  Edit,
+  Ban,
+  CheckCircle,
+  Key,
+} from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,37 +51,53 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
-  const [resetPasswordUser, setResetPasswordUser] = useState<UserType | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserType | null>(
+    null,
+  );
   const [newPassword, setNewPassword] = useState("");
-  
+
   const { data: users = [], isLoading } = useQuery<UserType[]>({
-    queryKey: ['/api/admin/users', { search: searchQuery, role: roleFilter, status: statusFilter }],
+    queryKey: [
+      "/api/admin/users",
+      { search: searchQuery, role: roleFilter, status: statusFilter },
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (roleFilter && roleFilter !== 'all') params.append('role', roleFilter);
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      
-      const url = `/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
+      if (searchQuery) params.append("search", searchQuery);
+      if (roleFilter && roleFilter !== "all") params.append("role", roleFilter);
+      if (statusFilter && statusFilter !== "all")
+        params.append("status", statusFilter);
+
+      const url = `/api/admin/users${params.toString() ? `?${params.toString()}` : ""}`;
       const response = await fetch(url, {
-        credentials: 'include',
+        credentials: "include",
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        throw new Error("Failed to fetch users");
       }
-      
+
       return response.json();
     },
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, updates }: { userId: string; updates: Partial<UserType> }) => {
-      const res = await apiRequest('PUT', `/api/admin/users/${userId}`, updates);
+    mutationFn: async ({
+      userId,
+      updates,
+    }: {
+      userId: string;
+      updates: Partial<UserType>;
+    }) => {
+      const res = await apiRequest(
+        "PUT",
+        `/api/admin/users/${userId}`,
+        updates,
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
         description: "User updated successfully",
@@ -88,11 +115,15 @@ export default function AdminUsers() {
 
   const suspendUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await apiRequest('POST', `/api/admin/users/${userId}/suspend`, {});
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/users/${userId}/suspend`,
+        {},
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
         description: "User suspended successfully",
@@ -109,11 +140,15 @@ export default function AdminUsers() {
 
   const reactivateUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await apiRequest('POST', `/api/admin/users/${userId}/reactivate`, {});
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/users/${userId}/reactivate`,
+        {},
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
         description: "User reactivated successfully",
@@ -129,12 +164,22 @@ export default function AdminUsers() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
-      const res = await apiRequest('POST', `/api/admin/users/${userId}/reset-password`, { newPassword });
+    mutationFn: async ({
+      userId,
+      newPassword,
+    }: {
+      userId: string;
+      newPassword: string;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/users/${userId}/reset-password`,
+        { newPassword },
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
         description: "Password reset successfully",
@@ -152,20 +197,21 @@ export default function AdminUsers() {
   });
 
   const formatDate = (dateString: string | Date | null) => {
-    if (!dateString) return 'N/A';
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    if (!dateString) return "N/A";
+    const date =
+      typeof dateString === "string" ? new Date(dateString) : dateString;
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const handleUpdateUser = () => {
     if (!editingUser) return;
-    
+
     const updates: Partial<UserType> = {
       username: editingUser.username,
       bio: editingUser.bio || undefined,
@@ -176,19 +222,19 @@ export default function AdminUsers() {
       timeDollarBalance: editingUser.timeDollarBalance,
       tdCashSplitPercentage: editingUser.tdCashSplitPercentage,
     };
-    
+
     // Only include PII fields if they exist (super-admin only)
     if (editingUser.email) updates.email = editingUser.email;
     if (editingUser.phone) updates.phone = editingUser.phone;
     if (editingUser.firstName) updates.firstName = editingUser.firstName;
     if (editingUser.lastName) updates.lastName = editingUser.lastName;
-    
+
     updateUserMutation.mutate({ userId: editingUser.id, updates });
   };
 
   const handleResetPassword = () => {
     if (!resetPasswordUser || !newPassword) return;
-    
+
     if (newPassword.length < 6) {
       toast({
         title: "Error",
@@ -197,7 +243,7 @@ export default function AdminUsers() {
       });
       return;
     }
-    
+
     resetPasswordMutation.mutate({ userId: resetPasswordUser.id, newPassword });
   };
 
@@ -250,7 +296,10 @@ export default function AdminUsers() {
             <div>
               <Label htmlFor="role-filter">Role</Label>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger id="role-filter" data-testid="select-role-filter">
+                <SelectTrigger
+                  id="role-filter"
+                  data-testid="select-role-filter"
+                >
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -266,7 +315,10 @@ export default function AdminUsers() {
             <div>
               <Label htmlFor="status-filter">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status-filter" data-testid="select-status-filter">
+                <SelectTrigger
+                  id="status-filter"
+                  data-testid="select-status-filter"
+                >
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -324,11 +376,16 @@ export default function AdminUsers() {
                             </div>
                           )}
                           <div>
-                            <p className="font-medium" data-testid={`text-username-${user.id}`}>
+                            <p
+                              className="font-medium"
+                              data-testid={`text-username-${user.id}`}
+                            >
                               {user.username}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : 'N/A'}
+                              {user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName}`
+                                : "N/A"}
                             </p>
                           </div>
                         </div>
@@ -336,15 +393,23 @@ export default function AdminUsers() {
                       <TableCell>
                         <div className="space-y-1">
                           {user.email ? (
-                            <div className="flex items-center gap-1 text-sm" data-testid={`text-email-${user.id}`}>
+                            <div
+                              className="flex items-center gap-1 text-sm"
+                              data-testid={`text-email-${user.id}`}
+                            >
                               <Mail className="w-3 h-3" />
                               {user.email}
                             </div>
                           ) : (
-                            <div className="text-sm text-gray-400">No email</div>
+                            <div className="text-sm text-gray-400">
+                              No email
+                            </div>
                           )}
                           {user.phone && (
-                            <div className="flex items-center gap-1 text-sm" data-testid={`text-phone-${user.id}`}>
+                            <div
+                              className="flex items-center gap-1 text-sm"
+                              data-testid={`text-phone-${user.id}`}
+                            >
                               <Phone className="w-3 h-3" />
                               {user.phone}
                             </div>
@@ -352,13 +417,22 @@ export default function AdminUsers() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' || user.role === 'super-admin' ? 'default' : 'secondary'} data-testid={`badge-role-${user.id}`}>
+                        <Badge
+                          variant={
+                            user.role === "admin" || user.role === "super-admin"
+                              ? "default"
+                              : "secondary"
+                          }
+                          data-testid={`badge-role-${user.id}`}
+                        >
                           {user.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={user.status === 'active' ? 'default' : 'destructive'}
+                        <Badge
+                          variant={
+                            user.status === "active" ? "default" : "destructive"
+                          }
                           data-testid={`badge-status-${user.id}`}
                         >
                           {user.status}
@@ -381,12 +455,14 @@ export default function AdminUsers() {
                           >
                             <Edit className="w-3 h-3" />
                           </Button>
-                          {user.status === 'active' ? (
+                          {user.status === "active" ? (
                             <Button
                               type="button"
                               size="sm"
                               variant="destructive"
-                              onClick={() => suspendUserMutation.mutate(user.id)}
+                              onClick={() =>
+                                suspendUserMutation.mutate(user.id)
+                              }
                               disabled={suspendUserMutation.isPending}
                               data-testid={`button-suspend-${user.id}`}
                             >
@@ -397,7 +473,9 @@ export default function AdminUsers() {
                               type="button"
                               size="sm"
                               variant="default"
-                              onClick={() => reactivateUserMutation.mutate(user.id)}
+                              onClick={() =>
+                                reactivateUserMutation.mutate(user.id)
+                              }
                               disabled={reactivateUserMutation.isPending}
                               data-testid={`button-reactivate-${user.id}`}
                             >
@@ -425,12 +503,19 @@ export default function AdminUsers() {
       </Card>
 
       {/* Edit User Dialog */}
-      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-user">
+      <Dialog
+        open={!!editingUser}
+        onOpenChange={(open) => !open && setEditingUser(null)}
+      >
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          data-testid="dialog-edit-user"
+        >
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update user information. Only super-admins can edit PII fields (email, phone, first name, last name).
+              Update user information. Only super-admins can edit PII fields
+              (email, phone, first name, last name).
             </DialogDescription>
           </DialogHeader>
           {editingUser && (
@@ -441,15 +526,22 @@ export default function AdminUsers() {
                   <Input
                     id="username"
                     value={editingUser.username}
-                    onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+                    onChange={(e) =>
+                      setEditingUser({
+                        ...editingUser,
+                        username: e.target.value,
+                      })
+                    }
                     data-testid="input-edit-username"
                   />
                 </div>
                 <div>
                   <Label htmlFor="role">Role *</Label>
-                  <Select 
-                    value={editingUser.role} 
-                    onValueChange={(role) => setEditingUser({ ...editingUser, role })}
+                  <Select
+                    value={editingUser.role}
+                    onValueChange={(role) =>
+                      setEditingUser({ ...editingUser, role })
+                    }
                   >
                     <SelectTrigger id="role" data-testid="select-edit-role">
                       <SelectValue />
@@ -464,9 +556,12 @@ export default function AdminUsers() {
                   </Select>
                 </div>
               </div>
-              
+
               {/* PII Fields - only show if data exists (super-admin access) */}
-              {(editingUser.email || editingUser.phone || editingUser.firstName || editingUser.lastName) && (
+              {(editingUser.email ||
+                editingUser.phone ||
+                editingUser.firstName ||
+                editingUser.lastName) && (
                 <div className="grid grid-cols-2 gap-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
                   <div className="col-span-2">
                     <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
@@ -478,8 +573,13 @@ export default function AdminUsers() {
                       <Label htmlFor="firstName">First Name</Label>
                       <Input
                         id="firstName"
-                        value={editingUser.firstName || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, firstName: e.target.value })}
+                        value={editingUser.firstName || ""}
+                        onChange={(e) =>
+                          setEditingUser({
+                            ...editingUser,
+                            firstName: e.target.value,
+                          })
+                        }
                         data-testid="input-edit-firstname"
                       />
                     </div>
@@ -489,8 +589,13 @@ export default function AdminUsers() {
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input
                         id="lastName"
-                        value={editingUser.lastName || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, lastName: e.target.value })}
+                        value={editingUser.lastName || ""}
+                        onChange={(e) =>
+                          setEditingUser({
+                            ...editingUser,
+                            lastName: e.target.value,
+                          })
+                        }
                         data-testid="input-edit-lastname"
                       />
                     </div>
@@ -501,8 +606,13 @@ export default function AdminUsers() {
                       <Input
                         id="email"
                         type="email"
-                        value={editingUser.email || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                        value={editingUser.email || ""}
+                        onChange={(e) =>
+                          setEditingUser({
+                            ...editingUser,
+                            email: e.target.value,
+                          })
+                        }
                         data-testid="input-edit-email"
                       />
                     </div>
@@ -512,21 +622,28 @@ export default function AdminUsers() {
                       <Label htmlFor="phone">Phone</Label>
                       <Input
                         id="phone"
-                        value={editingUser.phone || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                        value={editingUser.phone || ""}
+                        onChange={(e) =>
+                          setEditingUser({
+                            ...editingUser,
+                            phone: e.target.value,
+                          })
+                        }
                         data-testid="input-edit-phone"
                       />
                     </div>
                   )}
                 </div>
               )}
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status">Status *</Label>
-                  <Select 
-                    value={editingUser.status} 
-                    onValueChange={(status) => setEditingUser({ ...editingUser, status })}
+                  <Select
+                    value={editingUser.status}
+                    onValueChange={(status) =>
+                      setEditingUser({ ...editingUser, status })
+                    }
                   >
                     <SelectTrigger id="status" data-testid="select-edit-status">
                       <SelectValue />
@@ -539,11 +656,16 @@ export default function AdminUsers() {
                 </div>
                 <div>
                   <Label htmlFor="vendorStatus">Vendor Status</Label>
-                  <Select 
-                    value={editingUser.vendorStatus} 
-                    onValueChange={(vendorStatus) => setEditingUser({ ...editingUser, vendorStatus })}
+                  <Select
+                    value={editingUser.vendorStatus}
+                    onValueChange={(vendorStatus) =>
+                      setEditingUser({ ...editingUser, vendorStatus })
+                    }
                   >
-                    <SelectTrigger id="vendorStatus" data-testid="select-edit-vendor-status">
+                    <SelectTrigger
+                      id="vendorStatus"
+                      data-testid="select-edit-vendor-status"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -555,7 +677,7 @@ export default function AdminUsers() {
                   </Select>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="timeDollarBalance">TimeDollar Balance</Label>
@@ -563,41 +685,60 @@ export default function AdminUsers() {
                     id="timeDollarBalance"
                     type="number"
                     value={editingUser.timeDollarBalance || 0}
-                    onChange={(e) => setEditingUser({ ...editingUser, timeDollarBalance: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setEditingUser({
+                        ...editingUser,
+                        timeDollarBalance: parseInt(e.target.value) || 0,
+                      })
+                    }
                     data-testid="input-edit-balance"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="tdCashSplitPercentage">TD/Cash Split % (Cash)</Label>
+                  <Label htmlFor="tdCashSplitPercentage">
+                    TD/Cash Split % (Cash)
+                  </Label>
                   <Input
                     id="tdCashSplitPercentage"
                     type="number"
                     min="0"
                     max="100"
                     value={editingUser.tdCashSplitPercentage || 50}
-                    onChange={(e) => setEditingUser({ ...editingUser, tdCashSplitPercentage: parseInt(e.target.value) || 50 })}
+                    onChange={(e) =>
+                      setEditingUser({
+                        ...editingUser,
+                        tdCashSplitPercentage: parseInt(e.target.value) || 50,
+                      })
+                    }
                     data-testid="input-edit-split"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="bio">Bio</Label>
                 <Textarea
                   id="bio"
-                  value={editingUser.bio || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
+                  value={editingUser.bio || ""}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, bio: e.target.value })
+                  }
                   rows={3}
                   data-testid="textarea-edit-bio"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="profileImageUrl">Profile Image URL</Label>
                 <Input
                   id="profileImageUrl"
-                  value={editingUser.profileImageUrl || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, profileImageUrl: e.target.value })}
+                  value={editingUser.profileImageUrl || ""}
+                  onChange={(e) =>
+                    setEditingUser({
+                      ...editingUser,
+                      profileImageUrl: e.target.value,
+                    })
+                  }
                   placeholder="https://example.com/image.jpg"
                   data-testid="input-edit-image-url"
                 />
@@ -605,23 +746,31 @@ export default function AdminUsers() {
             </div>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setEditingUser(null)} data-testid="button-cancel-edit">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingUser(null)}
+              data-testid="button-cancel-edit"
+            >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="button"
-              onClick={handleUpdateUser} 
+              onClick={handleUpdateUser}
               disabled={updateUserMutation.isPending}
               data-testid="button-save-edit"
             >
-              {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+              {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Reset Password Dialog */}
-      <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && setResetPasswordUser(null)}>
+      <Dialog
+        open={!!resetPasswordUser}
+        onOpenChange={(open) => !open && setResetPasswordUser(null)}
+      >
         <DialogContent data-testid="dialog-reset-password">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
@@ -644,19 +793,26 @@ export default function AdminUsers() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => {
-              setResetPasswordUser(null);
-              setNewPassword("");
-            }} data-testid="button-cancel-reset">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setResetPasswordUser(null);
+                setNewPassword("");
+              }}
+              data-testid="button-cancel-reset"
+            >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="button"
-              onClick={handleResetPassword} 
+              onClick={handleResetPassword}
               disabled={resetPasswordMutation.isPending || !newPassword}
               data-testid="button-confirm-reset"
             >
-              {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+              {resetPasswordMutation.isPending
+                ? "Resetting..."
+                : "Reset Password"}
             </Button>
           </DialogFooter>
         </DialogContent>

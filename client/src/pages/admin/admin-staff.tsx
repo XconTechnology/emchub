@@ -44,7 +44,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UserPlus, Edit, Trash2, Calendar, Shield, FileText } from "lucide-react";
+import {
+  UserPlus,
+  Edit,
+  Trash2,
+  Calendar,
+  Shield,
+  FileText,
+  KeyRound,
+} from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -56,13 +64,41 @@ import { staffInsertSchema, staffRoleUpdateSchema } from "@shared/schema";
 import { useLocation } from "wouter";
 
 const STAFF_ROLES = [
-  { value: "individual", label: "Individual", description: "Access to User Management only" },
-  { value: "business", label: "Business", description: "Access to Vendor Management and Coupons only" },
-  { value: "support", label: "Support", description: "Access to Support Tickets only" },
-  { value: "sales", label: "Sales", description: "Access to Refunds/Transactions only" },
-  { value: "listings", label: "Listings", description: "Access to Listings and Categories management only" },
-  { value: "mediator", label: "Mediator", description: "Access to TimeDollar Disputes only" },
-  { value: "full_admin", label: "Full Admin", description: "Access to all admin features except Super Admin settings" },
+  {
+    value: "individual",
+    label: "Individual",
+    description: "Access to User Management only",
+  },
+  {
+    value: "business",
+    label: "Business",
+    description: "Access to Vendor Management and Coupons only",
+  },
+  {
+    value: "support",
+    label: "Support",
+    description: "Access to Support Tickets only",
+  },
+  {
+    value: "sales",
+    label: "Sales",
+    description: "Access to Refunds/Transactions only",
+  },
+  {
+    value: "listings",
+    label: "Listings",
+    description: "Access to Listings and Categories management only",
+  },
+  {
+    value: "mediator",
+    label: "Mediator",
+    description: "Access to TimeDollar Disputes only",
+  },
+  {
+    value: "full_admin",
+    label: "Full Admin",
+    description: "Access to all admin features except Super Admin settings",
+  },
 ] as const;
 
 export default function AdminStaff() {
@@ -71,10 +107,15 @@ export default function AdminStaff() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<User | null>(null);
+  const [resetPasswordStaff, setResetPasswordStaff] = useState<User | null>(
+    null,
+  );
+  const [newPassword, setNewPassword] = useState("");
 
   const { data: staffUsers = [], isLoading } = useQuery<User[]>({
-    queryKey: ['/api/staff'],
+    queryKey: ["/api/staff"],
   });
 
   const createForm = useForm<InsertStaff>({
@@ -98,11 +139,11 @@ export default function AdminStaff() {
 
   const createStaffMutation = useMutation({
     mutationFn: async (data: InsertStaff) => {
-      const res = await apiRequest('POST', '/api/staff/create', data);
+      const res = await apiRequest("POST", "/api/staff/create", data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
         title: "Success",
         description: "Staff account created successfully",
@@ -120,12 +161,18 @@ export default function AdminStaff() {
   });
 
   const updateStaffMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: string; data: StaffRoleUpdate }) => {
-      const res = await apiRequest('PUT', `/api/staff/${userId}/role`, data);
+    mutationFn: async ({
+      userId,
+      data,
+    }: {
+      userId: string;
+      data: StaffRoleUpdate;
+    }) => {
+      const res = await apiRequest("PUT", `/api/staff/${userId}/role`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
         title: "Success",
         description: "Staff role updated successfully",
@@ -144,11 +191,11 @@ export default function AdminStaff() {
 
   const deleteStaffMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await apiRequest('DELETE', `/api/staff/${userId}`, {});
+      const res = await apiRequest("DELETE", `/api/staff/${userId}`, {});
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/staff'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
       toast({
         title: "Success",
         description: "Staff account deleted successfully",
@@ -166,27 +213,40 @@ export default function AdminStaff() {
   });
 
   const formatDate = (dateString: string | Date | null) => {
-    if (!dateString) return 'N/A';
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    if (!dateString) return "N/A";
+    const date =
+      typeof dateString === "string" ? new Date(dateString) : dateString;
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getRoleBadgeColor = (role: string | null) => {
     switch (role) {
-      case "individual": return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
-      case "business": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "support": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "sales": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "listings": return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
-      case "mediator": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "full_admin": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+      case "super_admin":
+        return "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200";
+      case "admin":
+        return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+      case "individual":
+        return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+      case "business":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      case "support":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "sales":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "listings":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
+      case "mediator":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "full_admin":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
 
@@ -206,13 +266,69 @@ export default function AdminStaff() {
 
   const openEditDialog = (staff: User) => {
     setSelectedStaff(staff);
-    editForm.reset({ staffRole: staff.staffRole as any || "support" });
+    editForm.reset({ staffRole: (staff.staffRole as any) || "support" });
     setEditDialogOpen(true);
   };
 
   const openDeleteDialog = (staff: User) => {
     setSelectedStaff(staff);
     setDeleteDialogOpen(true);
+  };
+
+  const openResetPasswordDialog = (staff: User) => {
+    setResetPasswordStaff(staff);
+    setNewPassword("");
+    setResetPasswordDialogOpen(true);
+  };
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      newPassword,
+    }: {
+      userId: string;
+      newPassword: string;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/users/${userId}/reset-password`,
+        { newPassword },
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/staff"] });
+      toast({
+        title: "Success",
+        description: "Password reset successfully",
+      });
+      setResetPasswordDialogOpen(false);
+      setResetPasswordStaff(null);
+      setNewPassword("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleResetPassword = () => {
+    if (!resetPasswordStaff || !newPassword) return;
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+    resetPasswordMutation.mutate({
+      userId: resetPasswordStaff.id,
+      newPassword,
+    });
   };
 
   if (isLoading) {
@@ -231,7 +347,7 @@ export default function AdminStaff() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Staff Management
+            Staff Managements
           </h2>
           <p className="text-muted-foreground mt-2">
             Create and manage staff accounts with role-based access control
@@ -239,7 +355,7 @@ export default function AdminStaff() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => setLocation('/admin/audit-logs')}
+            onClick={() => setLocation("/admin/audit-logs")}
             variant="outline"
             data-testid="button-view-audit-logs"
           >
@@ -268,7 +384,9 @@ export default function AdminStaff() {
             <div className="text-center py-12 text-muted-foreground">
               <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">No staff accounts yet</p>
-              <p className="text-sm">Create your first staff account to get started</p>
+              <p className="text-sm">
+                Create your first staff account to get started
+              </p>
             </div>
           ) : (
             <Table>
@@ -284,12 +402,31 @@ export default function AdminStaff() {
               </TableHeader>
               <TableBody>
                 {staffUsers.map((staff) => (
-                  <TableRow key={staff.id} data-testid={`staff-row-${staff.id}`}>
-                    <TableCell className="font-medium">{staff.username}</TableCell>
+                  <TableRow
+                    key={staff.id}
+                    data-testid={`staff-row-${staff.id}`}
+                  >
+                    <TableCell className="font-medium">
+                      {staff.username}
+                    </TableCell>
                     <TableCell>{staff.email}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(staff.staffRole)}>
-                        {STAFF_ROLES.find(r => r.value === staff.staffRole)?.label || staff.staffRole}
+                      <Badge
+                        className={getRoleBadgeColor(
+                          staff.role === "super-admin"
+                            ? "super_admin"
+                            : staff.role === "admin"
+                              ? "admin"
+                              : staff.staffRole,
+                        )}
+                      >
+                        {staff.role === "super-admin"
+                          ? "Super Admin"
+                          : staff.role === "admin"
+                            ? "Admin"
+                            : STAFF_ROLES.find(
+                                (r) => r.value === staff.staffRole,
+                              )?.label || staff.staffRole}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -299,7 +436,11 @@ export default function AdminStaff() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={staff.status === "active" ? "default" : "secondary"}>
+                      <Badge
+                        variant={
+                          staff.status === "active" ? "default" : "secondary"
+                        }
+                      >
                         {staff.status}
                       </Badge>
                     </TableCell>
@@ -308,8 +449,28 @@ export default function AdminStaff() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => openResetPasswordDialog(staff)}
+                          data-testid={`button-reset-password-${staff.id}`}
+                          title="Reset password"
+                        >
+                          <KeyRound className="w-4 h-4 mr-1" />
+                          Password
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => openEditDialog(staff)}
                           data-testid={`button-edit-${staff.id}`}
+                          disabled={
+                            staff.role === "super-admin" ||
+                            staff.role === "admin"
+                          }
+                          title={
+                            staff.role === "super-admin" ||
+                            staff.role === "admin"
+                              ? "Role cannot be changed here"
+                              : "Edit role"
+                          }
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Edit
@@ -319,6 +480,16 @@ export default function AdminStaff() {
                           size="sm"
                           onClick={() => openDeleteDialog(staff)}
                           data-testid={`button-delete-${staff.id}`}
+                          disabled={
+                            staff.role === "super-admin" ||
+                            staff.role === "admin"
+                          }
+                          title={
+                            staff.role === "super-admin" ||
+                            staff.role === "admin"
+                              ? "Cannot be deleted from Staff page"
+                              : "Delete"
+                          }
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete
@@ -340,9 +511,16 @@ export default function AdminStaff() {
         </CardHeader>
         <CardContent className="space-y-3">
           {STAFF_ROLES.map((role) => (
-            <div key={role.value} className="flex items-start gap-3 p-3 border rounded-lg">
-              <Badge className={getRoleBadgeColor(role.value)}>{role.label}</Badge>
-              <p className="text-sm text-muted-foreground flex-1">{role.description}</p>
+            <div
+              key={role.value}
+              className="flex items-start gap-3 p-3 border rounded-lg"
+            >
+              <Badge className={getRoleBadgeColor(role.value)}>
+                {role.label}
+              </Badge>
+              <p className="text-sm text-muted-foreground flex-1">
+                {role.description}
+              </p>
             </div>
           ))}
         </CardContent>
@@ -358,7 +536,10 @@ export default function AdminStaff() {
             </DialogDescription>
           </DialogHeader>
           <Form {...createForm}>
-            <form onSubmit={createForm.handleSubmit(handleCreateStaff)} className="space-y-4">
+            <form
+              onSubmit={createForm.handleSubmit(handleCreateStaff)}
+              className="space-y-4"
+            >
               <FormField
                 control={createForm.control}
                 name="username"
@@ -366,7 +547,11 @@ export default function AdminStaff() {
                   <FormItem>
                     <FormLabel>Username *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter username" data-testid="input-username" />
+                      <Input
+                        {...field}
+                        placeholder="Enter username"
+                        data-testid="input-username"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -379,7 +564,12 @@ export default function AdminStaff() {
                   <FormItem>
                     <FormLabel>Email *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="email" placeholder="Enter email" data-testid="input-email" />
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="Enter email"
+                        data-testid="input-email"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -392,7 +582,12 @@ export default function AdminStaff() {
                   <FormItem>
                     <FormLabel>Password *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="Min. 6 characters" data-testid="input-password" />
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="Min. 6 characters"
+                        data-testid="input-password"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -415,7 +610,9 @@ export default function AdminStaff() {
                           <SelectItem key={role.value} value={role.value}>
                             <div className="flex flex-col">
                               <span className="font-medium">{role.label}</span>
-                              <span className="text-xs text-muted-foreground">{role.description}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {role.description}
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -439,7 +636,9 @@ export default function AdminStaff() {
                   disabled={createStaffMutation.isPending}
                   data-testid="button-submit-create"
                 >
-                  {createStaffMutation.isPending ? "Creating..." : "Create Staff"}
+                  {createStaffMutation.isPending
+                    ? "Creating..."
+                    : "Create Staff"}
                 </Button>
               </DialogFooter>
             </form>
@@ -457,7 +656,10 @@ export default function AdminStaff() {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditStaff)} className="space-y-4">
+            <form
+              onSubmit={editForm.handleSubmit(handleEditStaff)}
+              className="space-y-4"
+            >
               <FormField
                 control={editForm.control}
                 name="staffRole"
@@ -475,7 +677,9 @@ export default function AdminStaff() {
                           <SelectItem key={role.value} value={role.value}>
                             <div className="flex flex-col">
                               <span className="font-medium">{role.label}</span>
-                              <span className="text-xs text-muted-foreground">{role.description}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {role.description}
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -499,7 +703,9 @@ export default function AdminStaff() {
                   disabled={updateStaffMutation.isPending}
                   data-testid="button-submit-edit"
                 >
-                  {updateStaffMutation.isPending ? "Updating..." : "Update Role"}
+                  {updateStaffMutation.isPending
+                    ? "Updating..."
+                    : "Update Role"}
                 </Button>
               </DialogFooter>
             </form>
@@ -513,12 +719,15 @@ export default function AdminStaff() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Staff Account?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the staff account for <strong>{selectedStaff?.username}</strong>?
-              This action cannot be undone and will remove all their access.
+              Are you sure you want to delete the staff account for{" "}
+              <strong>{selectedStaff?.username}</strong>? This action cannot be
+              undone and will remove all their access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteStaff}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -529,6 +738,60 @@ export default function AdminStaff() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog
+        open={resetPasswordDialogOpen}
+        onOpenChange={setResetPasswordDialogOpen}
+      >
+        <DialogContent data-testid="dialog-reset-password">
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+            <DialogDescription>
+              Set a new password for{" "}
+              <strong>{resetPasswordStaff?.username}</strong>. Minimum 6
+              characters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">New password</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min. 6 characters"
+                data-testid="input-reset-password"
+                minLength={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setResetPasswordDialogOpen(false)}
+              data-testid="button-cancel-reset-password"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleResetPassword()}
+              disabled={
+                !newPassword ||
+                newPassword.length < 6 ||
+                resetPasswordMutation.isPending
+              }
+              data-testid="button-confirm-reset-password"
+            >
+              {resetPasswordMutation.isPending
+                ? "Resetting..."
+                : "Reset password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

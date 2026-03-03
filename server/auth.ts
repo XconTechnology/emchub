@@ -480,6 +480,15 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+/** Verify a plain password against a stored hash (same format as login). Export for use in reset-password route. */
+export async function verifyPassword(plainPassword: string, storedHash: string): Promise<boolean> {
+  try {
+    return await comparePasswords(plainPassword, storedHash);
+  } catch {
+    return false;
+  }
+}
+
 export function setupAuth(app: Express) {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);

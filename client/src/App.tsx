@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { AdminAuthProvider } from "@/hooks/use-admin-auth";
+import { ActivityProvider } from "@/contexts/ActivityContext";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 import Home from "@/pages/home";
@@ -150,14 +151,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AdminAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AdminAuthProvider>
-      </AuthProvider>
+      <ActivityProvider>
+        <AuthProvider>
+          <AdminAuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AdminAuthProvider>
+        </AuthProvider>
+      </ActivityProvider>
     </QueryClientProvider>
   );
 }

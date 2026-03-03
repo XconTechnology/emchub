@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { Search, Wrench, MessageSquare, Check, X, Clock } from "lucide-react";
 import { format } from "date-fns";
 
@@ -72,9 +73,10 @@ export default function AdminServiceRequests() {
     queryKey: ['/api/me'],
   });
 
+  const isActive = useActivity();
   const { data: requests = [], isLoading } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/admin/service-requests'],
-    refetchInterval: 5000,
+    refetchInterval: isActive ? 5000 : false,
   });
 
   const { data: messages = [] } = useQuery<any[]>({
@@ -88,7 +90,7 @@ export default function AdminServiceRequests() {
       return response.json();
     },
     enabled: !!messageDialog?.id,
-    refetchInterval: 3000,
+    refetchInterval: isActive ? 3000 : false,
   });
 
   // Notification effect - only notify for messages from OTHER users, not the sender

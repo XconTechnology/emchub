@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 
 interface AdminDashboardLayoutProps {
   children: React.ReactNode;
@@ -52,11 +53,12 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
   const [location] = useLocation();
   const { adminLogout } = useAdminAuth();
   const { toast } = useToast();
+  const isActive = useActivity();
 
-  // Fetch admin service request unread counts
+  // Fetch admin service request unread counts (stops after 1 min inactivity)
   const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
-    queryKey: ['/api/admin/service-requests/unread-counts'],
-    refetchInterval: 5000, // Poll every 5 seconds
+    queryKey: ["/api/admin/service-requests/unread-counts"],
+    refetchInterval: isActive ? 30000 : false,
   });
 
   const serviceUnreadCount = serviceRequestUnread?.totalUnread || 0;

@@ -17,6 +17,7 @@ import {
 import { LifeBuoy, Plus, Send, MessageSquare, Loader2, User as UserIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import type { SupportTicket } from "@shared/schema";
 import ContactSupportForm from "@/components/ContactSupportForm";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,11 +41,12 @@ export default function UserSupportTickets() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const isActive = useActivity();
   const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
     queryKey: ['/api/support-tickets/my-tickets'],
   });
 
-  // Fetch ticket messages when a ticket is selected
+  // Fetch ticket messages when a ticket is selected (stops after 1 min inactivity)
   const { data: messages = [], isLoading: messagesLoading } = useQuery<TicketMessage[]>({
     queryKey: ['/api/support-tickets', selectedTicket?.id, 'messages'],
     queryFn: async () => {
@@ -55,7 +57,7 @@ export default function UserSupportTickets() {
       return response.json();
     },
     enabled: !!selectedTicket?.id,
-    refetchInterval: selectedTicket ? 3000 : false, // Auto-refresh every 3 seconds
+    refetchInterval: selectedTicket && isActive ? 3000 : false,
   });
 
   // Send message mutation

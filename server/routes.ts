@@ -131,12 +131,7 @@ const isAdminAuthenticated = async (req: any, res: any, next: any) => {
 
 // Middleware that allows both user and admin authentication
 const isAuthenticatedOrAdmin = async (req: any, res: any, next: any) => {
-  // Check for admin authentication via session
-  if (req.session?.adminAuth) {
-    return next();
-  }
-  
-  // Otherwise, require user authentication
+  if (req.session?.adminAuth) return next();
   return isAuthenticated(req, res, next);
 };
 
@@ -1165,24 +1160,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin authentication routes
+  // Admin authentication routes – validate against DB users with role admin or super-admin
   app.post('/api/admin/login', async (req: any, res) => {
     try {
-      console.log('Admin login attempt:', { session: !!req.session, body: req.body });
-      const { username, password } = req.body;
-      
-      // Simple hardcoded admin credentials (you can enhance this later)
-      if (username === 'admin' && password === 'admin123') {
-        if (!req.session) {
-          console.error('Session not available during admin login');
-          return res.status(500).json({ message: "Session configuration error" });
-        }
-        req.session.adminAuth = true;
-        console.log('Admin session set successfully');
-        res.json({ message: "Admin login successful" });
-      } else {
-        res.status(401).json({ message: "Invalid admin credentials" });
+      const username = req.body?.username;
+      const password = req.body?.password;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
       }
+      if (!req.session) {
+        console.error('Session not available during admin login');
+        return res.status(500).json({ message: "Session configuration error" });
+      }
+      const user = (await storage.getUserByUsername(username)) ?? (await storage.getUserByEmail(username));
+      if (!user) {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+      if (user.role !== 'admin' && user.role !== 'super-admin') {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+      const { verifyPassword } = await import("./auth");
+      const valid = await verifyPassword(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ message: "Invalid admin credentials" });
+      }
+      req.session.adminAuth = true;
+      req.session.adminUserId = user.id;
+      res.json({ message: "Admin login successful" });
     } catch (error) {
       console.error("Admin login error:", error);
       res.status(500).json({ message: "Admin login failed" });
@@ -1422,18 +1426,21 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/admin/users/:id/reset-password', isAdminAuthenticated, async (req: any, res) => {
     try {
       const userId = req.params.id;
-      const { newPassword } = req.body;
-      
-      if (!newPassword || newPassword.length < 6) {
+      const newPassword = req.body?.newPassword;
+      if (typeof newPassword !== "string" || newPassword.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
-      
-      // Hash the new password using the same method as auth system
-      const { hashPassword } = await import("./auth");
+      const { hashPassword, verifyPassword } = await import("./auth");
       const hashedPassword = await hashPassword(newPassword);
-      
       const updatedUser = await storage.adminResetUserPassword(userId, hashedPassword);
-      
+
+      // Verify the stored hash so login will work (catches truncation or wrong format)
+      const verified = await verifyPassword(newPassword, updatedUser.password);
+      if (!verified) {
+        console.error("Reset password: verification failed after update (hash format or persistence issue)");
+        return res.status(500).json({ message: "Password was not saved correctly; please try again." });
+      }
+
       // Get admin user ID and username for activity log
       let adminId: string;
       let adminUsername: string;
@@ -1475,7 +1482,10 @@ export function registerRoutes(app: Express): Server {
       });
       
       res.json({ message: "Password reset successfully", user: { ...updatedUser, password: undefined } });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "User not found") {
+        return res.status(404).json({ message: "User not found" });
+      }
       console.error("Error resetting password:", error);
       res.status(500).json({ message: "Failed to reset password" });
     }
@@ -1552,10 +1562,10 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Get all staff users
+  // Get all staff users: staff + admin + super-admin so any admin (session or user) sees the full list in Staff Management
   app.get('/api/staff', isAdminAuthenticated, async (req: any, res) => {
     try {
-      const staff = await storage.getAllStaff();
+      const staff = await storage.getStaffIncludingSuperAdmins();
       const sanitized = staff.map(s => ({ ...s, password: undefined }));
       res.json(sanitized);
     } catch (error) {
@@ -2890,8 +2900,8 @@ export function registerRoutes(app: Express): Server {
     res.json({ message: "This is a protected route", userId });
   });
 
-  // Object Storage routes - for listing images (accessible to all authenticated users)
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+  // Object Storage routes - for listing images (accessible to authenticated users or admin session)
+  app.post("/api/objects/upload", isAuthenticatedOrAdmin, async (req, res) => {
     try {
       const objectStorageService = getObjectStorage();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();

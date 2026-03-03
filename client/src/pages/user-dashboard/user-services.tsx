@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useActivity } from "@/contexts/ActivityContext";
 import { format } from "date-fns";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -170,10 +171,11 @@ function UserServicesContent() {
     queryKey: ['/api/me'],
   });
 
-  // Fetch user service requests with polling to get updated unread counts
+  const isActive = useActivity();
+  // Fetch user service requests with polling (stops after 1 min inactivity)
   const { data: requests = [] } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/user-service-requests'],
-    refetchInterval: 5000, // Poll every 5 seconds for unread updates
+    refetchInterval: isActive ? 5000 : false,
   });
 
   const { data: messages = [] } = useQuery<any[]>({
@@ -187,7 +189,7 @@ function UserServicesContent() {
       return response.json();
     },
     enabled: !!messageDialog?.id,
-    refetchInterval: 3000,
+    refetchInterval: isActive ? 3000 : false,
   });
 
   const { data: offers = [] } = useQuery<any[]>({
@@ -201,7 +203,7 @@ function UserServicesContent() {
       return response.json();
     },
     enabled: !!messageDialog?.id,
-    refetchInterval: 3000,
+    refetchInterval: isActive ? 3000 : false,
   });
 
   // Notification effect - only notify for messages from OTHER users, not the sender

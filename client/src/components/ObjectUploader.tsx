@@ -65,10 +65,7 @@ export function ObjectUploader({
       <DashboardModal
         uppy={uppy}
         open={showModal}
-        onRequestClose={() => {
-          setShowModal(false);
-          console.log("onRequestClose");
-        }}
+        onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
       />
     </div>

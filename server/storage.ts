@@ -287,6 +287,7 @@ export interface IStorage {
     lastName?: string;
   }): Promise<User>;
   getAllStaff(): Promise<User[]>;
+  getStaffIncludingSuperAdmins(): Promise<User[]>;
   getStaffById(id: string): Promise<User | undefined>;
   updateStaffRole(id: string, staffRole: string): Promise<User>;
   deleteStaffUser(id: string): Promise<void>;
@@ -514,14 +515,17 @@ export class DatabaseStorage implements IStorage {
   async adminResetUserPassword(id: string, newPassword: string): Promise<User> {
     const [updated] = await db
       .update(users)
-      .set({ 
+      .set({
         password: newPassword,
         resetPasswordToken: null,
         resetPasswordExpires: null,
-        updatedAt: new Date() 
+        updatedAt: new Date(),
       })
       .where(eq(users.id, id))
       .returning();
+    if (!updated) {
+      throw new Error("User not found");
+    }
     return updated;
   }
 
@@ -3043,6 +3047,15 @@ export class DatabaseStorage implements IStorage {
   
   async getAllStaff(): Promise<User[]> {
     return db.select().from(users).where(eq(users.role, 'staff')).orderBy(users.createdAt);
+  }
+
+  /** Staff + admin + super-admin; for admin/super-admin requesters so they can see themselves and reset password. */
+  async getStaffIncludingSuperAdmins(): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(inArray(users.role, ['staff', 'admin', 'super-admin']))
+      .orderBy(users.createdAt);
   }
   
   async getStaffById(id: string): Promise<User | undefined> {

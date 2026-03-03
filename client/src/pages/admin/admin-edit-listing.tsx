@@ -29,6 +29,7 @@ import { useLocation, useParams } from "wouter";
 import { useEffect, useState } from "react";
 import type { Category, Listing } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { getObjectUploadParameters } from "@/lib/upload";
 import type { UploadResult } from "@uppy/core";
 import { Upload, X } from "lucide-react";
 
@@ -264,15 +265,7 @@ export default function AdminEditListing() {
                       <ObjectUploader
                         maxNumberOfFiles={5}
                         maxFileSize={10485760}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch('/api/objects/upload', {
-                            method: 'POST',
-                            credentials: 'include',
-                          });
-                          if (!response.ok) throw new Error('Failed to get upload URL');
-                          const { uploadURL } = await response.json();
-                          return { method: 'PUT' as const, url: uploadURL };
-                        }}
+                        onGetUploadParameters={getObjectUploadParameters}
                         onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
                           const urls = result.successful?.map(file => file.uploadURL) || [];
                           for (const url of urls) {

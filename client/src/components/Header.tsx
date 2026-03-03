@@ -7,6 +7,7 @@ import { BecomeVendorModal } from "./BecomeVendorModal";
 import emcLogo from "@assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { useActivity } from "@/contexts/ActivityContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { user, isLoading, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const isActive = useActivity();
 
   // Fetch cart items for logged-in users
   const { data: cartItems = [] } = useQuery<any[]>({
@@ -37,7 +39,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
     enabled: !!user,
   });
 
-  // Fetch unread notification counts with real-time polling
+  // Fetch unread notification counts with real-time polling (stops after 1 min inactivity)
   const { data: notificationCounts } = useQuery<{
     totalUnread: number;
     conversationUnread: number;
@@ -45,7 +47,7 @@ export default function Header({ forceSolid = false }: HeaderProps) {
   }>({
     queryKey: ['/api/notifications/unread-counts'],
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchInterval: isActive ? 30000 : false,
   });
 
   useEffect(() => {
