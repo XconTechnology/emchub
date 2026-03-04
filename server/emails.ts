@@ -17,10 +17,18 @@ transporter.verify((error) => {
 
 const ADMIN_EMAIL = "emchub@ilm.org.hk";
 
-const appUrl =
-  process.env.NODE_ENV === "production"
-    ? process.env.APP_URL_PROD
-    : process.env.APP_URL_DEV;
+/** Base URL for links in emails (reset password, welcome, etc.). Set in production so links point to your live site. */
+function getAppUrl(): string {
+  if (process.env.NODE_ENV !== "production") {
+    return process.env.APP_URL_DEV || "http://localhost:5174";
+  }
+  const raw =
+    process.env.APP_URL_PROD ||
+    process.env.PUBLIC_URL ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
+  return raw || "http://localhost:5174";
+}
+const appUrl = getAppUrl();
 
 export async function sendWelcomeEmail(user: {
   email: string;
