@@ -48,7 +48,22 @@ export function FileUpload({
         throw new Error("Failed to get upload URL");
       }
 
-      const { uploadURL, key } = await uploadUrlResponse.json();
+      const data = await uploadUrlResponse.json();
+      const uploadURL = data.uploadURL ?? data.uploadUrl;
+      let key = data.key ?? data.objectPath;
+
+      // Fallback: derive object path from signed URL when server doesn't return key (e.g. old deploy)
+      if (!key && uploadURL) {
+        try {
+          const u = new URL(uploadURL);
+          const parts = u.pathname.split("/").filter(Boolean);
+          const uploadsIdx = parts.indexOf("uploads");
+          const keyParts = uploadsIdx >= 0 ? parts.slice(uploadsIdx) : parts;
+          key = keyParts.length ? "/objects/" + keyParts.join("/") : "";
+        } catch {
+          key = "";
+        }
+      }
 
       // ✅ Content-Type matches what was signed — no S3 signature mismatch
       const uploadResponse = await fetch(uploadURL, {
@@ -61,9 +76,9 @@ export function FileUpload({
         throw new Error("Failed to upload file");
       }
 
-      // ✅ Store the permanent S3 key, not the expiring signed URL
-      setUploadedUrl(key);
-      onUploadComplete(key);
+      // ✅ Store the permanent object path for the form (e.g. /objects/uploads/uuid)
+      setUploadedUrl(key || "");
+      onUploadComplete(key || "");
 
       toast({
         title: "Upload successful",

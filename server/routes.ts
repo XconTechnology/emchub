@@ -2340,18 +2340,17 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/admin/vendor-requests/:id/document/:type', isAdminAuthenticated, async (req: any, res) => {
     try {
       const { id, type } = req.params;
-      console.log(`Fetching document ${type} for vendor request ${id}`);
-      
+
       // Get the vendor request from database
       const { vendorRequests } = await import("@shared/schema");
       const requests = await db.select().from(vendorRequests).where(eq(vendorRequests.id, id)).limit(1);
       const request = requests[0];
-      
+
       if (!request) {
-        return res.status(404).json({ message: "Vendor request not found" });
+        return res.status(404).json({ message: "Vendor request not found", code: "REQUEST_NOT_FOUND" });
       }
 
-      // Get the document URL based on type
+      // Get the document path/URL based on type
       let documentUrl: string | null = null;
       switch (type) {
         case 'id':
@@ -2364,25 +2363,31 @@ export function registerRoutes(app: Express): Server {
           documentUrl = request.addressProofDoc;
           break;
         default:
-          return res.status(400).json({ message: "Invalid document type" });
+          return res.status(400).json({ message: "Invalid document type", code: "INVALID_TYPE" });
       }
 
-      if (!documentUrl) {
-        return res.status(404).json({ message: "Document not found" });
+      const trimmed = typeof documentUrl === "string" ? documentUrl.trim() : "";
+      if (!trimmed) {
+        return res.status(404).json({
+          message: "No document stored for this request. It may have been submitted before the upload fix.",
+          code: "DOCUMENT_NOT_STORED",
+        });
       }
-
-      console.log(`Document URL: ${documentUrl}`);
+      documentUrl = trimmed;
 
       const storage = getObjectStorage();
       if (!storage.getDocumentAsDataUrl) {
-        return res.status(501).json({ message: "Document preview not supported" });
+        return res.status(501).json({ message: "Document preview not supported", code: "NOT_SUPPORTED" });
       }
       try {
         const result = await storage.getDocumentAsDataUrl(documentUrl);
         res.json(result);
       } catch (error) {
-        console.error("Error downloading document:", error);
-        return res.status(404).json({ message: "Document file not found in storage" });
+        console.error("Error loading document from storage:", error);
+        return res.status(404).json({
+          message: "Document file not found in storage",
+          code: "FILE_NOT_IN_STORAGE",
+        });
       }
     } catch (error) {
       console.error("Error getting document:", error);
@@ -2956,8 +2961,14 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/vendor/upload", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = getObjectStorage();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      const withPath = objectStorageService.getObjectEntityUploadURLWithPath?.();
+      if (withPath) {
+        const { uploadURL, objectPath } = await withPath;
+        res.json({ uploadURL, key: objectPath });
+      } else {
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        res.json({ uploadURL });
+      }
     } catch (error) {
       console.error("Error getting vendor document upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });

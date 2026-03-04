@@ -81,6 +81,11 @@ export class S3ObjectStorageService implements IObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
+    const { uploadURL } = await this.getObjectEntityUploadURLWithPath();
+    return uploadURL;
+  }
+
+  async getObjectEntityUploadURLWithPath(): Promise<{ uploadURL: string; objectPath: string }> {
     const objectId = randomUUID();
     const key = `${UPLOAD_PREFIX}/${objectId}`;
 
@@ -88,8 +93,9 @@ export class S3ObjectStorageService implements IObjectStorageService {
       Bucket: this.bucket,
       Key: key,
     });
-    const url = await getSignedUrl(this.client, command, { expiresIn: 900 });
-    return url;
+    const uploadURL = await getSignedUrl(this.client, command, { expiresIn: 900 });
+    const objectPath = `${OBJECT_PATH_PREFIX}/${key}`;
+    return { uploadURL, objectPath };
   }
 
   async getObjectEntityFile(objectPath: string): Promise<IStorageFile> {
@@ -208,12 +214,17 @@ export class S3ObjectStorageService implements IObjectStorageService {
   async getDocumentAsDataUrl(
     url: string
   ): Promise<{ url: string; contentType: string; fileName: string }> {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split("/").filter(Boolean);
-    if (pathParts.length < 2) throw new Error("Invalid URL");
-    const bucket = pathParts[0];
-    const key = pathParts.slice(1).join("/");
-    if (bucket !== this.bucket) throw new Error("Access denied");
+    let key: string;
+    if (url.startsWith(OBJECT_PATH_PREFIX + "/")) {
+      key = this.objectKeyFromPath(url);
+    } else {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/").filter(Boolean);
+      if (pathParts.length < 2) throw new Error("Invalid URL");
+      const bucket = pathParts[0];
+      key = pathParts.slice(1).join("/");
+      if (bucket !== this.bucket) throw new Error("Access denied");
+    }
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     const resp = await this.client.send(command);
     if (!resp.Body) throw new Error("File not found");

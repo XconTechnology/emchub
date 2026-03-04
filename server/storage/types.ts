@@ -15,6 +15,8 @@ export interface IStorageFile {
  */
 export interface IObjectStorageService {
   getObjectEntityUploadURL(): Promise<string>;
+  /** Returns both signed upload URL and the object path to store (e.g. /objects/uploads/uuid). */
+  getObjectEntityUploadURLWithPath?(): Promise<{ uploadURL: string; objectPath: string }>;
   getObjectEntityFile(objectPath: string): Promise<IStorageFile>;
   downloadObject(file: IStorageFile, res: Response, cacheTtlSec?: number): Promise<void>;
   trySetObjectEntityAclPolicy(rawPath: string, aclPolicy: ObjectAclPolicy): Promise<string>;

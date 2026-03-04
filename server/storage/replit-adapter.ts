@@ -30,6 +30,10 @@ export class ReplitObjectStorageAdapter implements IObjectStorageService {
     return this.service.getObjectEntityUploadURL();
   }
 
+  async getObjectEntityUploadURLWithPath(): Promise<{ uploadURL: string; objectPath: string }> {
+    return this.service.getObjectEntityUploadURLWithPath();
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<IStorageFile> {
     const file = await this.service.getObjectEntityFile(objectPath);
     return gcsFileToStorageFile(file);
@@ -86,6 +90,20 @@ export class ReplitObjectStorageAdapter implements IObjectStorageService {
   async getDocumentAsDataUrl(
     url: string
   ): Promise<{ url: string; contentType: string; fileName: string }> {
+    if (url.startsWith("/objects/")) {
+      const file = await this.service.getObjectEntityFile(url);
+      const [metadata] = await file.getMetadata();
+      const [content] = await file.download();
+      const contentType = (metadata as { contentType?: string }).contentType || "application/octet-stream";
+      const objectPath = url.replace(/^\/objects\//, "");
+      const fileName = objectPath.split("/").pop() || "document";
+      const base64 = content.toString("base64");
+      return {
+        url: `data:${contentType};base64,${base64}`,
+        contentType,
+        fileName,
+      };
+    }
     if (!url.startsWith("https://storage.googleapis.com/")) {
       throw new Error("Invalid storage URL");
     }
