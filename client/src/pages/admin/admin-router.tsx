@@ -25,6 +25,7 @@ import AdminLogin from "../admin-login";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import AdminBlogs from "./admin-blogs";
 
 export default function AdminRouter() {
   const { isAdminAuthenticated, isLoading, checkAdminAuth } = useAdminAuth();
@@ -59,13 +60,19 @@ export default function AdminRouter() {
       <Switch>
         <Route path="/admin/analytics" component={AdminAnalytics} />
         <Route path="/admin/transactions" component={AdminTransactions} />
-        <Route path="/admin/pending-approvals" component={AdminPendingApprovals} />
+        <Route
+          path="/admin/pending-approvals"
+          component={AdminPendingApprovals}
+        />
         <Route path="/admin/vendor-requests" component={AdminVendorRequests} />
         <Route path="/admin/vendors" component={AdminVendors} />
         <Route path="/admin/coupons" component={AdminCoupons} />
         <Route path="/admin/activity-logs" component={AdminActivityLogs} />
         <Route path="/admin/support-tickets" component={AdminSupportTickets} />
-        <Route path="/admin/service-requests" component={AdminServiceRequests} />
+        <Route
+          path="/admin/service-requests"
+          component={AdminServiceRequests}
+        />
         <Route path="/admin/staff" component={AdminStaff} />
         <Route path="/admin/audit-logs" component={AdminAuditLogs} />
         <Route path="/admin/timedollars" component={AdminTimeDollars} />
@@ -78,6 +85,7 @@ export default function AdminRouter() {
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/recycle-bin" component={AdminRecycleBin} />
         <Route path="/admin" component={AdminOverview} />
+        <Route path="/admin/blogs" component={AdminBlogs} />
       </Switch>
     </AdminDashboardLayout>
   );

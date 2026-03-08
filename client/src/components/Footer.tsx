@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import { Link } from "wouter";
 import emcLogo from "@assets/logo.png";
 import ContactSupportForm from "./ContactSupportForm";
@@ -22,12 +29,17 @@ export default function Footer() {
             {/* Logo and Description */}
             <div className="md:col-span-2">
               <div className="flex items-center mb-4">
-                <img src={emcLogo} alt="EMC HUB Logo" className="w-10 h-10 mr-3" />
+                <img
+                  src={emcLogo}
+                  alt="EMC HUB Logo"
+                  className="w-10 h-10 mr-3"
+                />
                 <span className="font-bold text-xl">EMC HUB</span>
               </div>
               <p className="text-background/80 mb-6">
-                Connecting Hong Kong&apos;s ethnic minority community through digital discovery.
-                Find, support, and celebrate the diverse businesses that make our city vibrant.
+                Connecting Hong Kong&apos;s ethnic minority community through
+                digital discovery. Find, support, and celebrate the diverse
+                businesses that make our city vibrant.
               </p>
 
               <div className="flex space-x-4">
@@ -71,28 +83,57 @@ export default function Footer() {
               <h4 className="font-bold mb-4">Quick Links</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-home">
+                  <Link
+                    href="/"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-home"
+                  >
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link href="/events" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-events">
+                  <Link
+                    href="/events"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-events"
+                  >
                     Events
                   </Link>
                 </li>
                 <li>
-                  <Link href="/map" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-map">
+                  <Link
+                    href="/map"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-map"
+                  >
                     Map View
                   </Link>
                 </li>
                 <li>
-                  <Link href="/products" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-products">
+                  <Link
+                    href="/products"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-products"
+                  >
                     Products
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about-us" className="text-background/80 hover:text-primary transition-colors" data-testid="footer-link-about">
+                  <Link
+                    href="/about-us"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-about"
+                  >
                     About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/blogs"
+                    className="text-background/80 hover:text-primary transition-colors"
+                    data-testid="footer-link-blogs"
+                  >
+                    Blogs
                   </Link>
                 </li>
                 <li>
@@ -122,7 +163,8 @@ export default function Footer() {
                 <li className="flex items-start text-background/80">
                   <MapPin className="w-4 h-4 mr-3 mt-0.5 flex-shrink-0" />
                   <span data-testid="contact-address">
-                    Unit C, 4/F, 760 Cheung Sha Wan Rd, Lai Chi Kok, Kowloon, Hong Kong
+                    Unit C, 4/F, 760 Cheung Sha Wan Rd, Lai Chi Kok, Kowloon,
+                    Hong Kong
                   </span>
                 </li>
               </ul>
@@ -168,7 +210,10 @@ export default function Footer() {
         </div>
       </footer>
 
-      <ContactSupportForm isOpen={showSupportForm} onClose={() => setShowSupportForm(false)} />
+      <ContactSupportForm
+        isOpen={showSupportForm}
+        onClose={() => setShowSupportForm(false)}
+      />
     </>
   );
 }

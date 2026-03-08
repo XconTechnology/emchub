@@ -3,14 +3,22 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, ArrowRight, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import {
+  Calendar,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+} from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import type { Publication } from "@shared/schema";
 
 export default function PublicationsCarousel() {
   const { data: publications = [], isLoading } = useQuery<Publication[]>({
-    queryKey: ['/api/publications'],
+    queryKey: ["/api/publications"],
   });
+
+  console.log("Fetched publications:", publications);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -27,28 +35,30 @@ export default function PublicationsCarousel() {
     checkScroll();
     const el = scrollRef.current;
     if (el) {
-      el.addEventListener('scroll', checkScroll);
-      window.addEventListener('resize', checkScroll);
+      el.addEventListener("scroll", checkScroll);
+      window.addEventListener("resize", checkScroll);
       return () => {
-        el.removeEventListener('scroll', checkScroll);
-        window.removeEventListener('resize', checkScroll);
+        el.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
       };
     }
   }, [publications]);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
     const cardWidth = 380;
     scrollRef.current.scrollBy({
-      left: direction === 'left' ? -cardWidth : cardWidth,
-      behavior: 'smooth',
+      left: direction === "left" ? -cardWidth : cardWidth,
+      behavior: "smooth",
     });
   };
 
   const formatDate = (date: string | Date | null) => {
     if (!date) return "";
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric',
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -87,7 +97,9 @@ export default function PublicationsCarousel() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <BookOpen className="w-7 h-7 text-primary" />
-              <h2 className="text-3xl font-bold text-foreground">Publications</h2>
+              <h2 className="text-3xl font-bold text-foreground">
+                Publications
+              </h2>
             </div>
             <p className="text-muted-foreground text-lg">
               Latest articles and guides from our community
@@ -99,7 +111,7 @@ export default function PublicationsCarousel() {
                 variant="outline"
                 size="icon"
                 className="rounded-full h-10 w-10"
-                onClick={() => scroll('left')}
+                onClick={() => scroll("left")}
                 disabled={!canScrollLeft}
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -108,7 +120,7 @@ export default function PublicationsCarousel() {
                 variant="outline"
                 size="icon"
                 className="rounded-full h-10 w-10"
-                onClick={() => scroll('right')}
+                onClick={() => scroll("right")}
                 disabled={!canScrollRight}
               >
                 <ChevronRight className="w-5 h-5" />
@@ -125,7 +137,7 @@ export default function PublicationsCarousel() {
         <div
           ref={scrollRef}
           className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 snap-x snap-mandatory"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {publications.map((pub) => (
             <Link key={pub.id} href={`/publications/${pub.slug}`}>
@@ -156,7 +168,7 @@ export default function PublicationsCarousel() {
                     )}
                   </div>
                   <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors leading-snug">
-                    {pub.title.split('\n').map((line, idx) => (
+                    {pub.title.split("\n").map((line, idx) => (
                       <span key={idx}>
                         {idx > 0 && <br />}
                         {line}
@@ -171,7 +183,11 @@ export default function PublicationsCarousel() {
                   {pub.tags && pub.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {pub.tags.slice(0, 3).map((tag, i) => (
-                        <Badge key={i} variant="outline" className="text-xs px-2 py-0.5">
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-xs px-2 py-0.5"
+                        >
                           {tag}
                         </Badge>
                       ))}

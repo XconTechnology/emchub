@@ -22,6 +22,7 @@ import {
   Wrench,
   Coins,
   MessageSquare,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,16 +50,21 @@ interface AdminDashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
+export default function AdminDashboardLayout({
+  children,
+}: AdminDashboardLayoutProps) {
   const [location] = useLocation();
   const { adminLogout } = useAdminAuth();
   const { toast } = useToast();
   const isActive = useActivity();
 
-  // Fetch admin service request unread counts (stops after 1 min inactivity)
-  const { data: serviceRequestUnread } = useQuery<{ totalUnread: number; requests: any[] }>({
+  // Fetch admin service request unread counts
+  const { data: serviceRequestUnread } = useQuery<{
+    totalUnread: number;
+    requests: any[];
+  }>({
     queryKey: ["/api/admin/service-requests/unread-counts"],
-    refetchInterval: isActive ? 30000 : false,
+    refetchInterval: 5000, // Poll every 5 seconds
   });
 
   const serviceUnreadCount = serviceRequestUnread?.totalUnread || 0;
@@ -71,7 +77,12 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
     });
   };
 
-  const adminNavItems: { title: string; url: string; icon: any; badge?: number }[] = [
+  const adminNavItems: {
+    title: string;
+    url: string;
+    icon: any;
+    badge?: number;
+  }[] = [
     {
       title: "Dashboard",
       url: "/admin",
@@ -144,6 +155,11 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
       icon: UserCog,
     },
     {
+      title: "Blogs",
+      url: "/admin/blogs",
+      icon: BookOpen,
+    },
+    {
       title: "TimeDollars",
       url: "/admin/timedollars",
       icon: Coins,
@@ -166,12 +182,17 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
         <Sidebar className="border-r border-gray-200 dark:border-gray-800">
           <SidebarHeader className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Link href="/admin">
-              <div className="flex items-center gap-2 cursor-pointer" data-testid="admin-sidebar-logo">
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                data-testid="admin-sidebar-logo"
+              >
                 <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                   <LayoutDashboard className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-lg text-foreground">Admin Panel</span>
+                  <span className="font-bold text-lg text-foreground">
+                    Admin Panel
+                  </span>
                   <span className="text-xs text-muted-foreground">EMC HUB</span>
                 </div>
               </div>
@@ -188,17 +209,20 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                       <SidebarMenuButton
                         asChild
                         isActive={location === item.url}
-                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
-                        <Link href={item.url} className="flex items-center justify-between w-full">
+                        <Link
+                          href={item.url}
+                          className="flex items-center justify-between w-full"
+                        >
                           <span className="flex items-center gap-2">
                             <item.icon className="w-4 h-4" />
                             <span>{item.title}</span>
                           </span>
                           {item.badge && (
-                            <Badge 
+                            <Badge
                               className="h-5 min-w-5 flex items-center justify-center p-0 px-1 bg-red-500 text-white text-xs animate-pulse"
-                              data-testid={`badge-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                              data-testid={`badge-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                             >
                               {item.badge}
                             </Badge>
@@ -229,7 +253,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center border-b bg-background px-4">
             <SidebarTrigger data-testid="sidebar-toggle" />
             <Separator orientation="vertical" className="h-8 mx-2" />
-            
+
             {/* Centered heading */}
             <h1 className="flex-1 text-lg font-semibold text-center">
               {location === "/admin" && "Dashboard Overview"}
@@ -251,7 +275,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
               {location === "/admin/recycle-bin" && "Recycle Bin"}
               {location === "/admin/transactions" && "Transactions"}
             </h1>
-            
+
             {/* View Site button */}
             <Button
               variant="outline"
@@ -264,9 +288,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
               <span className="hidden sm:inline">View Site</span>
             </Button>
           </header>
-          <div className="flex-1 p-6">
-            {children}
-          </div>
+          <div className="flex-1 p-6">{children}</div>
         </SidebarInset>
       </div>
     </SidebarProvider>

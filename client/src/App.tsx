@@ -42,6 +42,8 @@ import PrivacyPolicy from "@/pages/privacypolicy";
 import TermsOfUse from "@/pages/termsofuse";
 
 import { useEffect } from "react";
+import BlogsPage from "./pages/blogs-page";
+import SingleBlogPage from "./pages/single-blog-page";
 
 function Router() {
   const [location] = useLocation();
@@ -69,6 +71,8 @@ function Router() {
       <Route path="/events" component={EventsPage} />
       <Route path="/event/:id" component={EventDetailPage} />
       <Route path="/explore" component={Explore} />
+      <Route path="/blogs" component={BlogsPage} />
+      <Route path="/blog/:slug" component={SingleBlogPage} />
 
       <Route path="/about-us" component={AboutUs} />
       <Route path="/publications" component={Publications} />
@@ -90,7 +94,10 @@ function Router() {
 
       <Route path="/dashboard" component={UserDashboardRouter} />
       <Route path="/dashboard/vendor-orders" component={UserDashboardRouter} />
-      <Route path="/dashboard/vendor-transactions" component={UserDashboardRouter} />
+      <Route
+        path="/dashboard/vendor-transactions"
+        component={UserDashboardRouter}
+      />
       <Route path="/dashboard/purchases" component={UserDashboardRouter} />
       <Route path="/dashboard/activity" component={UserDashboardRouter} />
       <Route path="/dashboard/become-vendor" component={UserDashboardRouter} />
@@ -112,9 +119,18 @@ function Router() {
       <Route path="/dashboard/coupons" component={UserDashboardRouter} />
       <Route path="/dashboard/pricing" component={UserDashboardRouter} />
       <Route path="/dashboard/messages" component={UserDashboardRouter} />
-      <Route path="/dashboard/support-tickets" component={UserDashboardRouter} />
-      <Route path="/dashboard/vendor-support-tickets" component={UserDashboardRouter} />
-      <Route path="/dashboard/vendor-support-tickets/:id" component={UserDashboardRouter} />
+      <Route
+        path="/dashboard/support-tickets"
+        component={UserDashboardRouter}
+      />
+      <Route
+        path="/dashboard/vendor-support-tickets"
+        component={UserDashboardRouter}
+      />
+      <Route
+        path="/dashboard/vendor-support-tickets/:id"
+        component={UserDashboardRouter}
+      />
       <Route path="/dashboard/saved-items" component={UserDashboardRouter} />
       <Route path="/dashboard/recycle-bin" component={UserDashboardRouter} />
 
@@ -140,6 +156,7 @@ function Router() {
       <Route path="/admin/listings/edit/:id" component={AdminRouter} />
       <Route path="/admin/users" component={AdminRouter} />
       <Route path="/admin/recycle-bin" component={AdminRouter} />
+      <Route path="/admin/blogs" component={AdminRouter} />
 
       <Route path="/access-denied" component={AccessDenied} />
 

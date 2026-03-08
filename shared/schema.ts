@@ -10,8 +10,9 @@ import {
   boolean,
   text,
   real,
+  uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Session storage table.
@@ -960,3 +961,74 @@ export type InsertPublication = z.infer<typeof insertPublicationSchema>;
 // Legacy types (deprecated)
 export type BusinessListing = typeof businessListings.$inferSelect;
 export type InsertBusinessListing = z.infer<typeof insertBusinessListingSchema>;
+
+
+export const blogs = pgTable("blogs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  // Core content
+  title: varchar("title", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  excerpt: text("excerpt"),
+  content: text("content").notNull().default(""),
+
+  // SEO fields
+  metaTitle: varchar("meta_title", { length: 160 }),
+  metaDescription: varchar("meta_description", { length: 320 }),
+
+  // Media
+  featuredImage: text("featured_image"),
+  featuredImageAlt: varchar("featured_image_alt", { length: 255 }),
+
+  // Schema / structured data
+  schemaMarkup: jsonb("schema_markup"),
+
+  // Internal linking — stored as array of { label, url } objects
+  internalLinks: jsonb("internal_links").$type<
+    Array<{ label: string; url: string }>
+  >(),
+
+  // Status
+  status: varchar("status", { length: 20 }).notNull().default("draft"), // "draft" | "published"
+  publishedAt: timestamp("published_at"),
+
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+
+  // Author reference (FK to users table — adjust column name if yours differs)
+  createdBy: uuid("created_by"), // .references(() => users.id)
+});
+
+// ─── Zod Schemas ─────────────────────────────────────────────────────────────
+
+export const insertBlogSchema = createInsertSchema(blogs, {
+  title: z.string().min(3, "Title must be at least 3 characters").max(255),
+  slug: z
+    .string()
+    .min(3)
+    .max(255)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug must be lowercase letters, numbers, and hyphens only"
+    ),
+  excerpt: z.string().max(500).optional(),
+  content: z.string().min(1, "Content is required"),
+  metaTitle: z.string().max(160).optional(),
+  metaDescription: z.string().max(320).optional(),
+  featuredImage: z.string().url().optional().or(z.literal("")),
+  featuredImageAlt: z.string().max(255).optional(),
+  schemaMarkup: z.record(z.unknown()).optional(),
+  internalLinks: z
+    .array(z.object({ label: z.string(), url: z.string().url() }))
+    .optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
+}).omit({ id: true, createdAt: true, updatedAt: true, publishedAt: true });
+
+export const updateBlogSchema = insertBlogSchema.partial();
+
+export const selectBlogSchema = createSelectSchema(blogs);
+
+export type Blog = typeof blogs.$inferSelect;
+export type InsertBlog = typeof blogs.$inferInsert;
+export type BlogStatus = "draft" | "published";
